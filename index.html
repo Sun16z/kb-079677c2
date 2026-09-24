@@ -812,16 +812,18 @@ footer { color: var(--ink3); font-size: 12px; }
   }
 
   // ---------- CoinKarma 新一期：抓同目錄 json，泡泡動畫換道 ----------
-  // 分享版：網頁放 GitHub Pages（不含數據），數據在 secret gist，gist ID 放在連結的 # 後面
+  // 分享版：網頁放 GitHub Pages（不含數據），數據在 secret gist，gist ID 放在連結的 # 後面。
+  // 讀 gist 的 raw 網址（內容 CDN，沒有次數限制）；不要用 api.github.com，未登入每個 IP 每小時只有 60 次，
+  // 一個分頁每分鐘讀一次就會用完（2026-09-25 實際發生過）。raw 會快取 5 分鐘，所以加上以分鐘為單位的參數。
   const GIST = (location.hash.match(/^#([0-9a-f]{20,40})$/) || [])[1] || null;
+  const GIST_OWNER = "Sun16z";
   async function poll() {
     try {
-      const url = GIST ? `https://api.github.com/gists/${GIST}` : "karma_bubbles.json?t=" + Date.now();
-      // gist API 未登入每小時 60 次；no-cache 會帶 ETag 重新驗證，沒變的 304 不算次數
-      const r = await fetch(url, { cache: GIST ? "no-cache" : "no-store" });
+      const url = GIST ? `https://gist.githubusercontent.com/${GIST_OWNER}/${GIST}/raw/karma_bubbles.json?m=${Math.floor(Date.now() / 60000)}`
+        : "karma_bubbles.json?t=" + Date.now();
+      const r = await fetch(url, { cache: "no-store" });
       if (!r.ok) throw r.status;
-      const j = await r.json();
-      const d = GIST ? JSON.parse(j.files["karma_bubbles.json"].content) : j;
+      const d = await r.json();
       if (d.runAt !== DATA?.runAt) {
         const prevSyms = DATA ? DATA.coins.map((c) => c.bn).join() : "";
         apply(d);
