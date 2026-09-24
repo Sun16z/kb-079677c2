@@ -79,7 +79,8 @@ button { font: inherit; color: inherit; }
 .field canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
 .field canvas.pointing { cursor: pointer; }
 .field canvas.dragging { cursor: grabbing; }
-.lane-h { position: absolute; top: 12px; pointer-events: none; display: flex; align-items: baseline; gap: 8px; padding-left: 16px; white-space: nowrap; }
+.lane-h { position: absolute; top: 12px; pointer-events: none; display: flex; align-items: baseline; gap: 8px; padding-left: 16px; white-space: nowrap; overflow: hidden; }
+.lane-h em { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .lane-h b { font: 800 clamp(18px, 1.7vw, 24px)/1 var(--display); letter-spacing: .02em; }
 .lane-h span { font: 700 13px/1 var(--mono); color: var(--ink3); }
 .lane-h em { font-style: normal; font-size: 12px; color: var(--ink3); }
@@ -109,12 +110,34 @@ button { font: inherit; color: inherit; }
 .chips span { font: 500 11px/1 var(--mono); padding: 5px 8px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink2); }
 .chips span.p { color: var(--buy); } .chips span.n { color: var(--avoid); }
 
+/* 族群輪動 */
+.rot { display: grid; gap: 12px; }
+.rot-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.rot-h h2 { margin: 0; font: 800 22px/1.2 var(--display); }
+.rot-h p { margin: 0; color: var(--ink2); font-size: 13px; max-width: 70ch; }
+.rot-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.evt { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.evt-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.evt-h b { font: 800 18px/1.2 var(--display); }
+.evt-h span { color: var(--ink3); font-size: 12px; }
+.evt-h .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink2); }
+.evt svg { width: 100%; height: 118px; display: block; }
+.evt ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.cand { display: grid; grid-template-columns: 86px 1fr auto; gap: 2px 10px; align-items: baseline; padding: 6px 4px; border-radius: 10px; }
+.cand + .cand { border-top: 1px solid var(--line); }
+.cand b { font: 800 15px/1.3 var(--display); }
+.cand .sigs { display: flex; gap: 6px; flex-wrap: wrap; font: 500 11px/1.4 var(--mono); color: var(--ink3); }
+.cand .sigs .on { color: var(--buy); }
+.cand .since { font: 700 13px var(--mono); text-align: right; }
+.evt .foot { color: var(--ink3); font-size: 12px; margin: 0; }
+.rot-empty { background: var(--panel); border: 1px dashed var(--line); border-radius: 18px; padding: 16px; color: var(--ink2); margin: 0; }
+
 /* 分道回測 */
 .track { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 14px 28px; align-items: start; }
 .track h2 { margin: 0 0 6px; font: 800 20px/1.2 var(--display); }
 .track p { margin: 0; color: var(--ink2); max-width: 60ch; }
 .track small { display: block; margin-top: 8px; color: var(--ink3); font-size: 12px; }
-.track-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.track-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .track-grid div { display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--ink) 4%, transparent); }
 .track-grid b { font: 800 16px/1.2 var(--display); }
 .track-grid dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12px; }
@@ -172,9 +195,9 @@ footer { color: var(--ink3); font-size: 12px; }
     <div class="controls">
       <div class="seg" role="group" aria-label="泡泡大小">
         <span>大小</span>
-        <button type="button" data-mode="strength" aria-pressed="true">訊號強度</button>
-        <button type="button" data-mode="r24" aria-pressed="false">24h 漲跌</button>
+        <button type="button" data-mode="r24" aria-pressed="true">24h 漲跌</button>
         <button type="button" data-mode="vol" aria-pressed="false">成交量</button>
+        <button type="button" data-mode="liq" aria-pressed="false">CoinKarma LIQ</button>
       </div>
       <span class="live" id="live" data-s="off"><i></i><span>快照</span></span>
     </div>
@@ -188,12 +211,14 @@ footer { color: var(--ink3); font-size: 12px; }
     <div class="card" id="card" hidden role="dialog" aria-live="polite"></div>
   </section>
   <p class="legend">
-    <span><b>位置</b> 風險高低（<span id="lg-dir">越左越低</span>）</span>
-    <span><b>大小</b> <span id="lg-size">訊號強度</span></span>
-    <span><b>虛線圈</b> 買盤只跳一期，還沒確認</span>
-    <span><b>↑ ↓</b> 這期剛換道</span>
-    <span><b>閃光圈</b> 即時價已站上觸發價</span>
+    <span><b>位置</b> 過去一年的勝率（<span id="lg-dir">越左越高</span>）</span>
+    <span><b>大小</b> <span id="lg-size">24h 漲跌</span></span>
+    <span><b>↑ ↓</b> 這輪剛換道</span>
+    <span><b>觀望的底色</b> 24h 漲跌，不是訊號</span>
+    <span><b>分道規則</b> 只用幣安價格與量能，CoinKarma 數字僅供參考</span>
   </p>
+
+  <section class="rot" id="rot" hidden></section>
 
   <section class="track" id="track" hidden></section>
 
@@ -207,13 +232,21 @@ footer { color: var(--ink3); font-size: 12px; }
 (() => {
   const DATA0 = /*__DATA__*/null;
   const TIERS = ["buy", "wait", "hot", "avoid"];
-  const NAME = { buy: "可以買", wait: "觀望", hot: "別追", avoid: "別碰" };
-  const HINT = { buy: "風險最低", wait: "方向不明", hot: "漲多容易落後", avoid: "賣壓大" };
+  const NAME = { buy: "可以埋伏", wait: "觀望", hot: "別追", avoid: "別碰" };
+  const HINT = { buy: "龍頭噴了、它還沒跟", wait: "沒有優勢", hot: "過熱或正在噴的龍頭", avoid: "還在急跌" };
+  // 各道過去一年 24h 跑贏大盤的比例（winrate_stats.json）
+  const laneWin = (t) => {
+    const S = DATA?.stats;
+    if (!S) return "";
+    if (t === "buy") { const a = S.rotation?.volume?.lagBeat, b = S.rotation?.narrative?.lagBeat; return a && b ? `${Math.round(a * 100)}–${Math.round(b * 100)}%` : ""; }
+    const x = S.lanes?.[t]?.beat;
+    return x ? Math.round(x * 100) + "%" : "";
+  };
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = (id) => document.getElementById(id);
   const field = $("field"), cv = $("cv"), ctx = cv.getContext("2d"), card = $("card");
 
-  let DATA = null, nodes = [], lanes = {}, mode = "strength", W = 0, H = 0, dpr = 1, vertical = false;
+  let DATA = null, nodes = [], lanes = {}, mode = "r24", W = 0, H = 0, dpr = 1, vertical = false;
   let hover = null, selected = null, drag = null, colors = {}, dark = true;
   const live = {};          // BNSYMBOL -> {p, r24}
   let liveState = "off";
@@ -255,16 +288,13 @@ footer { color: var(--ink3); font-size: 12px; }
       return n;
     });
     if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
-    renderHeader(); renderTrack(); renderBoard(); layout(first);
+    renderHeader(); renderRotation(); renderTrack(); renderBoard(); layout(first);
     if (selected) renderCard(); else card.hidden = true;
   }
 
   function metric(n) {
     const c = n.c;
-    if (mode === "strength") {
-      const k = Math.abs(c.karma);
-      return 0.2 + Math.pow(k / 45, 1.6) * (c.tier === "wait" ? 0.45 : 1);
-    }
+    if (mode === "liq") return 0.3 + Math.abs(c.liq ?? 0);
     if (mode === "r24") return 0.25 + Math.abs(r24Of(c) ?? 0);
     return Math.sqrt(c.vol24 || 1e6) / 1e3;
   }
@@ -272,7 +302,7 @@ footer { color: var(--ink3); font-size: 12px; }
   function layout(snap) {
     const rect = field.getBoundingClientRect();
     vertical = innerWidth <= 760;
-    $("lg-dir").textContent = vertical ? "越上越低" : "越左越低";
+    $("lg-dir").textContent = vertical ? "越上越高" : "越左越高";
     W = rect.width;
     if (vertical) { H = Math.max(760, Math.min(1250, W * 2.7)); field.style.height = H + "px"; }
     else { field.style.height = ""; H = field.getBoundingClientRect().height; }
@@ -295,7 +325,8 @@ footer { color: var(--ink3); font-size: 12px; }
       return { t, a, need, n: ns.length };
     });
     const A = share.reduce((s, x) => s + x.a, 0) || 1;
-    let sizes = share.map((x) => Math.max(x.a / A * span, x.need, span * (x.n ? 0.12 : 0.08)));
+    // 空的道也要留得下標題（桌機至少 170px）
+    let sizes = share.map((x) => Math.max(x.a / A * span, x.need, span * (x.n ? 0.12 : 0.08), vertical ? 64 : 170));
     const k = span / sizes.reduce((a, b) => a + b, 0);
     sizes = sizes.map((s) => s * k);
     let at = 0;
@@ -327,8 +358,8 @@ footer { color: var(--ink3); font-size: 12px; }
     const box = $("lanes");
     box.innerHTML = TIERS.map((t) => {
       const n = DATA.coins.filter((c) => c.tier === t).length;
-      const note = t === "buy" && DATA.market.mood === "off" ? "大盤轉弱，先等" : HINT[t];
-      return `<div class="lane-h" data-t="${t}"><b class="t-${t}">${NAME[t]}</b><span>${n}</span><em>${note}</em></div>` +
+      const w = laneWin(t);
+      return `<div class="lane-h" data-t="${t}"><b class="t-${t}">${NAME[t]}</b><span>${n}</span><em>${HINT[t]}${w ? `｜勝率 ${w}` : ""}</em></div>` +
         (n ? "" : `<div class="lane-empty" data-e="${t}">目前沒有</div>`);
     }).join("");
   }
@@ -338,7 +369,7 @@ footer { color: var(--ink3); font-size: 12px; }
       if (!L) continue;
       if (el.dataset.t) {
         if (vertical) { el.style.left = "0px"; el.style.top = (L.s0 + 12) + "px"; }
-        else { el.style.left = L.s0 + "px"; el.style.top = "14px"; }
+        else { el.style.left = L.s0 + "px"; el.style.top = "14px"; el.style.maxWidth = Math.max(60, L.s1 - L.s0 - 6) + "px"; }
       } else {
         const R = laneRect(t);
         el.style.left = (R.x0 + R.x1) / 2 + "px"; el.style.top = (R.y0 + R.y1) / 2 + "px";
@@ -384,7 +415,6 @@ footer { color: var(--ink3); font-size: 12px; }
     const c = n.c;
     if (mode === "r24") return fmtPct(r24Of(c));
     if (mode === "vol") return fmtVol(c.vol24);
-    if (c.tier === "hot") return "RSI " + Math.round(c.rsi);
     return "LIQ " + sgn(c.liq);
   }
 
@@ -410,6 +440,9 @@ footer { color: var(--ink3); font-size: 12px; }
 
   function bubble(n, t) {
     const c = n.c, col = colors[c.tier], r = n.r;
+    // 觀望道的底色跟著 24h 漲跌（像 CryptoBubbles），外圈維持灰色，避免被看成買賣訊號
+    const fillCol = c.tier === "wait" ? ((r24Of(c) ?? 0) >= 0 ? colors.buy : colors.avoid) : col;
+    const tint = c.tier === "wait" ? Math.min(1, Math.abs(r24Of(c) ?? 0) / 8) : 1;
     if (r < 2) return;
     const focus = selected && selected !== n;
     ctx.save();
@@ -417,15 +450,15 @@ footer { color: var(--ink3); font-size: 12px; }
     const loud = c.tier === "buy" || c.tier === "avoid";
     if (dark && loud) { ctx.shadowColor = rgba(col, 0.55); ctx.shadowBlur = Math.min(34, r * 0.45); }
     const g = ctx.createRadialGradient(n.x, n.y - r * 0.15, r * 0.1, n.x, n.y, r);
-    g.addColorStop(0, rgba(col, dark ? 0.05 : 0.08));
-    g.addColorStop(0.7, rgba(col, dark ? 0.16 : 0.18));
-    g.addColorStop(1, rgba(col, dark ? 0.5 : 0.42));
+    const k = c.tier === "wait" ? 0.25 + 0.45 * tint : 1;
+    g.addColorStop(0, rgba(fillCol, (dark ? 0.05 : 0.08) * k));
+    g.addColorStop(0.7, rgba(fillCol, (dark ? 0.16 : 0.18) * k));
+    g.addColorStop(1, rgba(fillCol, (dark ? 0.5 : 0.42) * k));
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 6.2832); ctx.fill();
     ctx.shadowBlur = 0;
     ctx.lineWidth = n === hover || n === selected ? 3 : c.tier === "wait" ? 1.4 : 2;
     ctx.strokeStyle = broke(c) ? colors.ink3 : col;
-    if (c.tier === "buy" && !c.confirmed) ctx.setLineDash([6, 5]);
     ctx.stroke(); ctx.setLineDash([]);
 
     if (brk(c)) {
@@ -543,44 +576,89 @@ footer { color: var(--ink3); font-size: 12px; }
     const late = age != null && age > 90;
     const banner = $("banner");
     banner.hidden = !(DATA.stale || late);
-    if (!banner.hidden) banner.textContent = `CoinKarma 最後一版是 ${tpe(DATA.ckTime)}，已經 ${age} 分鐘沒出新版（正常每小時 :15 更新）。泡泡位置可能不準，別照著下單。`;
+    if (!banner.hidden) banner.textContent = `CoinKarma 最後一版是 ${tpe(DATA.ckTime)}，已經 ${age} 分鐘沒出新版（正常每小時 :15 更新）。分道不受影響，但卡片裡的 LIQ 是舊數字。`;
     $("sub").innerHTML =
       `<span>BTC <b class="mono">${fmtPx(px)}</b> <span class="mono ${cls(m.btc4h)}">${fmtPct(m.btc4h, 2)}</span> 4H</span>` +
       `<span>上漲家數 <b class="mono">${Math.round((m.breadth ?? 0) * 100)}%</b></span>` +
       `<span>CoinKarma <b class="mono">${tpe(DATA.ckTime)}</b> 版，下一版約 <b class="mono">${next && next > Date.now() ? tpe(next.toISOString()) : "隨時"}</b></span>`;
   }
 
+  function renderRotation() {
+    const R = DATA.rotation, el = $("rot");
+    el.hidden = !R;
+    if (!R) return;
+    const S = DATA.stats?.rotation;
+    const pc = (x) => Math.round(x * 100) + "%";
+    const statLine = S?.volume ? `過去一年：龍頭噴出後買同族群還沒跟上的，24h 後 ${pc(S.volume.lagBeat)}（細分族群）到 ${pc(S.narrative.lagBeat)}（敘事表）跑贏大盤；直接追龍頭只有 ${pc(S.volume.leadBeat)}。量能、主動買這些跡象有沒有亮，對勝率的幫助不穩定。` : "";
+    const head = `<div class="rot-h"><h2>族群輪動</h2><p>龍頭 24 小時比大盤多漲 ${R.theta}% 以上、而且是剛發動，才會列出來；下面是同族群還沒跟上的幣。${statLine}</p></div>`;
+    if (!R.events.length) {
+      el.innerHTML = head + `<p class="rot-empty">最近 ${R.hold} 小時沒有族群龍頭剛噴出。有的話會出現在這裡。</p>`;
+      return;
+    }
+    const cardOf = (e) => {
+      const W = 340, H = 118, lx = 58, ly = H / 2, lr = 34;
+      const cs = e.cands.slice(0, 4);
+      const pos = cs.map((c, i) => ({ x: 170 + (i % 2) * 110, y: cs.length === 1 ? ly : 26 + i * ((H - 52) / Math.max(1, cs.length - 1)), r: 13 + c.sig * 4, c }));
+      const live = (c) => !c.caught && e.ageH <= 24;
+      const col = (c) => live(c) ? colors.buy : colors.wait;
+      const svg = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
+        ${pos.map((p) => `<line x1="${lx}" y1="${ly}" x2="${p.x}" y2="${p.y}" stroke="${colors.line}" stroke-width="1.5" stroke-dasharray="3 4"/>`).join("")}
+        <circle cx="${lx}" cy="${ly}" r="${lr}" fill="${rgba(colors.hot, 0.2)}" stroke="${colors.hot}" stroke-width="2"/>
+        <text x="${lx}" y="${ly - 4}" text-anchor="middle" font-family="Bricolage Grotesque, system-ui" font-weight="800" font-size="${Math.min(15, 60 / e.leadBase.length + 6)}" fill="${colors.ink}">${esc(e.leadBase)}</text>
+        <text x="${lx}" y="${ly + 13}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="10" fill="${colors.hot}">${fmtPct(e.leadEx24)}</text>
+        ${pos.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="${p.r}" fill="${rgba(col(p.c), 0.18)}" stroke="${col(p.c)}" stroke-width="${live(p.c) ? 2 : 1.2}"/>
+          <text x="${p.x + p.r + 5}" y="${p.y + 4}" font-family="Bricolage Grotesque, system-ui" font-weight="800" font-size="12" fill="${colors.ink}">${esc(p.c.base)}</text>`).join("")}
+      </svg>`;
+      const rows = e.cands.map((c) => `<li class="cand"><b class="${live(c) ? "t-buy" : "t-wait"}">${esc(c.base)}${c.caught ? ` <small style="font:500 11px var(--body);color:var(--ink3)">已跟上</small>` : ""}</b>
+          <span class="sigs"><span class="${c.vr >= 1.5 ? "on" : ""}">量 ${c.vr ?? "-"}x</span><span class="${c.tk >= 0.52 ? "on" : ""}">主動買 ${c.tk == null ? "-" : Math.round(c.tk * 100) + "%"}</span><span class="${c.r4 > 0 ? "on" : ""}">4h ${fmtPct(c.r4)}</span></span>
+          <span class="since ${cls(c.since)}" title="事件後到現在">${fmtPct(c.since)}</span></li>`).join("");
+      const ago = e.ageH <= 0 ? "剛剛" : `${e.ageH} 小時前`;
+      const tag = e.narrative === "both" ? "細分族群＋敘事表" : e.narrative ? "敘事表" : "細分族群";
+      return `<article class="evt"><div class="evt-h"><b>${esc(e.group)}</b><span>${ago}發動，龍頭 ${esc(e.leadBase)} 之後 ${fmtPct(e.leadSince)}</span><span class="tag">${tag}</span></div>
+        ${svg}${e.cands.length ? `<ol>${rows}</ol>` : `<p class="foot">同族群都已經跟上，沒有落後的。</p>`}
+        <p class="foot">${e.ageH > 24 ? "已經超過 24 小時，回測只驗證到 24 小時內進場，這張只供參考。" : "綠色＝還沒跟上、可以埋伏；灰色＝事件後已漲超過龍頭一半。右邊是發動後到現在的漲跌；量能、主動買、4h 只當參考。"}</p></article>`;
+    };
+    el.innerHTML = head + `<div class="rot-list">${R.events.map(cardOf).join("")}</div>`;
+  }
+
   function renderTrack() {
     const S = DATA.stats, el = $("track");
     el.hidden = !S;
     if (!S) return;
-    const d = (iso) => new Date(iso).toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric" });
-    const cell = (t) => {
-      const x = S.tiers[t];
-      if (!x) return "";
-      return `<div><b class="t-${t}">${NAME[t]}</b><dl>
-        <dt>跑贏大盤</dt><dd>${Math.round(x.beat * 100)}%</dd>
-        <dt>扣大盤平均</dt><dd class="${cls(x.ex)}">${fmtPct(x.ex, 2)}</dd>
-        <dt>最差一成</dt><dd class="dn">${fmtPct(x.tail)}</dd></dl></div>`;
-    };
-    el.innerHTML = `<div><h2>這套分道過去準不準</h2><p>${esc(S.note)}</p>
-      <small>每輪被分到各道的幣，${S.hours} 小時後的漲跌扣掉同時間全部幣的平均。資料 ${d(S.from)} 到 ${d(S.to)}，共 ${S.runs} 輪，每輪自動重算。</small></div>
-      <div class="track-grid">${TIERS.map(cell).join("")}</div>`;
+    const d = (iso) => new Date(iso).toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei", year: "numeric", month: "numeric", day: "numeric" });
+    const pc = (x) => x == null ? "-" : Math.round(x * 100) + "%";
+    const R = S.rotation || {};
+    const cells = [
+      ["buy", "可以埋伏（細分族群）", R.volume?.lagBeat, null, null, `比龍二龍三平常多 ${fmtPct((R.volume?.lagEx ?? 0) - (R.volume?.lagBase ?? 0), 2)}`],
+      ["buy", "可以埋伏（敘事表）", R.narrative?.lagBeat, null, null, `比平常多 ${fmtPct((R.narrative?.lagEx ?? 0) - (R.narrative?.lagBase ?? 0), 2)}，可能有事後挑選`],
+      ["hot", "別追：過熱", S.lanes.hot.beat, S.lanes.hot.beat1, S.lanes.hot.beat2, `中位數 ${fmtPct(S.lanes.hot.median)}`],
+      ["hot", "別追：追龍頭", R.volume?.leadBeat, null, null, "族群龍頭剛噴出時才買"],
+      ["avoid", "別碰：急跌中", S.lanes.avoid.beat, S.lanes.avoid.beat1, S.lanes.avoid.beat2, `中位數 ${fmtPct(S.lanes.avoid.median)}`],
+      ["wait", "觀望：其他", S.lanes.wait.beat, S.lanes.wait.beat1, S.lanes.wait.beat2, "等於大盤"],
+    ];
+    el.innerHTML = `<div><h2>這套分道過去準不準</h2>
+      <p>勝率＝買進後 ${S.hours} 小時跑贏同時間全市場中位數的比例，50% 就是沒有優勢。能穩定拉開差距的是「避開」：過熱和追龍頭大約四成，急跌中四成六；「埋伏」只比五成多一點，優勢主要來自少數大漲，不是每次都贏。</p>
+      <small>幣安永續 ${S.coins} 檔 1 小時 K 線，${d(S.from)} 到 ${d(S.to)}；每個時間點只算成交額前 150。規則在看結果前就定好，前半年、後半年分開驗證。</small></div>
+      <div class="track-grid">${cells.map(([t, name, b, b1, b2, note]) => `<div><b class="t-${t}">${name}</b><dl>
+        <dt>跑贏大盤</dt><dd>${pc(b)}</dd>
+        ${b1 != null ? `<dt>前半／後半</dt><dd>${pc(b1)}／${pc(b2)}</dd>` : ""}
+        <dt></dt><dd style="font-weight:500;color:var(--ink3);font-family:var(--body)">${note}</dd></dl></div>`).join("")}</div>`;
   }
 
   function renderBoard() {
     const by = (t) => DATA.coins.filter((c) => c.tier === t);
     const buys = by("buy").sort((a, b) => b.karma - a.karma);
-    const hots = by("hot").sort((a, b) => b.rsi - a.rsi);
-    const avoids = by("avoid").sort((a, b) => a.liq - b.liq);
+    const hots = by("hot").sort((a, b) => a.karma - b.karma);
+    const avoids = by("avoid").sort((a, b) => b.karma - a.karma);
     const row = (c, extra = "") => `<li><button class="row" type="button" data-sym="${esc(c.sym)}"><b class="t-${c.tier}">${esc(c.sym)}</b><p>${esc(c.why)}</p>${extra}</button></li>`;
-    const buyMeta = (c) => `<span class="meta"><span>觸發 ${fmtPx(c.trigger)}</span><span>失效 ${fmtPx(c.inv)}</span><span data-dist="${esc(c.sym)}"></span></span>`;
-    const col = (t, list, sub, extra) => `<div class="col ${t}"><h2><b class="t-${t}">${NAME[t]}</b><span>${list.length}</span><small>${sub}</small></h2>` +
+    const buyMeta = (c) => c.trigger ? `<span class="meta"><span>觸發 ${fmtPx(c.trigger)}</span><span>失效 ${fmtPx(c.inv)}</span><span data-dist="${esc(c.sym)}"></span></span>`
+      : `<span class="meta"><span>24h 超額 ${fmtPct(c.ex24)}</span><span>量 ${c.vr ?? "-"}x</span><span>主動買 ${c.tk == null ? "-" : Math.round(c.tk * 100) + "%"}</span></span>`;
+    const col = (t, list, sub, extra) => `<div class="col ${t}"><h2><b class="t-${t}">${NAME[t]}</b><span>${list.length}</span><small>${sub}${laneWin(t) ? `｜過去勝率 ${laneWin(t)}` : ""}</small></h2>` +
       (list.length ? `<ol>${list.map((c) => row(c, extra ? extra(c) : "")).join("")}</ol>` : `<p class="none">這一期沒有。</p>`) + `</div>`;
     $("board").innerHTML =
-      col("buy", buys, DATA.market.mood === "off" ? "大盤轉弱，只觀察" : "站上觸發價才進", buyMeta) +
-      col("hot", hots, "等回檔") +
-      col("avoid", avoids, "別開新多單");
+      col("buy", buys, "龍頭噴了、它還沒跟上", buyMeta) +
+      col("hot", hots, "追高多半會輸") +
+      col("avoid", avoids, "還在急跌");
     const waits = by("wait").sort((a, b) => b.karma - a.karma);
     $("waitline").innerHTML = `<h2>觀望 ${waits.length}</h2>` + waits.map((c) => `<button type="button" data-sym="${esc(c.sym)}">${esc(c.sym)}</button>`).join("");
     document.querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
@@ -606,8 +684,7 @@ footer { color: var(--ink3); font-size: 12px; }
   function renderCard() {
     const c = selected.c, col = colors[c.tier];
     const px = priceOf(c), r24 = r24Of(c);
-    const vsBtc = c.rsiDiff == null ? "-" : (c.rsiDiff > 0 ? "強 " : "弱 ") + Math.abs(c.rsiDiff).toFixed(0);
-    const plan = c.tier === "buy" && c.trigger ? `<div class="plan">
+    const plan = DATA.legacy && c.tier === "buy" && c.trigger ? `<div class="plan">
         <div><small>進場：站上</small><b>${fmtPx(c.trigger)}</b></div>
         <div><small>失效：跌破</small><b>${fmtPx(c.inv)}</b></div>
         <div><small>現價距觸發</small><b data-dist="${esc(c.sym)}">-</b></div></div>` : "";
@@ -617,20 +694,16 @@ footer { color: var(--ink3); font-size: 12px; }
       <div class="px"><strong>${fmtPx(px)}</strong><span class="mono ${cls(r24)}">${fmtPct(r24)} 24h</span></div>
       <p class="why">${esc(c.why)}</p>
       ${plan}
-      <div class="spark"><small>CoinKarma LIQ 近 ${c.liqHist.length} 期（虛線＝0）</small>${spark(c.liqHist, col)}</div>
       <dl class="stats">
-        <div><dt>LIQ</dt><dd class="${cls(c.liq)}">${sgn(c.liq)}</dd></div>
-        <div><dt>LIQ 百分位</dt><dd>${c.liqPct ?? "-"}</dd></div>
-        <div><dt>CoinKarma</dt><dd>${esc(c.ck && c.ck !== "-" ? c.ck : "無")}</dd></div>
-        <div><dt>RSI</dt><dd>${c.rsi ?? "-"}</dd></div>
-        <div><dt>RSI 比 BTC</dt><dd>${vsBtc}</dd></div>
+        <div><dt>24h 比大盤</dt><dd class="${cls(c.ex24)}">${fmtPct(c.ex24)}</dd></div>
+        <div><dt>7 天比大盤</dt><dd class="${cls(c.ex168)}">${fmtPct(c.ex168)}</dd></div>
+        <div><dt>RSI（1h）</dt><dd>${c.rsi ?? "-"}</dd></div>
+        <div><dt>4h 量能</dt><dd>${c.vr == null ? "-" : c.vr + "x"}</dd></div>
+        <div><dt>主動買</dt><dd>${c.tk == null ? "-" : Math.round(c.tk * 100) + "%"}</dd></div>
         <div><dt>資金費率</dt><dd>${c.funding == null ? "-" : (c.funding * 100).toFixed(4) + "%"}</dd></div>
-        <div><dt>1H</dt><dd class="${cls(c.r1h)}">${fmtPct(c.r1h, 2)}</dd></div>
-        <div><dt>OI 1H</dt><dd class="${cls(c.oi1h)}">${fmtPct(c.oi1h)}</dd></div>
-        <div><dt>成交量 24h</dt><dd>${fmtVol(c.vol24)}</dd></div>
       </dl>
-      ${c.ckDesc ? `<p class="why" style="color:var(--ink2);font-size:13px">CoinKarma：${esc(c.ckDesc)}</p>` : ""}
-      <div class="chips">${c.reasons.map(([p, s]) => `<span class="${p > 0 ? "p" : p < 0 ? "n" : ""}">${p > 0 ? "+" : ""}${p} ${esc(s)}</span>`).join("")}</div>`;
+      <div class="spark"><small>CoinKarma 參考（回測沒有預測力）：LIQ ${sgn(c.liq)}、狀態 ${esc(c.ck && c.ck !== "-" ? c.ck : "無")}，近 ${c.liqHist.length} 期</small>${spark(c.liqHist, colors.wait)}</div>
+      ${c.ckDesc ? `<p class="why" style="color:var(--ink2);font-size:13px">CoinKarma：${esc(c.ckDesc)}</p>` : ""}`;
     card.querySelector(".x").addEventListener("click", () => select(null));
     tickLive();
   }
@@ -729,7 +802,7 @@ footer { color: var(--ink3); font-size: 12px; }
   // ---------- 開機 ----------
   readColors();
   const mq = matchMedia("(prefers-color-scheme: light)");
-  const retheme = () => { readColors(); if (selected && !card.hidden) renderCard(); };
+  const retheme = () => { readColors(); if (DATA) renderRotation(); if (selected && !card.hidden) renderCard(); };
   mq.addEventListener?.("change", retheme);
   new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   try {
