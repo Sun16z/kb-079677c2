@@ -132,6 +132,16 @@ button { font: inherit; color: inherit; }
 .evt .foot { color: var(--ink3); font-size: 12px; margin: 0; }
 .rot-empty { background: var(--panel); border: 1px dashed var(--line); border-radius: 18px; padding: 16px; color: var(--ink2); margin: 0; }
 
+/* 暴漲原因 */
+.news { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--hot) 9%, transparent); }
+.news small { color: var(--ink3); font-size: 11px; letter-spacing: .04em; }
+.news p { margin: 0; font-size: 13px; }
+.news .cat { font-weight: 700; color: var(--hot); margin-right: 6px; }
+.news .lead { color: var(--ink2); }
+.news ul { margin: 0; padding: 0 0 0 16px; display: grid; gap: 3px; font-size: 12px; }
+.news a { color: var(--ink2); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
+.evt .why-line { margin: 0; font-size: 13px; color: var(--ink2); }
+
 /* 分道回測 */
 .track { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 14px 28px; align-items: start; }
 .track h2 { margin: 0 0 6px; font: 800 20px/1.2 var(--display); }
@@ -215,6 +225,7 @@ footer { color: var(--ink3); font-size: 12px; }
     <span><b>大小</b> <span id="lg-size">24h 漲跌</span></span>
     <span><b>↑ ↓</b> 這輪剛換道</span>
     <span><b>觀望的底色</b> 24h 漲跌，不是訊號</span>
+    <span><b>！</b> 剛暴漲，點開看原因</span>
     <span><b>分道規則</b> 只用幣安價格與量能，CoinKarma 數字僅供參考</span>
   </p>
 
@@ -483,6 +494,13 @@ footer { color: var(--ink3); font-size: 12px; }
       const txt = brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
       ctx.fillText(txt, n.x, n.y + fs * 0.5 + s2 * 0.35);
     }
+    const nw = DATA.news?.[c.bn];
+    if (nw && nw.status === "done" && r > 14) {
+      const bx = n.x - r * 0.72, by = n.y - r * 0.72, br = Math.max(8, Math.min(11, r * 0.2));
+      ctx.fillStyle = colors.hot; ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = colors.field; ctx.font = `800 ${br * 1.4}px system-ui, sans-serif`;
+      ctx.fillText("!", bx, by + 1);
+    }
     if (c.moved && r > 16) {
       const bx = n.x + r * 0.72, by = n.y - r * 0.72, br = Math.max(8, Math.min(11, r * 0.2));
       ctx.fillStyle = c.moved === "up" ? colors.buy : colors.avoid;
@@ -615,6 +633,7 @@ footer { color: var(--ink3); font-size: 12px; }
       const ago = e.ageH <= 0 ? "剛剛" : `${e.ageH} 小時前`;
       const tag = e.narrative === "both" ? "細分族群＋敘事表" : e.narrative ? "敘事表" : "細分族群";
       return `<article class="evt"><div class="evt-h"><b>${esc(e.group)}</b><span>${ago}發動，龍頭 ${esc(e.leadBase)} 之後 ${fmtPct(e.leadSince)}</span><span class="tag">${tag}</span></div>
+        ${DATA.news?.[e.lead]?.reason ? `<p class="why-line">原因：${esc(DATA.news[e.lead].reason)}</p>` : ""}
         ${svg}${e.cands.length ? `<ol>${rows}</ol>` : `<p class="foot">同族群都已經跟上，沒有落後的。</p>`}
         <p class="foot">${e.ageH > 24 ? "已經超過 24 小時，回測只驗證到 24 小時內進場，這張只供參考。" : "綠色＝還沒跟上、可以埋伏；灰色＝事件後已漲超過龍頭一半。右邊是發動後到現在的漲跌；量能、主動買、4h 只當參考。"}</p></article>`;
     };
@@ -638,6 +657,7 @@ footer { color: var(--ink3); font-size: 12px; }
     ];
     el.innerHTML = `<div><h2>這套分道過去準不準</h2>
       <p>勝率＝買進後 ${S.hours} 小時跑贏同時間全市場中位數的比例，50% 就是沒有優勢。能穩定拉開差距的是「避開」：過熱和追龍頭大約四成，急跌中四成六；「埋伏」只比五成多一點，優勢主要來自少數大漲，不是每次都贏。</p>
+      ${DATA.newsStats?.n ? `<p>暴漲時新聞和價格誰先動：目前累計 ${DATA.newsStats.n} 次，其中 ${DATA.newsStats.priceLed} 次在新聞出來前價格或量能就先動了。</p>` : ""}
       <small>幣安永續 ${S.coins} 檔 1 小時 K 線，${d(S.from)} 到 ${d(S.to)}；每個時間點只算成交額前 150。規則在看結果前就定好，前半年、後半年分開驗證。</small></div>
       <div class="track-grid">${cells.map(([t, name, b, b1, b2, note]) => `<div><b class="t-${t}">${name}</b><dl>
         <dt>跑贏大盤</dt><dd>${pc(b)}</dd>
@@ -681,6 +701,19 @@ footer { color: var(--ink3); font-size: 12px; }
       <circle cx="${X(hist.length - 1)}" cy="${Y(lv)}" r="3.5" fill="${col}"/></svg>`;
   }
 
+  function newsBlock(nw) {
+    if (!nw) return "";
+    const tpe = (iso) => iso ? new Date(iso).toLocaleString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }) : "-";
+    const when = tpe(nw.detected);
+    if (nw.status !== "done") return `<div class="news"><small>為什麼漲（${when} 查詢）</small><p>這次沒查到原因。</p></div>`;
+    const L = nw.lead;
+    const lead = L ? `<p class="lead">${esc(L.label)}：新聞前 2 小時 ${fmtPct(L.pre)}，新聞後 2 小時 ${L.post == null ? "還沒滿 2 小時" : fmtPct(L.post)}${L.preVol ? `，新聞前量能最高是平常的 ${L.preVol} 倍` : ""}。</p>` : "";
+    const first = nw.first_seen ? `最早消息 ${tpe(nw.first_seen)}` : "查不到最早消息時間";
+    const src = (nw.sources || []).map((x) => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title || x.url)}</a>${x.time ? `（${tpe(x.time)}）` : ""}</li>`).join("");
+    return `<div class="news"><small>為什麼漲：Grok 查 X＋新聞，${when} 查詢，信心${esc(nw.confidence || "-")}；${first}</small>
+      <p><span class="cat">${esc(nw.category || "")}</span>${esc(nw.reason || "")}</p>${lead}${src ? `<ul>${src}</ul>` : ""}</div>`;
+  }
+
   function renderCard() {
     const c = selected.c, col = colors[c.tier];
     const px = priceOf(c), r24 = r24Of(c);
@@ -693,6 +726,7 @@ footer { color: var(--ink3); font-size: 12px; }
         <button class="x" type="button" aria-label="關閉">×</button></div>
       <div class="px"><strong>${fmtPx(px)}</strong><span class="mono ${cls(r24)}">${fmtPct(r24)} 24h</span></div>
       <p class="why">${esc(c.why)}</p>
+      ${newsBlock(DATA.news?.[c.bn])}
       ${plan}
       <dl class="stats">
         <div><dt>24h 比大盤</dt><dd class="${cls(c.ex24)}">${fmtPct(c.ex24)}</dd></div>
