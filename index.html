@@ -89,7 +89,7 @@ button { font: inherit; color: inherit; }
 .legend b { color: var(--ink2); font-weight: 600; }
 
 /* 詳情卡 */
-.card { position: absolute; width: 330px; max-width: calc(100% - 24px); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); z-index: 2; display: grid; gap: 12px; }
+.card { position: absolute; width: 330px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); z-index: 2; display: grid; gap: 12px; }
 .card-h { display: flex; align-items: center; gap: 10px; }
 .card-h b { font: 800 26px/1 var(--display); }
 .pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid currentColor; }
