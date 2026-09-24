@@ -6,7 +6,8 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<!-- 字型不擋畫面：先用系統字型畫出來，字型到了再換（網路慢時不會整頁空白） -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap" media="print" onload="this.media='all'">
 <style>
 /* 深色優先：裸 :root 是深色，淺色在下方覆寫 */
 :root {
@@ -14,6 +15,7 @@
   --bg: #070b10;
   --field: #0a0f16;
   --panel: #0f161f;
+  --panel2: #131c27;
   --ink: #eaf0f6;
   --ink2: #a3afbe;
   --ink3: #6c7888;
@@ -26,18 +28,19 @@
   --display: "Bricolage Grotesque", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
   --body: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r: 16px;
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     color-scheme: light;
-    --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff;
+    --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff; --panel2: #f3f5f8;
     --ink: #0c141e; --ink2: #475262; --ink3: #7a8494; --line: #d3dae3;
     --buy: #0a9a63; --wait: #5d6c83; --hot: #c96f00; --avoid: #dc1f3c; --glow: 0;
   }
 }
 :root[data-theme="light"] {
   color-scheme: light;
-  --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff;
+  --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff; --panel2: #f3f5f8;
   --ink: #0c141e; --ink2: #475262; --ink3: #7a8494; --line: #d3dae3;
   --buy: #0a9a63; --wait: #5d6c83; --hot: #c96f00; --avoid: #dc1f3c; --glow: 0;
 }
@@ -46,195 +49,237 @@
 [hidden] { display: none !important; }
 html, body { background: var(--bg); color: var(--ink); }
 body { margin: 0; font: 14px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
-.app { max-width: 1600px; margin: 0 auto; padding-inline: 20px; padding-block: 16px 40px; display: grid; gap: 14px; }
+.app { max-width: 1600px; margin: 0 auto; padding-inline: 20px; padding-block: 12px 40px; display: grid; gap: 12px; }
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-
-/* 頂部判決 */
-.top { display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center; }
-.lamp { display: grid; gap: 5px; padding: 7px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
-.lamp i { width: 14px; height: 14px; border-radius: 50%; background: var(--line); display: block; transition: background .4s, box-shadow .4s; }
-.lamp[data-lit="green"] i:nth-child(3) { background: var(--buy); box-shadow: 0 0 calc(var(--glow) * 12px) var(--buy); }
-.lamp[data-lit="amber"] i:nth-child(2) { background: var(--hot); box-shadow: 0 0 calc(var(--glow) * 12px) var(--hot); }
-.lamp[data-lit="red"] i:nth-child(1) { background: var(--avoid); box-shadow: 0 0 calc(var(--glow) * 12px) var(--avoid); }
-.verdict { min-width: 0; }
-.verdict h1 { margin: 0; font: 800 clamp(22px, 2.6vw, 34px)/1.15 var(--display); letter-spacing: -0.015em; text-wrap: balance; }
-.verdict p { margin: 4px 0 0; color: var(--ink2); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.verdict p b { color: var(--ink); font-weight: 600; }
+.t-buy { color: var(--buy); } .t-wait { color: var(--wait); } .t-hot { color: var(--hot); } .t-avoid { color: var(--avoid); }
 .up { color: var(--buy); } .dn { color: var(--avoid); }
-.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+
+/* 頂列：品牌、市況、控制 */
+.bar { display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; min-height: 40px; }
+.brand { font: 800 17px/1 var(--display); letter-spacing: -0.01em; white-space: nowrap; }
+.brand span { color: var(--ink3); font-weight: 500; }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--ink2); font-size: 12.5px; }
+.meta b { color: var(--ink); font-weight: 600; }
+.controls { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .seg { display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
-.seg span { align-self: center; padding: 0 8px 0 10px; color: var(--ink3); font-size: 12px; }
-.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 999px; cursor: pointer; color: var(--ink2); font-size: 13px; white-space: nowrap; }
+.seg span { align-self: center; padding: 0 6px 0 10px; color: var(--ink3); font-size: 12px; }
+.seg button { border: 0; background: none; padding: 5px 11px; border-radius: 999px; cursor: pointer; color: var(--ink2); font-size: 12.5px; white-space: nowrap; }
 .seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
-.live { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink2); padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); white-space: nowrap; }
+.live { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink2); padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); white-space: nowrap; }
 .live i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink3); }
 .live[data-s="on"] i { background: var(--buy); animation: blink 2s infinite; }
 .live[data-s="wait"] i { background: var(--hot); }
 @keyframes blink { 50% { opacity: .35; } }
+.howto { position: relative; }
+.howto summary { list-style: none; cursor: pointer; font-size: 12.5px; color: var(--ink2); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+.howto summary::-webkit-details-marker { display: none; }
+.howto[open] summary { color: var(--ink); border-color: var(--ink3); }
+.howto .pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 5; width: min(360px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); display: grid; gap: 8px; font-size: 13px; color: var(--ink2); }
+.howto .pop b { color: var(--ink); }
+
+/* 決策列：三個數字＋一句話 */
+.decide { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px 22px; align-items: center; }
+.tally { display: grid; grid-template-columns: repeat(3, minmax(128px, 1fr)); gap: 8px; }
+.tile { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 10px 14px; cursor: pointer; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: baseline; transition: border-color .2s, background .2s, transform .15s; }
+.tile:active { transform: translateY(1px); }
+.tile b { grid-row: span 2; font: 800 34px/1 var(--display); font-variant-numeric: tabular-nums; }
+.tile span { font: 700 14px/1.2 var(--body); }
+.tile small { color: var(--ink3); font: 500 11.5px/1.3 var(--mono); }
+.tile.zero b { color: var(--ink3); }
+.tile.t-buy:not(.zero) { border-color: color-mix(in srgb, var(--buy) 45%, var(--line)); background: color-mix(in srgb, var(--buy) 8%, var(--panel)); }
+.tile.t-hot:not(.zero) { border-color: color-mix(in srgb, var(--hot) 45%, var(--line)); background: color-mix(in srgb, var(--hot) 7%, var(--panel)); }
+.tile.t-avoid:not(.zero) { border-color: color-mix(in srgb, var(--avoid) 45%, var(--line)); background: color-mix(in srgb, var(--avoid) 7%, var(--panel)); }
+.tile[aria-pressed="true"] { outline: 2px solid currentColor; outline-offset: -2px; }
+.tile span, .tile small { color: var(--ink2); }
+.say { margin: 0; font: 800 clamp(18px, 1.9vw, 26px)/1.25 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+.say small { display: block; margin-top: 4px; font: 500 13px/1.4 var(--body); color: var(--ink3); letter-spacing: 0; }
+
+/* 族群熱度條 */
+.heat { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-block: 2px; mask-image: linear-gradient(90deg, #000 94%, transparent); }
+.heat::-webkit-scrollbar { display: none; }
+.heat .lbl { flex: none; align-self: center; font-size: 12px; color: var(--ink3); padding-right: 4px; white-space: nowrap; }
+.hc { flex: none; display: inline-flex; align-items: baseline; gap: 7px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; white-space: nowrap;
+  background: color-mix(in srgb, var(--hc) calc(var(--k) * 32%), var(--panel)); }
+.hc span { font-size: 12.5px; }
+.hc b { font: 700 12px/1 var(--mono); color: var(--hc); }
+.hc em { font-style: normal; font-size: 10.5px; font-weight: 700; color: var(--bg); background: var(--hot); border-radius: 999px; padding: 1px 6px; }
+.hc[aria-pressed="true"] { border-color: var(--ink); }
 
 /* 泡泡場 */
-.field { position: relative; background: var(--field); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; height: clamp(480px, calc(100dvh - 190px), 860px); touch-action: pan-y; }
+.field { position: relative; background: var(--field); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; height: clamp(460px, calc(100dvh - 250px), 820px); touch-action: pan-y; }
 .field canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
 .field canvas.pointing { cursor: pointer; }
 .field canvas.dragging { cursor: grabbing; }
-.lane-h { position: absolute; top: 12px; pointer-events: none; display: flex; align-items: baseline; gap: 8px; padding-left: 16px; white-space: nowrap; overflow: hidden; }
-.lane-h em { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.lane-h b { font: 800 clamp(18px, 1.7vw, 24px)/1 var(--display); letter-spacing: .02em; }
-.lane-h span { font: 700 13px/1 var(--mono); color: var(--ink3); }
-.lane-h em { font-style: normal; font-size: 12px; color: var(--ink3); }
-.lane-empty { position: absolute; color: var(--ink3); font-size: 13px; pointer-events: none; transform: translate(-50%, -50%); text-align: center; }
-.legend { margin: 0; color: var(--ink3); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 18px; }
-.legend b { color: var(--ink2); font-weight: 600; }
+.lane-h { position: absolute; top: 12px; pointer-events: none; display: flex; align-items: baseline; gap: 7px; padding-left: 14px; white-space: nowrap; overflow: hidden; }
+.lane-h b { font: 800 clamp(16px, 1.5vw, 21px)/1 var(--display); }
+.lane-h span { font: 700 13px/1 var(--mono); color: var(--ink2); }
+.lane-h em { font: 500 11.5px/1 var(--mono); font-style: normal; color: var(--ink3); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.lane-empty { position: absolute; color: var(--ink3); font-size: 12.5px; pointer-events: none; transform: translate(-50%, -50%); text-align: center; width: 100px; }
 
 /* 詳情卡 */
-.card { position: absolute; width: 330px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); z-index: 2; display: grid; gap: 12px; }
+.card { position: absolute; width: 340px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); z-index: 2; display: grid; gap: 12px; }
 .card-h { display: flex; align-items: center; gap: 10px; }
 .card-h b { font: 800 26px/1 var(--display); }
 .pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid currentColor; }
-.t-buy { color: var(--buy); } .t-wait { color: var(--wait); } .t-hot { color: var(--hot); } .t-avoid { color: var(--avoid); }
 .x { margin-left: auto; border: 0; background: none; font-size: 20px; line-height: 1; cursor: pointer; color: var(--ink3); padding: 4px 6px; border-radius: 8px; }
 .px { display: flex; align-items: baseline; gap: 10px; }
 .px strong { font: 700 20px/1 var(--mono); }
 .card .why { margin: 0; font-size: 14px; }
 .spark { display: grid; gap: 4px; }
 .spark small, .stats dt, .plan small { color: var(--ink3); font-size: 11px; letter-spacing: .04em; }
-.spark svg { width: 100%; height: 54px; display: block; }
+.spark svg { width: 100%; height: 50px; display: block; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; margin: 0; }
 .stats div { display: grid; gap: 1px; }
 .stats dd { margin: 0; font: 700 14px/1.2 var(--mono); }
 .plan { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--buy) 10%, transparent); }
 .plan div { display: grid; gap: 2px; } .plan b { font: 700 14px/1.2 var(--mono); }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chips span { font: 500 11px/1 var(--mono); padding: 5px 8px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink2); }
-.chips span.p { color: var(--buy); } .chips span.n { color: var(--avoid); }
-
-/* 族群輪動 */
-.rot { display: grid; gap: 12px; }
-.rot-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
-.rot-h h2 { margin: 0; font: 800 22px/1.2 var(--display); }
-.rot-h p { margin: 0; color: var(--ink2); font-size: 13px; max-width: 70ch; }
-.rot-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
-.evt { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
-.evt-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.evt-h b { font: 800 18px/1.2 var(--display); }
-.evt-h span { color: var(--ink3); font-size: 12px; }
-.evt-h .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink2); }
-.evt svg { width: 100%; height: 118px; display: block; }
-.evt ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.cand { display: grid; grid-template-columns: 86px 1fr auto; gap: 2px 10px; align-items: baseline; padding: 6px 4px; border-radius: 10px; }
-.cand + .cand { border-top: 1px solid var(--line); }
-.cand b { font: 800 15px/1.3 var(--display); }
-.cand .sigs { display: flex; gap: 6px; flex-wrap: wrap; font: 500 11px/1.4 var(--mono); color: var(--ink3); }
-.cand .sigs .on { color: var(--buy); }
-.cand .since { font: 700 13px var(--mono); text-align: right; }
-.evt .foot { color: var(--ink3); font-size: 12px; margin: 0; }
-.rot-empty { background: var(--panel); border: 1px dashed var(--line); border-radius: 18px; padding: 16px; color: var(--ink2); margin: 0; }
-
-/* 暴漲原因 */
 .news { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--hot) 9%, transparent); }
-.news small { color: var(--ink3); font-size: 11px; letter-spacing: .04em; }
+.news small { color: var(--ink3); font-size: 11px; letter-spacing: .02em; }
 .news p { margin: 0; font-size: 13px; }
 .news .cat { font-weight: 700; color: var(--hot); margin-right: 6px; }
 .news .lead { color: var(--ink2); }
 .news ul { margin: 0; padding: 0 0 0 16px; display: grid; gap: 3px; font-size: 12px; }
 .news a { color: var(--ink2); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
-.evt .why-line { margin: 0; font-size: 13px; color: var(--ink2); }
 
-/* 分道回測 */
-.track { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 14px 28px; align-items: start; }
-.track h2 { margin: 0 0 6px; font: 800 20px/1.2 var(--display); }
-.track p { margin: 0; color: var(--ink2); max-width: 60ch; }
-.track small { display: block; margin-top: 8px; color: var(--ink3); font-size: 12px; }
-.track-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.track-grid div { display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--ink) 4%, transparent); }
-.track-grid b { font: 800 16px/1.2 var(--display); }
+/* 下方兩欄：族群輪動｜該注意的幣 */
+.split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+.sec-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 2px 2px 8px; }
+.sec-h h2 { margin: 0; font: 800 20px/1.2 var(--display); }
+.sec-h p { margin: 0; color: var(--ink3); font-size: 12.5px; }
+.rot-list { display: grid; gap: 10px; }
+.evt { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 8px; min-width: 0; }
+.evt-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.evt-h b { font: 800 17px/1.2 var(--display); }
+.evt-h span { color: var(--ink3); font-size: 12px; }
+.evt-h .tag { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink2); margin-left: auto; }
+.evt .why-line { margin: 0; font-size: 13px; color: var(--ink2); }
+.evt-body { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 10px; align-items: center; }
+.evt svg { width: 100%; height: 100px; display: block; }
+.evt ol { list-style: none; margin: 0; padding: 0; display: grid; }
+.cand { display: grid; grid-template-columns: minmax(64px, auto) 1fr auto; gap: 2px 10px; align-items: baseline; padding: 6px 2px; }
+.cand + .cand { border-top: 1px solid var(--line); }
+.cand b { font: 800 15px/1.3 var(--display); }
+.cand b small { font: 500 11px var(--body); color: var(--ink3); }
+.cand .sigs { display: flex; gap: 8px; flex-wrap: wrap; font: 500 11px/1.4 var(--mono); color: var(--ink3); }
+.cand .sigs .on { color: var(--buy); }
+.cand .since { font: 700 13px var(--mono); text-align: right; }
+.evt .foot { color: var(--ink3); font-size: 12px; margin: 0; }
+.empty { background: var(--panel); border: 1px dashed var(--line); border-radius: var(--r); padding: 14px 16px; color: var(--ink2); margin: 0; font-size: 13px; }
+
+.watch { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px 6px; }
+.watch h3 { margin: 10px 0 2px; font: 800 15px/1.3 var(--display); display: flex; gap: 8px; align-items: baseline; }
+.watch h3:first-of-type { margin-top: 2px; }
+.watch h3 small { font: 500 11.5px var(--mono); color: var(--ink3); }
+.watch ol { list-style: none; margin: 0; padding: 0; }
+.watch li + li { border-top: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: 70px 1fr; gap: 2px 10px; width: 100%; text-align: left; background: none; border: 0; padding: 8px 4px; cursor: pointer; border-radius: 10px; }
+.row:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.row b { font: 800 15px/1.35 var(--display); }
+.row p { margin: 0; color: var(--ink2); font-size: 12.5px; }
+.row .meta2 { grid-column: 2; display: flex; flex-wrap: wrap; gap: 2px 12px; font: 500 11.5px/1.4 var(--mono); color: var(--ink3); }
+.none { color: var(--ink3); padding: 4px 4px 8px; margin: 0; font-size: 12.5px; }
+
+/* 收合區 */
+.more { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); }
+.more > summary { cursor: pointer; padding: 12px 16px; font: 700 14px/1.3 var(--display); list-style: none; display: flex; gap: 10px; align-items: baseline; }
+.more > summary::-webkit-details-marker { display: none; }
+.more > summary::before { content: "▸"; color: var(--ink3); transition: transform .2s; display: inline-block; }
+.more[open] > summary::before { transform: rotate(90deg); }
+.more > summary small { font: 500 12px var(--body); color: var(--ink3); }
+.more > div { padding: 0 16px 16px; }
+.track { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 14px 28px; align-items: start; }
+.track p { margin: 0 0 8px; color: var(--ink2); max-width: 64ch; font-size: 13px; }
+.track small { display: block; color: var(--ink3); font-size: 12px; }
+.track-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.track-grid div { display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; background: var(--panel2); }
+.track-grid b { font: 800 14px/1.2 var(--display); }
 .track-grid dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12px; }
 .track-grid dt { color: var(--ink3); }
-.track-grid dd { margin: 0; text-align: right; font: 700 13px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
-
-/* 動作清單 */
-.board { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 14px; }
-.col { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px 16px 8px; min-width: 0; }
-.col h2 { margin: 0 0 6px; font: 800 20px/1.2 var(--display); display: flex; align-items: baseline; gap: 10px; }
-.col h2 span { font: 700 13px var(--mono); color: var(--ink3); }
-.col h2 small { font: 500 12px var(--body); color: var(--ink3); margin-left: auto; }
-.col ol { list-style: none; margin: 0; padding: 0; }
-.col li + li { border-top: 1px solid var(--line); }
-.row { display: grid; grid-template-columns: 74px 1fr; gap: 2px 12px; width: 100%; text-align: left; background: none; border: 0; padding: 11px 6px; cursor: pointer; border-radius: 10px; }
-.row:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
-.row b { font: 800 17px/1.3 var(--display); }
-.row p { margin: 0; color: var(--ink2); font-size: 13px; }
-.row .meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 2px 12px; font: 500 12px/1.4 var(--mono); color: var(--ink3); }
-.row .meta .go { color: var(--buy); font-weight: 700; }
-.row .meta .bad { color: var(--avoid); font-weight: 700; }
-.none { color: var(--ink3); padding: 14px 6px; margin: 0; }
-.waitline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.waitline h2 { margin: 0 8px 0 0; font: 800 16px var(--display); color: var(--wait); }
-.waitline button { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 11px; cursor: pointer; font: 500 12px var(--mono); color: var(--ink2); }
+.track-grid dd { margin: 0; text-align: right; font: 700 13px/1.4 var(--mono); }
+.waitline { display: flex; flex-wrap: wrap; gap: 6px; }
+.waitline button { border: 1px solid var(--line); background: var(--panel2); border-radius: 999px; padding: 4px 11px; cursor: pointer; font: 500 12px var(--mono); color: var(--ink2); }
 .waitline button:hover { color: var(--ink); border-color: var(--ink3); }
 footer { color: var(--ink3); font-size: 12px; }
 .banner { background: color-mix(in srgb, var(--avoid) 14%, transparent); color: var(--ink); border: 1px solid color-mix(in srgb, var(--avoid) 40%, transparent); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
 
 @media (max-width: 1100px) {
+  .split { grid-template-columns: 1fr; }
   .track { grid-template-columns: 1fr; }
-  .board { grid-template-columns: 1fr 1fr; }
-  .board .col.buy { grid-column: 1 / -1; }
 }
 @media (max-width: 760px) {
-  .app { padding-inline: 16px; padding-block: 12px 32px; }
-  .top { grid-template-columns: auto 1fr; }
-  .controls { grid-column: 1 / -1; justify-content: space-between; }
+  .app { padding-inline: 16px; padding-block: 10px 32px; gap: 10px; }
+  .controls { margin-left: 0; width: 100%; justify-content: space-between; }
+  .decide { grid-template-columns: 1fr; gap: 10px; }
+  .tally { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tile { grid-template-columns: 1fr; padding: 9px 10px; }
+  .tile b { grid-row: auto; font-size: 28px; }
+  .tile small { display: none; }
   .field { height: auto; }
   .lane-h { top: auto; }
-  .board { grid-template-columns: 1fr; }
+  .evt-body { grid-template-columns: 1fr; }
   .track-grid { grid-template-columns: 1fr 1fr; }
   .card { position: fixed; left: 12px !important; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); top: auto !important; width: auto; max-width: none; max-height: 72dvh; overflow: auto; }
 }
-@media (prefers-reduced-motion: reduce) { .live[data-s="on"] i { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .live[data-s="on"] i { animation: none; } .tile { transition: none; } }
 </style>
 
 <div class="app">
-  <header class="top">
-    <div class="lamp" id="lamp" data-lit="" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="verdict">
-      <h1 id="head">載入中</h1>
-      <p id="sub"></p>
-    </div>
+  <header class="bar">
+    <div class="brand">Karma <span>Bubbles</span></div>
+    <div class="meta" id="sub"></div>
     <div class="controls">
       <div class="seg" role="group" aria-label="泡泡大小">
         <span>大小</span>
         <button type="button" data-mode="r24" aria-pressed="true">24h 漲跌</button>
         <button type="button" data-mode="vol" aria-pressed="false">成交量</button>
-        <button type="button" data-mode="liq" aria-pressed="false">CoinKarma LIQ</button>
+        <button type="button" data-mode="liq" aria-pressed="false">LIQ</button>
       </div>
       <span class="live" id="live" data-s="off"><i></i><span>快照</span></span>
+      <details class="howto">
+        <summary>怎麼看</summary>
+        <div class="pop">
+          <span><b>位置</b>：越左邊，過去一年的勝率越高。可以埋伏＝族群龍頭剛噴、它還沒跟上；別追＝過熱或正在噴的龍頭；別碰＝還在急跌。</span>
+          <span><b>大小</b>：<span id="lg-size">24h 漲跌</span>。觀望的幣刻意縮小、淡化。</span>
+          <span><b>觀望的底色</b>：24h 漲跌，不是訊號。</span>
+          <span><b>！</b>：剛暴漲，點開看 Grok 查到的原因。<b>↑↓</b>：這輪剛換道。</span>
+          <span><b>上面三個數字、族群熱度</b>都可以點，點了只亮那一群，再點一次取消。</span>
+          <span>分道只用幣安價格與量能；CoinKarma 的 LIQ 回測沒有預測力，只放在卡片裡參考。</span>
+        </div>
+      </details>
     </div>
   </header>
 
+  <section class="decide">
+    <div class="tally" id="tally"></div>
+    <p class="say" id="head">載入中</p>
+  </section>
+
   <div id="banner" class="banner" hidden></div>
 
-  <section class="field" id="field" aria-label="泡泡圖：依可以買、觀望、別追、別碰分四區">
+  <nav class="heat" id="heat" aria-label="族群 24 小時強弱"></nav>
+
+  <section class="field" id="field" aria-label="泡泡圖：依可以埋伏、觀望、別追、別碰分四區">
     <canvas id="cv"></canvas>
     <div id="lanes"></div>
     <div class="card" id="card" hidden role="dialog" aria-live="polite"></div>
   </section>
-  <p class="legend">
-    <span><b>位置</b> 過去一年的勝率（<span id="lg-dir">越左越高</span>）</span>
-    <span><b>大小</b> <span id="lg-size">24h 漲跌</span></span>
-    <span><b>↑ ↓</b> 這輪剛換道</span>
-    <span><b>觀望的底色</b> 24h 漲跌，不是訊號</span>
-    <span><b>！</b> 剛暴漲，點開看原因</span>
-    <span><b>分道規則</b> 只用幣安價格與量能，CoinKarma 數字僅供參考</span>
-  </p>
 
-  <section class="rot" id="rot" hidden></section>
+  <div class="split">
+    <section class="rot" id="rot" hidden></section>
+    <section class="watch" id="board"></section>
+  </div>
 
-  <section class="track" id="track" hidden></section>
+  <details class="more" id="trackBox" hidden>
+    <summary>這套分道過去準不準 <small id="trackSum"></small></summary>
+    <div><section class="track" id="track"></section></div>
+  </details>
 
-  <section class="board" id="board"></section>
-  <div class="waitline" id="waitline"></div>
+  <details class="more">
+    <summary id="waitSum">觀望</summary>
+    <div><div class="waitline" id="waitline"></div></div>
+  </details>
 
   <footer>資料：CoinKarma 山寨幣篩選器（LIQ、RSI、狀態）＋ Binance USDⓈ-M 永續行情。分類只針對做多，不是投資建議。</footer>
 </div>
@@ -259,6 +304,8 @@ footer { color: var(--ink3); font-size: 12px; }
 
   let DATA = null, nodes = [], lanes = {}, mode = "r24", W = 0, H = 0, dpr = 1, vertical = false;
   let hover = null, selected = null, drag = null, colors = {}, dark = true;
+  let focus = null;         // {tier} 或 {group}：只亮這一群，其餘淡掉
+  const inFocus = (c) => !focus || (focus.tier ? c.tier === focus.tier : c.group === focus.group);
   const live = {};          // BNSYMBOL -> {p, r24}
   let liveState = "off";
 
@@ -299,23 +346,21 @@ footer { color: var(--ink3); font-size: 12px; }
       return n;
     });
     if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
-    renderHeader(); renderRotation(); renderTrack(); renderBoard(); layout(first);
+    renderHeader(); renderHeat(); renderRotation(); renderTrack(); renderBoard(); layout(first);
     if (selected) renderCard(); else card.hidden = true;
   }
 
   function metric(n) {
     const c = n.c;
-    if (mode === "liq") return 0.3 + Math.abs(c.liq ?? 0);
-    if (mode === "r24") return 0.25 + Math.abs(r24Of(c) ?? 0);
-    return Math.sqrt(c.vol24 || 1e6) / 1e3;
+    const v = mode === "liq" ? 0.3 + Math.abs(c.liq ?? 0) : mode === "r24" ? 0.25 + Math.abs(r24Of(c) ?? 0) : Math.sqrt(c.vol24 || 1e6) / 1e3;
+    return c.tier === "wait" ? v * 0.3 : v;      // 觀望刻意縮小，把畫面留給要行動的幣
   }
 
   function layout(snap) {
     const rect = field.getBoundingClientRect();
     vertical = innerWidth <= 760;
-    $("lg-dir").textContent = vertical ? "越上越高" : "越左越高";
     W = rect.width;
-    if (vertical) { H = Math.max(760, Math.min(1250, W * 2.7)); field.style.height = H + "px"; }
+    if (vertical) { H = Math.max(640, Math.min(1080, W * 2.2)); field.style.height = H + "px"; }
     else { field.style.height = ""; H = field.getBoundingClientRect().height; }
     dpr = Math.min(2, devicePixelRatio || 1);
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
@@ -324,7 +369,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const area = W * (H - head);
     const vs = nodes.map(metric), V = vs.reduce((a, b) => a + b, 0) || 1;
     const fill = vertical ? 0.42 : 0.47;
-    const maxR = Math.min(W, H) * (vertical ? 0.2 : 0.13), minR = vertical ? 15 : 19;
+    const maxR = Math.min(W, H) * (vertical ? 0.2 : 0.14), minR = vertical ? 13 : 15;
     nodes.forEach((n, i) => { n.tr = Math.max(minR, Math.min(maxR, Math.sqrt(fill * area * vs[i] / V / Math.PI))); });
 
     // 每條道的寬度跟泡泡總面積走，但至少容得下最大那顆
@@ -336,8 +381,8 @@ footer { color: var(--ink3); font-size: 12px; }
       return { t, a, need, n: ns.length };
     });
     const A = share.reduce((s, x) => s + x.a, 0) || 1;
-    // 空的道也要留得下標題（桌機至少 170px）
-    let sizes = share.map((x) => Math.max(x.a / A * span, x.need, span * (x.n ? 0.12 : 0.08), vertical ? 64 : 170));
+    // 空的道只留標題寬度；有幣的道至少 16%，別讓要行動的幣擠在窄條裡
+    let sizes = share.map((x) => x.n ? Math.max(x.a / A * span, x.need, span * 0.16, vertical ? 110 : 190) : (vertical ? 56 : 178));
     const k = span / sizes.reduce((a, b) => a + b, 0);
     sizes = sizes.map((s) => s * k);
     let at = 0;
@@ -370,8 +415,8 @@ footer { color: var(--ink3); font-size: 12px; }
     box.innerHTML = TIERS.map((t) => {
       const n = DATA.coins.filter((c) => c.tier === t).length;
       const w = laneWin(t);
-      return `<div class="lane-h" data-t="${t}"><b class="t-${t}">${NAME[t]}</b><span>${n}</span><em>${HINT[t]}${w ? `｜勝率 ${w}` : ""}</em></div>` +
-        (n ? "" : `<div class="lane-empty" data-e="${t}">目前沒有</div>`);
+      return `<div class="lane-h" data-t="${t}" title="${HINT[t]}"><b class="t-${t}">${NAME[t]}</b><span>${n}</span>${w ? `<em>勝率 ${w}</em>` : ""}</div>` +
+        (n ? "" : `<div class="lane-empty" data-e="${t}">這輪沒有</div>`);
     }).join("");
   }
   function placeLaneHeads() {
@@ -455,13 +500,13 @@ footer { color: var(--ink3); font-size: 12px; }
     const fillCol = c.tier === "wait" ? ((r24Of(c) ?? 0) >= 0 ? colors.buy : colors.avoid) : col;
     const tint = c.tier === "wait" ? Math.min(1, Math.abs(r24Of(c) ?? 0) / 8) : 1;
     if (r < 2) return;
-    const focus = selected && selected !== n;
+    const dim = (selected && selected !== n) || !inFocus(c);
     ctx.save();
-    ctx.globalAlpha = focus ? 0.28 : 1;
-    const loud = c.tier === "buy" || c.tier === "avoid";
+    ctx.globalAlpha = dim ? 0.2 : 1;
+    const loud = c.tier !== "wait";
     if (dark && loud) { ctx.shadowColor = rgba(col, 0.55); ctx.shadowBlur = Math.min(34, r * 0.45); }
     const g = ctx.createRadialGradient(n.x, n.y - r * 0.15, r * 0.1, n.x, n.y, r);
-    const k = c.tier === "wait" ? 0.25 + 0.45 * tint : 1;
+    const k = c.tier === "wait" ? 0.18 + 0.32 * tint : 1;
     g.addColorStop(0, rgba(fillCol, (dark ? 0.05 : 0.08) * k));
     g.addColorStop(0.7, rgba(fillCol, (dark ? 0.16 : 0.18) * k));
     g.addColorStop(1, rgba(fillCol, (dark ? 0.5 : 0.42) * k));
@@ -469,18 +514,18 @@ footer { color: var(--ink3); font-size: 12px; }
     ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 6.2832); ctx.fill();
     ctx.shadowBlur = 0;
     ctx.lineWidth = n === hover || n === selected ? 3 : c.tier === "wait" ? 1.4 : 2;
-    ctx.strokeStyle = broke(c) ? colors.ink3 : col;
+    ctx.strokeStyle = broke(c) ? colors.ink3 : c.tier === "wait" ? rgba(col, 0.55) : col;
     ctx.stroke(); ctx.setLineDash([]);
 
     if (brk(c)) {
       const k = reduce ? 0.35 : (t % 1600) / 1600;
-      ctx.globalAlpha = (focus ? 0.28 : 1) * (1 - k);
+      ctx.globalAlpha = (dim ? 0.2 : 1) * (1 - k);
       ctx.lineWidth = 2; ctx.strokeStyle = col;
       ctx.beginPath(); ctx.arc(n.x, n.y, r + 4 + k * 16, 0, 6.2832); ctx.stroke();
-      ctx.globalAlpha = focus ? 0.28 : 1;
+      ctx.globalAlpha = dim ? 0.2 : 1;
     }
 
-    ctx.fillStyle = colors.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = c.tier === "wait" ? colors.ink2 : colors.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const sym = c.sym;
     let fs = Math.min(r * 0.5, (r * 1.55) / Math.max(2.2, sym.length * 0.62));
     fs = Math.max(9, fs);
@@ -563,8 +608,9 @@ footer { color: var(--ink3); font-size: 12px; }
   function selectSym(sym) {
     const n = nodes.find((x) => x.c.sym === sym);
     if (!n) return;
+    if (focus && !inFocus(n.c)) { focus = null; renderHeader(); renderHeat(); }
     select(n);
-    if (!vertical) field.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+    if (!vertical) field.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
   }
 
   document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
@@ -577,12 +623,39 @@ footer { color: var(--ink3); font-size: 12px; }
 
   // ---------- HTML 區塊 ----------
   function renderHeader() {
-    const m = DATA.market;
-    const lit = { on: "green", wait: "amber", flat: "amber", off: "red", stale: "red" }[m.mood] || "";
-    $("lamp").dataset.lit = lit;
-    $("head").textContent = m.head;
+    const m = DATA.market, cnt = (t) => DATA.coins.filter((c) => c.tier === t).length;
+    $("tally").innerHTML = ["buy", "hot", "avoid"].map((t) => {
+      const n = cnt(t), w = laneWin(t);
+      return `<button type="button" class="tile t-${t}${n ? "" : " zero"}" data-t="${t}" aria-pressed="${focus?.tier === t}">
+        <b>${n}</b><span>${NAME[t]}</span><small>${w ? "勝率 " + w : ""}</small></button>`;
+    }).join("");
+    $("tally").querySelectorAll(".tile").forEach((b) => b.addEventListener("click", () => setFocus({ tier: b.dataset.t })));
+    $("head").innerHTML = esc(m.head) + (DATA.legacy ? `<small>這輪幣安資料沒抓到，暫時用 CoinKarma 舊分類。</small>` : "");
     document.title = "Karma Bubbles";
     renderSub();
+  }
+
+  function setFocus(f) {
+    const same = focus && f && focus.tier === f.tier && focus.group === f.group;
+    focus = same ? null : f;
+    if (focus) select(null);
+    renderHeader(); renderHeat();
+  }
+
+  function renderHeat() {
+    const R = DATA.rotation, el = $("heat");
+    const list = R?.sectors || [];
+    el.hidden = !list.length;
+    if (!list.length) return;
+    const fired = new Set((R.events || []).filter((e) => e.ageH <= 24).map((e) => e.group));
+    const mx = Math.max(3, ...list.map((x) => Math.abs(x.ex24)));
+    el.innerHTML = `<span class="lbl">族群 24h</span>` + list.map((x) => {
+      const k = Math.min(1, Math.abs(x.ex24) / mx).toFixed(2), col = x.ex24 >= 0 ? "var(--buy)" : "var(--avoid)";
+      const top = x.top.map(([b, v]) => `${b} ${fmtPct(v)}`).join("、");
+      return `<button type="button" class="hc" style="--hc:${col};--k:${k}" data-g="${esc(x.group)}" aria-pressed="${focus?.group === x.group}" title="比大盤 ${fmtPct(x.ex24)}（成員中位數）｜漲最多：${esc(top)}">
+        <span>${esc(x.group)}</span><b>${fmtPct(x.ex24)}</b>${fired.has(x.group) ? "<em>龍頭噴</em>" : ""}</button>`;
+    }).join("");
+    el.querySelectorAll(".hc").forEach((b) => b.addEventListener("click", () => setFocus({ group: b.dataset.g })));
   }
   function renderSub() {
     const m = DATA.market;
@@ -607,80 +680,83 @@ footer { color: var(--ink3); font-size: 12px; }
     if (!R) return;
     const S = DATA.stats?.rotation;
     const pc = (x) => Math.round(x * 100) + "%";
-    const statLine = S?.volume ? `過去一年：龍頭噴出後買同族群還沒跟上的，24h 後 ${pc(S.volume.lagBeat)}（細分族群）到 ${pc(S.narrative.lagBeat)}（敘事表）跑贏大盤；直接追龍頭只有 ${pc(S.volume.leadBeat)}。量能、主動買這些跡象有沒有亮，對勝率的幫助不穩定。` : "";
-    const head = `<div class="rot-h"><h2>族群輪動</h2><p>龍頭 24 小時比大盤多漲 ${R.theta}% 以上、而且是剛發動，才會列出來；下面是同族群還沒跟上的幣。${statLine}</p></div>`;
+    const stat = S?.volume ? `龍頭 24h 比大盤多漲 ${R.theta}% 且剛發動才列出。過去一年：買還沒跟上的 ${pc(S.volume.lagBeat)}–${pc(S.narrative.lagBeat)} 跑贏大盤，追龍頭 ${pc(S.volume.leadBeat)}。` : "";
+    const head = `<div class="sec-h"><h2>族群輪動</h2><p>${stat}</p></div>`;
     if (!R.events.length) {
-      el.innerHTML = head + `<p class="rot-empty">最近 ${R.hold} 小時沒有族群龍頭剛噴出。有的話會出現在這裡。</p>`;
+      el.innerHTML = head + `<p class="empty">最近 ${R.hold} 小時沒有族群龍頭剛噴出。上面的族群熱度條可以看哪個族群在動。</p>`;
       return;
     }
     const cardOf = (e) => {
-      const W = 340, H = 118, lx = 58, ly = H / 2, lr = 34;
-      const cs = e.cands.slice(0, 4);
-      const pos = cs.map((c, i) => ({ x: 170 + (i % 2) * 110, y: cs.length === 1 ? ly : 26 + i * ((H - 52) / Math.max(1, cs.length - 1)), r: 13 + c.sig * 4, c }));
       const live = (c) => !c.caught && e.ageH <= 24;
       const col = (c) => live(c) ? colors.buy : colors.wait;
+      const cs = e.cands.slice(0, 4);
+      const W = 180, H = 100, lx = 42, ly = H / 2;
+      const pos = cs.map((c, i) => ({ x: 132, y: cs.length === 1 ? ly : 16 + i * ((H - 32) / Math.max(1, cs.length - 1)), c }));
       const svg = `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
         ${pos.map((p) => `<line x1="${lx}" y1="${ly}" x2="${p.x}" y2="${p.y}" stroke="${colors.line}" stroke-width="1.5" stroke-dasharray="3 4"/>`).join("")}
-        <circle cx="${lx}" cy="${ly}" r="${lr}" fill="${rgba(colors.hot, 0.2)}" stroke="${colors.hot}" stroke-width="2"/>
-        <text x="${lx}" y="${ly - 4}" text-anchor="middle" font-family="Bricolage Grotesque, system-ui" font-weight="800" font-size="${Math.min(15, 60 / e.leadBase.length + 6)}" fill="${colors.ink}">${esc(e.leadBase)}</text>
+        <circle cx="${lx}" cy="${ly}" r="34" fill="${rgba(colors.hot, 0.18)}" stroke="${colors.hot}" stroke-width="2"/>
+        <text x="${lx}" y="${ly - 3}" text-anchor="middle" font-family="Bricolage Grotesque, system-ui" font-weight="800" font-size="${Math.min(14, 56 / e.leadBase.length + 5)}" fill="${colors.ink}">${esc(e.leadBase)}</text>
         <text x="${lx}" y="${ly + 13}" text-anchor="middle" font-family="JetBrains Mono, monospace" font-weight="700" font-size="10" fill="${colors.hot}">${fmtPct(e.leadEx24)}</text>
-        ${pos.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="${p.r}" fill="${rgba(col(p.c), 0.18)}" stroke="${col(p.c)}" stroke-width="${live(p.c) ? 2 : 1.2}"/>
-          <text x="${p.x + p.r + 5}" y="${p.y + 4}" font-family="Bricolage Grotesque, system-ui" font-weight="800" font-size="12" fill="${colors.ink}">${esc(p.c.base)}</text>`).join("")}
+        ${pos.map((p) => `<circle cx="${p.x}" cy="${p.y}" r="${live(p.c) ? 11 : 8}" fill="${rgba(col(p.c), 0.2)}" stroke="${col(p.c)}" stroke-width="${live(p.c) ? 2 : 1.2}"/>
+          <text x="${p.x + 15}" y="${p.y + 4}" font-family="Bricolage Grotesque, system-ui" font-weight="800" font-size="11" fill="${live(p.c) ? colors.ink : colors.ink3}">${esc(p.c.base)}</text>`).join("")}
       </svg>`;
-      const rows = e.cands.map((c) => `<li class="cand"><b class="${live(c) ? "t-buy" : "t-wait"}">${esc(c.base)}${c.caught ? ` <small style="font:500 11px var(--body);color:var(--ink3)">已跟上</small>` : ""}</b>
+      const rows = e.cands.map((c) => `<li class="cand"><b class="${live(c) ? "t-buy" : "t-wait"}">${esc(c.base)}${c.caught ? ` <small>已跟上</small>` : ""}</b>
           <span class="sigs"><span class="${c.vr >= 1.5 ? "on" : ""}">量 ${c.vr ?? "-"}x</span><span class="${c.tk >= 0.52 ? "on" : ""}">主動買 ${c.tk == null ? "-" : Math.round(c.tk * 100) + "%"}</span><span class="${c.r4 > 0 ? "on" : ""}">4h ${fmtPct(c.r4)}</span></span>
-          <span class="since ${cls(c.since)}" title="事件後到現在">${fmtPct(c.since)}</span></li>`).join("");
+          <span class="since ${cls(c.since)}" title="發動後到現在">${fmtPct(c.since)}</span></li>`).join("");
       const ago = e.ageH <= 0 ? "剛剛" : `${e.ageH} 小時前`;
       const tag = e.narrative === "both" ? "細分族群＋敘事表" : e.narrative ? "敘事表" : "細分族群";
+      const reason = DATA.news?.[e.lead]?.reason;
       return `<article class="evt"><div class="evt-h"><b>${esc(e.group)}</b><span>${ago}發動，龍頭 ${esc(e.leadBase)} 之後 ${fmtPct(e.leadSince)}</span><span class="tag">${tag}</span></div>
-        ${DATA.news?.[e.lead]?.reason ? `<p class="why-line">原因：${esc(DATA.news[e.lead].reason)}</p>` : ""}
-        ${svg}${e.cands.length ? `<ol>${rows}</ol>` : `<p class="foot">同族群都已經跟上，沒有落後的。</p>`}
-        <p class="foot">${e.ageH > 24 ? "已經超過 24 小時，回測只驗證到 24 小時內進場，這張只供參考。" : "綠色＝還沒跟上、可以埋伏；灰色＝事件後已漲超過龍頭一半。右邊是發動後到現在的漲跌；量能、主動買、4h 只當參考。"}</p></article>`;
+        ${reason ? `<p class="why-line">原因：${esc(reason)}</p>` : ""}
+        <div class="evt-body">${svg}${e.cands.length ? `<ol>${rows}</ol>` : `<p class="foot">同族群都已經跟上，沒有落後的。</p>`}</div>
+        ${e.ageH > 24 ? `<p class="foot">已經超過 24 小時，回測只驗證到 24 小時內進場，只供參考。</p>` : ""}</article>`;
     };
     el.innerHTML = head + `<div class="rot-list">${R.events.map(cardOf).join("")}</div>`;
   }
 
   function renderTrack() {
-    const S = DATA.stats, el = $("track");
-    el.hidden = !S;
+    const S = DATA.stats;
+    $("trackBox").hidden = !S;
     if (!S) return;
     const d = (iso) => new Date(iso).toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei", year: "numeric", month: "numeric", day: "numeric" });
     const pc = (x) => x == null ? "-" : Math.round(x * 100) + "%";
     const R = S.rotation || {};
+    $("trackSum").textContent = `過熱 ${pc(S.lanes.hot.beat)}、急跌 ${pc(S.lanes.avoid.beat)}、埋伏 ${laneWin("buy")}、觀望 ${pc(S.lanes.wait.beat)}`;
     const cells = [
-      ["buy", "可以埋伏（細分族群）", R.volume?.lagBeat, null, null, `比龍二龍三平常多 ${fmtPct((R.volume?.lagEx ?? 0) - (R.volume?.lagBase ?? 0), 2)}`],
+      ["buy", "可以埋伏（細分族群）", R.volume?.lagBeat, null, null, `比平常多 ${fmtPct((R.volume?.lagEx ?? 0) - (R.volume?.lagBase ?? 0), 2)}`],
       ["buy", "可以埋伏（敘事表）", R.narrative?.lagBeat, null, null, `比平常多 ${fmtPct((R.narrative?.lagEx ?? 0) - (R.narrative?.lagBase ?? 0), 2)}，可能有事後挑選`],
       ["hot", "別追：過熱", S.lanes.hot.beat, S.lanes.hot.beat1, S.lanes.hot.beat2, `中位數 ${fmtPct(S.lanes.hot.median)}`],
       ["hot", "別追：追龍頭", R.volume?.leadBeat, null, null, "族群龍頭剛噴出時才買"],
       ["avoid", "別碰：急跌中", S.lanes.avoid.beat, S.lanes.avoid.beat1, S.lanes.avoid.beat2, `中位數 ${fmtPct(S.lanes.avoid.median)}`],
       ["wait", "觀望：其他", S.lanes.wait.beat, S.lanes.wait.beat1, S.lanes.wait.beat2, "等於大盤"],
     ];
-    el.innerHTML = `<div><h2>這套分道過去準不準</h2>
-      <p>勝率＝買進後 ${S.hours} 小時跑贏同時間全市場中位數的比例，50% 就是沒有優勢。能穩定拉開差距的是「避開」：過熱和追龍頭大約四成，急跌中四成六；「埋伏」只比五成多一點，優勢主要來自少數大漲，不是每次都贏。</p>
-      ${DATA.newsStats?.n ? `<p>暴漲時新聞和價格誰先動：目前累計 ${DATA.newsStats.n} 次，其中 ${DATA.newsStats.priceLed} 次在新聞出來前價格或量能就先動了。</p>` : ""}
-      <small>幣安永續 ${S.coins} 檔 1 小時 K 線，${d(S.from)} 到 ${d(S.to)}；每個時間點只算成交額前 150。規則在看結果前就定好，前半年、後半年分開驗證。</small></div>
+    const ns = DATA.newsStats;
+    $("track").innerHTML = `<div>
+      <p>勝率＝買進後 ${S.hours} 小時跑贏同時間全市場中位數的比例，50% 就是沒有優勢。能穩定拉開差距的是「避開」：過熱和追龍頭大約四成，急跌中四成六；「埋伏」只比五成多一點，優勢主要來自少數大漲。</p>
+      ${ns?.n ? `<p>暴漲時新聞和價格誰先動：目前累計 ${ns.n} 次，${ns.priceLed} 次在新聞出來前價格或量能就先動了。</p>` : ""}
+      <small>幣安永續 ${S.coins} 檔 1 小時 K 線，${d(S.from)} 到 ${d(S.to)}；每個時間點只算成交額前 150。規則在看結果前定好，前半年、後半年分開驗證。</small></div>
       <div class="track-grid">${cells.map(([t, name, b, b1, b2, note]) => `<div><b class="t-${t}">${name}</b><dl>
         <dt>跑贏大盤</dt><dd>${pc(b)}</dd>
         ${b1 != null ? `<dt>前半／後半</dt><dd>${pc(b1)}／${pc(b2)}</dd>` : ""}
-        <dt></dt><dd style="font-weight:500;color:var(--ink3);font-family:var(--body)">${note}</dd></dl></div>`).join("")}</div>`;
+        <dt>備註</dt><dd style="font-weight:500;color:var(--ink3);font-family:var(--body)">${note}</dd></dl></div>`).join("")}</div>`;
   }
 
   function renderBoard() {
     const by = (t) => DATA.coins.filter((c) => c.tier === t);
-    const buys = by("buy").sort((a, b) => b.karma - a.karma);
-    const hots = by("hot").sort((a, b) => a.karma - b.karma);
-    const avoids = by("avoid").sort((a, b) => b.karma - a.karma);
-    const row = (c, extra = "") => `<li><button class="row" type="button" data-sym="${esc(c.sym)}"><b class="t-${c.tier}">${esc(c.sym)}</b><p>${esc(c.why)}</p>${extra}</button></li>`;
-    const buyMeta = (c) => c.trigger ? `<span class="meta"><span>觸發 ${fmtPx(c.trigger)}</span><span>失效 ${fmtPx(c.inv)}</span><span data-dist="${esc(c.sym)}"></span></span>`
-      : `<span class="meta"><span>24h 超額 ${fmtPct(c.ex24)}</span><span>量 ${c.vr ?? "-"}x</span><span>主動買 ${c.tk == null ? "-" : Math.round(c.tk * 100) + "%"}</span></span>`;
-    const col = (t, list, sub, extra) => `<div class="col ${t}"><h2><b class="t-${t}">${NAME[t]}</b><span>${list.length}</span><small>${sub}${laneWin(t) ? `｜過去勝率 ${laneWin(t)}` : ""}</small></h2>` +
-      (list.length ? `<ol>${list.map((c) => row(c, extra ? extra(c) : "")).join("")}</ol>` : `<p class="none">這一期沒有。</p>`) + `</div>`;
-    $("board").innerHTML =
-      col("buy", buys, "龍頭噴了、它還沒跟上", buyMeta) +
-      col("hot", hots, "追高多半會輸") +
-      col("avoid", avoids, "還在急跌");
-    const waits = by("wait").sort((a, b) => b.karma - a.karma);
-    $("waitline").innerHTML = `<h2>觀望 ${waits.length}</h2>` + waits.map((c) => `<button type="button" data-sym="${esc(c.sym)}">${esc(c.sym)}</button>`).join("");
+    const groups = [
+      ["buy", by("buy").sort((a, b) => b.karma - a.karma), "龍頭噴了、它還沒跟上"],
+      ["hot", by("hot").sort((a, b) => a.karma - b.karma), "追高多半會輸"],
+      ["avoid", by("avoid").sort((a, b) => b.karma - a.karma), "還在急跌"],
+    ];
+    const meta = (c) => c.trigger ? `<span class="meta2"><span>觸發 ${fmtPx(c.trigger)}</span><span>失效 ${fmtPx(c.inv)}</span><span data-dist="${esc(c.sym)}"></span></span>`
+      : `<span class="meta2"><span>24h 比大盤 ${fmtPct(c.ex24)}</span><span>RSI ${c.rsi ?? "-"}</span>${c.group ? `<span>${esc(c.group)}</span>` : ""}</span>`;
+    const row = (c) => `<li><button class="row" type="button" data-sym="${esc(c.sym)}"><b class="t-${c.tier}">${esc(c.sym)}</b><p>${esc(c.why)}</p>${meta(c)}</button></li>`;
+    $("board").innerHTML = `<div class="sec-h"><h2>該注意的幣</h2><p>點名字會在泡泡圖上打開卡片</p></div>` + groups.map(([t, list, sub]) =>
+      `<h3><span class="t-${t}">${NAME[t]}</span><small>${list.length} 檔｜${sub}${laneWin(t) ? `｜勝率 ${laneWin(t)}` : ""}</small></h3>` +
+      (list.length ? `<ol>${list.map(row).join("")}</ol>` : `<p class="none">這輪沒有。</p>`)).join("");
+    const waits = by("wait").sort((a, b) => Math.abs(r24Of(b) ?? 0) - Math.abs(r24Of(a) ?? 0));
+    $("waitSum").innerHTML = `觀望 ${waits.length} 檔 <small>沒有明顯優勢，跟大盤差不多</small>`;
+    $("waitline").innerHTML = waits.map((c) => `<button type="button" data-sym="${esc(c.sym)}">${esc(c.sym)} <span class="${cls(r24Of(c))}">${fmtPct(r24Of(c))}</span></button>`).join("");
     document.querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
     tickLive();
   }
@@ -838,7 +914,7 @@ footer { color: var(--ink3); font-size: 12px; }
   // ---------- 開機 ----------
   readColors();
   const mq = matchMedia("(prefers-color-scheme: light)");
-  const retheme = () => { readColors(); if (DATA) renderRotation(); if (selected && !card.hidden) renderCard(); };
+  const retheme = () => { readColors(); if (DATA) { renderRotation(); renderHeat(); } if (selected && !card.hidden) renderCard(); };
   mq.addEventListener?.("change", retheme);
   new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   try {
