@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="zh-Hant">
+<meta charset="utf-8">
+<title>Karma Bubbles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* 深色優先：裸 :root 是深色，淺色在下方覆寫 */
+:root {
+  color-scheme: dark;
+  --bg: #070b10;
+  --field: #0a0f16;
+  --panel: #0f161f;
+  --ink: #eaf0f6;
+  --ink2: #a3afbe;
+  --ink3: #6c7888;
+  --line: #1b2532;
+  --buy: #2bd98a;
+  --wait: #7f8ea5;
+  --hot: #ffb224;
+  --avoid: #ff4f61;
+  --glow: 1;
+  --display: "Bricolage Grotesque", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --body: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff;
+    --ink: #0c141e; --ink2: #475262; --ink3: #7a8494; --line: #d3dae3;
+    --buy: #0a9a63; --wait: #5d6c83; --hot: #c96f00; --avoid: #dc1f3c; --glow: 0;
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff;
+  --ink: #0c141e; --ink2: #475262; --ink3: #7a8494; --line: #d3dae3;
+  --buy: #0a9a63; --wait: #5d6c83; --hot: #c96f00; --avoid: #dc1f3c; --glow: 0;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); color: var(--ink); }
+body { margin: 0; font: 14px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
+.app { max-width: 1600px; margin: 0 auto; padding-inline: 20px; padding-block: 16px 40px; display: grid; gap: 14px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* 頂部判決 */
+.top { display: grid; grid-template-columns: auto 1fr auto; gap: 18px; align-items: center; }
+.lamp { display: grid; gap: 5px; padding: 7px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); }
+.lamp i { width: 14px; height: 14px; border-radius: 50%; background: var(--line); display: block; transition: background .4s, box-shadow .4s; }
+.lamp[data-lit="green"] i:nth-child(3) { background: var(--buy); box-shadow: 0 0 calc(var(--glow) * 12px) var(--buy); }
+.lamp[data-lit="amber"] i:nth-child(2) { background: var(--hot); box-shadow: 0 0 calc(var(--glow) * 12px) var(--hot); }
+.lamp[data-lit="red"] i:nth-child(1) { background: var(--avoid); box-shadow: 0 0 calc(var(--glow) * 12px) var(--avoid); }
+.verdict { min-width: 0; }
+.verdict h1 { margin: 0; font: 800 clamp(22px, 2.6vw, 34px)/1.15 var(--display); letter-spacing: -0.015em; text-wrap: balance; }
+.verdict p { margin: 4px 0 0; color: var(--ink2); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.verdict p b { color: var(--ink); font-weight: 600; }
+.up { color: var(--buy); } .dn { color: var(--avoid); }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+.seg { display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.seg span { align-self: center; padding: 0 8px 0 10px; color: var(--ink3); font-size: 12px; }
+.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 999px; cursor: pointer; color: var(--ink2); font-size: 13px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.live { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink2); padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); white-space: nowrap; }
+.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--ink3); }
+.live[data-s="on"] i { background: var(--buy); animation: blink 2s infinite; }
+.live[data-s="wait"] i { background: var(--hot); }
+@keyframes blink { 50% { opacity: .35; } }
+
+/* 泡泡場 */
+.field { position: relative; background: var(--field); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; height: clamp(480px, calc(100dvh - 190px), 860px); touch-action: pan-y; }
+.field canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
+.field canvas.pointing { cursor: pointer; }
+.field canvas.dragging { cursor: grabbing; }
+.lane-h { position: absolute; top: 12px; pointer-events: none; display: flex; align-items: baseline; gap: 8px; padding-left: 16px; white-space: nowrap; }
+.lane-h b { font: 800 clamp(18px, 1.7vw, 24px)/1 var(--display); letter-spacing: .02em; }
+.lane-h span { font: 700 13px/1 var(--mono); color: var(--ink3); }
+.lane-h em { font-style: normal; font-size: 12px; color: var(--ink3); }
+.lane-empty { position: absolute; color: var(--ink3); font-size: 13px; pointer-events: none; transform: translate(-50%, -50%); text-align: center; }
+.legend { margin: 0; color: var(--ink3); font-size: 12px; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.legend b { color: var(--ink2); font-weight: 600; }
+
+/* 詳情卡 */
+.card { position: absolute; width: 330px; max-width: calc(100% - 24px); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); z-index: 2; display: grid; gap: 12px; }
+.card-h { display: flex; align-items: center; gap: 10px; }
+.card-h b { font: 800 26px/1 var(--display); }
+.pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.t-buy { color: var(--buy); } .t-wait { color: var(--wait); } .t-hot { color: var(--hot); } .t-avoid { color: var(--avoid); }
+.x { margin-left: auto; border: 0; background: none; font-size: 20px; line-height: 1; cursor: pointer; color: var(--ink3); padding: 4px 6px; border-radius: 8px; }
+.px { display: flex; align-items: baseline; gap: 10px; }
+.px strong { font: 700 20px/1 var(--mono); }
+.card .why { margin: 0; font-size: 14px; }
+.spark { display: grid; gap: 4px; }
+.spark small, .stats dt, .plan small { color: var(--ink3); font-size: 11px; letter-spacing: .04em; }
+.spark svg { width: 100%; height: 54px; display: block; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 8px; margin: 0; }
+.stats div { display: grid; gap: 1px; }
+.stats dd { margin: 0; font: 700 14px/1.2 var(--mono); }
+.plan { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--buy) 10%, transparent); }
+.plan div { display: grid; gap: 2px; } .plan b { font: 700 14px/1.2 var(--mono); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { font: 500 11px/1 var(--mono); padding: 5px 8px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink2); }
+.chips span.p { color: var(--buy); } .chips span.n { color: var(--avoid); }
+
+/* 動作清單 */
+.board { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 14px; }
+.col { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px 16px 8px; min-width: 0; }
+.col h2 { margin: 0 0 6px; font: 800 20px/1.2 var(--display); display: flex; align-items: baseline; gap: 10px; }
+.col h2 span { font: 700 13px var(--mono); color: var(--ink3); }
+.col h2 small { font: 500 12px var(--body); color: var(--ink3); margin-left: auto; }
+.col ol { list-style: none; margin: 0; padding: 0; }
+.col li + li { border-top: 1px solid var(--line); }
+.row { display: grid; grid-template-columns: 74px 1fr; gap: 2px 12px; width: 100%; text-align: left; background: none; border: 0; padding: 11px 6px; cursor: pointer; border-radius: 10px; }
+.row:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.row b { font: 800 17px/1.3 var(--display); }
+.row p { margin: 0; color: var(--ink2); font-size: 13px; }
+.row .meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 2px 12px; font: 500 12px/1.4 var(--mono); color: var(--ink3); }
+.row .meta .go { color: var(--buy); font-weight: 700; }
+.row .meta .bad { color: var(--avoid); font-weight: 700; }
+.none { color: var(--ink3); padding: 14px 6px; margin: 0; }
+.waitline { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.waitline h2 { margin: 0 8px 0 0; font: 800 16px var(--display); color: var(--wait); }
+.waitline button { border: 1px solid var(--line); background: var(--panel); border-radius: 999px; padding: 4px 11px; cursor: pointer; font: 500 12px var(--mono); color: var(--ink2); }
+.waitline button:hover { color: var(--ink); border-color: var(--ink3); }
+footer { color: var(--ink3); font-size: 12px; }
+.banner { background: color-mix(in srgb, var(--avoid) 14%, transparent); color: var(--ink); border: 1px solid color-mix(in srgb, var(--avoid) 40%, transparent); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
+
+@media (max-width: 1100px) {
+  .board { grid-template-columns: 1fr 1fr; }
+  .board .col.buy { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .app { padding-inline: 16px; padding-block: 12px 32px; }
+  .top { grid-template-columns: auto 1fr; }
+  .controls { grid-column: 1 / -1; justify-content: space-between; }
+  .field { height: auto; }
+  .lane-h { top: auto; }
+  .board { grid-template-columns: 1fr; }
+  .card { position: fixed; left: 12px !important; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); top: auto !important; width: auto; max-width: none; max-height: 72dvh; overflow: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .live[data-s="on"] i { animation: none; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="lamp" id="lamp" data-lit="" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="verdict">
+      <h1 id="head">載入中</h1>
+      <p id="sub"></p>
+    </div>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="泡泡大小">
+        <span>大小</span>
+        <button type="button" data-mode="strength" aria-pressed="true">訊號強度</button>
+        <button type="button" data-mode="r24" aria-pressed="false">24h 漲跌</button>
+        <button type="button" data-mode="vol" aria-pressed="false">成交量</button>
+      </div>
+      <span class="live" id="live" data-s="off"><i></i><span>快照</span></span>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <section class="field" id="field" aria-label="泡泡圖：依可以買、觀望、別追、別碰分四區">
+    <canvas id="cv"></canvas>
+    <div id="lanes"></div>
+    <div class="card" id="card" hidden role="dialog" aria-live="polite"></div>
+  </section>
+  <p class="legend">
+    <span><b>位置</b> 該不該買（<span id="lg-dir">越左越好</span>）</span>
+    <span><b>大小</b> <span id="lg-size">訊號強度</span></span>
+    <span><b>虛線圈</b> 買盤只跳一期，還沒確認</span>
+    <span><b>↑ ↓</b> 這期剛換道</span>
+    <span><b>閃光圈</b> 即時價已站上觸發價</span>
+  </p>
+
+  <section class="board" id="board"></section>
+  <div class="waitline" id="waitline"></div>
+
+  <footer>資料：CoinKarma 山寨幣篩選器（LIQ、RSI、狀態）＋ Binance USDⓈ-M 永續行情。分類只針對做多，不是投資建議。</footer>
+</div>
+
+<script>
+(() => {
+  const DATA0 = /*__DATA__*/null;
+  const TIERS = ["buy", "wait", "hot", "avoid"];
+  const NAME = { buy: "可以買", wait: "觀望", hot: "別追", avoid: "別碰" };
+  const HINT = { buy: "買盤先動、還沒噴", wait: "方向不明", hot: "漲過頭", avoid: "賣壓大" };
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = (id) => document.getElementById(id);
+  const field = $("field"), cv = $("cv"), ctx = cv.getContext("2d"), card = $("card");
+
+  let DATA = null, nodes = [], lanes = {}, mode = "strength", W = 0, H = 0, dpr = 1, vertical = false;
+  let hover = null, selected = null, drag = null, colors = {}, dark = true;
+  const live = {};          // BNSYMBOL -> {p, r24}
+  let liveState = "off";
+
+  // ---------- 格式 ----------
+  const fmtPx = (p) => p == null ? "-" : p >= 1000 ? p.toLocaleString("en-US", { maximumFractionDigits: 0 })
+    : p >= 1 ? (+p.toPrecision(5)).toString() : (+p.toPrecision(4)).toString();
+  const fmtPct = (v, d = 1) => v == null ? "-" : (v > 0 ? "+" : "") + v.toFixed(d) + "%";
+  const fmtVol = (v) => v == null ? "-" : v >= 1e9 ? "$" + (v / 1e9).toFixed(1) + "B" : "$" + Math.round(v / 1e6) + "M";
+  const sgn = (v, d = 2) => v == null ? "-" : (v > 0 ? "+" : "") + v.toFixed(d);
+  const cls = (v) => v > 0 ? "up" : v < 0 ? "dn" : "";
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]));
+  const tpe = (iso) => iso ? new Date(iso).toLocaleTimeString("zh-TW", { timeZone: "Asia/Taipei", hour: "2-digit", minute: "2-digit", hour12: false }) : "-";
+
+  const priceOf = (c) => live[c.bn]?.p ?? c.price;
+  const r24Of = (c) => live[c.bn]?.r24 ?? c.r24;
+  const brk = (c) => c.tier === "buy" && c.trigger && priceOf(c) >= c.trigger;
+  const broke = (c) => c.tier === "buy" && c.inv && priceOf(c) < c.inv;
+
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of [...TIERS, "ink", "ink2", "ink3", "line", "field"]) colors[k] = cs.getPropertyValue("--" + k).trim();
+    dark = cs.getPropertyValue("--glow").trim() === "1";
+  }
+  const rgba = (hex, a) => {
+    const h = hex.replace("#", "");
+    const n = parseInt(h.length === 3 ? h.split("").map((x) => x + x).join("") : h, 16);
+    return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+  };
+
+  // ---------- 資料 ----------
+  function apply(data) {
+    const first = !DATA;
+    DATA = data;
+    const old = new Map(nodes.map((n) => [n.c.sym, n]));
+    nodes = data.coins.map((c) => {
+      const n = old.get(c.sym) || { x: W * Math.random(), y: H * Math.random(), vx: 0, vy: 0, r: 0, ph: Math.random() * 6.28 };
+      n.c = c;
+      return n;
+    });
+    if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
+    renderHeader(); renderBoard(); layout(first);
+    if (selected) renderCard(); else card.hidden = true;
+  }
+
+  function metric(n) {
+    const c = n.c;
+    if (mode === "strength") {
+      const k = Math.abs(c.karma);
+      return 0.2 + Math.pow(k / 45, 1.6) * (c.tier === "wait" ? 0.45 : 1);
+    }
+    if (mode === "r24") return 0.25 + Math.abs(r24Of(c) ?? 0);
+    return Math.sqrt(c.vol24 || 1e6) / 1e3;
+  }
+
+  function layout(snap) {
+    const rect = field.getBoundingClientRect();
+    vertical = innerWidth <= 760;
+    $("lg-dir").textContent = vertical ? "越上越好" : "越左越好";
+    W = rect.width;
+    if (vertical) { H = Math.max(760, Math.min(1250, W * 2.7)); field.style.height = H + "px"; }
+    else { field.style.height = ""; H = field.getBoundingClientRect().height; }
+    dpr = Math.min(2, devicePixelRatio || 1);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+
+    const head = vertical ? 0 : 44;
+    const area = W * (H - head);
+    const vs = nodes.map(metric), V = vs.reduce((a, b) => a + b, 0) || 1;
+    const fill = vertical ? 0.42 : 0.47;
+    const maxR = Math.min(W, H) * (vertical ? 0.2 : 0.13), minR = vertical ? 15 : 19;
+    nodes.forEach((n, i) => { n.tr = Math.max(minR, Math.min(maxR, Math.sqrt(fill * area * vs[i] / V / Math.PI))); });
+
+    // 每條道的寬度跟泡泡總面積走，但至少容得下最大那顆
+    const span = vertical ? H : W;
+    const share = TIERS.map((t) => {
+      const ns = nodes.filter((n) => n.c.tier === t);
+      const a = ns.reduce((s, n) => s + n.tr * n.tr * Math.PI, 0);
+      const need = ns.reduce((m, n) => Math.max(m, n.tr * 2.4), 0);
+      return { t, a, need, n: ns.length };
+    });
+    const A = share.reduce((s, x) => s + x.a, 0) || 1;
+    let sizes = share.map((x) => Math.max(x.a / A * span, x.need, span * (x.n ? 0.12 : 0.08)));
+    const k = span / sizes.reduce((a, b) => a + b, 0);
+    sizes = sizes.map((s) => s * k);
+    let at = 0;
+    TIERS.forEach((t, i) => {
+      const L = lanes[t] || (lanes[t] = { s0: at, s1: at + sizes[i] });
+      L.t0 = at; L.t1 = at + sizes[i]; at += sizes[i];
+      if (snap) { L.s0 = L.t0; L.s1 = L.t1; }
+    });
+    TIERS.forEach((t) => {
+      const ns = nodes.filter((n) => n.c.tier === t).sort((a, b) => b.c.karma - a.c.karma);
+      ns.forEach((n, i) => { n.f = (i + 0.5) / ns.length; n.row = ((i * 7) % 5) / 4 - 0.5; });
+    });
+    if (snap) nodes.forEach((n) => { const p = target(n); n.x = p.x + (Math.random() - .5) * 40; n.y = p.y + (Math.random() - .5) * 40; n.r = n.tr * 0.3; });
+    buildLaneHeads();
+  }
+
+  function laneRect(t) {
+    const L = lanes[t];
+    const head = vertical ? 40 : 46;
+    return vertical ? { x0: 0, x1: W, y0: L.s0 + head, y1: L.s1 } : { x0: L.s0, x1: L.s1, y0: head, y1: H };
+  }
+  function target(n) {
+    const R = laneRect(n.c.tier);
+    if (vertical) return { x: W / 2 + n.row * W * 0.5, y: R.y0 + (R.y1 - R.y0) * (0.12 + 0.76 * n.f) };
+    return { x: R.x0 + (R.x1 - R.x0) * (0.15 + 0.7 * n.f), y: R.y0 + (R.y1 - R.y0) * (0.5 + n.row * 0.62) };
+  }
+
+  function buildLaneHeads() {
+    const box = $("lanes");
+    box.innerHTML = TIERS.map((t) => {
+      const n = DATA.coins.filter((c) => c.tier === t).length;
+      const note = t === "buy" && DATA.market.mood === "off" ? "大盤轉弱，先等" : HINT[t];
+      return `<div class="lane-h" data-t="${t}"><b class="t-${t}">${NAME[t]}</b><span>${n}</span><em>${note}</em></div>` +
+        (n ? "" : `<div class="lane-empty" data-e="${t}">目前沒有</div>`);
+    }).join("");
+  }
+  function placeLaneHeads() {
+    for (const el of $("lanes").children) {
+      const t = el.dataset.t || el.dataset.e, L = lanes[t];
+      if (!L) continue;
+      if (el.dataset.t) {
+        if (vertical) { el.style.left = "0px"; el.style.top = (L.s0 + 12) + "px"; }
+        else { el.style.left = L.s0 + "px"; el.style.top = "14px"; }
+      } else {
+        const R = laneRect(t);
+        el.style.left = (R.x0 + R.x1) / 2 + "px"; el.style.top = (R.y0 + R.y1) / 2 + "px";
+      }
+    }
+  }
+
+  // ---------- 物理 ----------
+  function step(t) {
+    for (const t2 of TIERS) { const L = lanes[t2]; if (!L) continue; L.s0 += (L.t0 - L.s0) * 0.08; L.s1 += (L.t1 - L.s1) * 0.08; }
+    const kx = vertical ? 0.004 : 0.01, ky = vertical ? 0.01 : 0.004;
+    for (const n of nodes) {
+      n.r += (n.tr - n.r) * 0.1;
+      if (n === drag?.n) continue;
+      const p = target(n);
+      const wob = reduce ? 0 : 5;
+      p.x += Math.sin(t / 2400 + n.ph) * wob; p.y += Math.cos(t / 2900 + n.ph) * wob;
+      n.vx += (p.x - n.x) * kx; n.vy += (p.y - n.y) * ky;
+      const R = laneRect(n.c.tier), pad = n.r + 3;
+      if (n.x < R.x0 + pad) n.vx += (R.x0 + pad - n.x) * 0.1;
+      if (n.x > R.x1 - pad) n.vx -= (n.x - R.x1 + pad) * 0.1;
+      if (n.y < R.y0 + pad) n.vy += (R.y0 + pad - n.y) * 0.1;
+      if (n.y > R.y1 - pad) n.vy -= (n.y - R.y1 + pad) * 0.1;
+      n.vx *= 0.82; n.vy *= 0.82;
+      n.x += n.vx; n.y += n.vy;
+    }
+    for (let it = 0; it < 3; it++) {
+      for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        let dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 0.01;
+        const min = a.r + b.r + 3;
+        if (d >= min) continue;
+        const o = (min - d) / d;
+        const wa = a === drag?.n ? 0 : b === drag?.n ? 1 : 0.5, wb = 1 - wa;
+        a.x -= dx * o * wa; a.y -= dy * o * wa; b.x += dx * o * wb; b.y += dy * o * wb;
+      }
+    }
+    for (const n of nodes) { n.x = Math.max(n.r, Math.min(W - n.r, n.x)); n.y = Math.max(n.r, Math.min(H - n.r, n.y)); }
+  }
+
+  // ---------- 繪圖 ----------
+  function label(n) {
+    const c = n.c;
+    if (mode === "r24") return fmtPct(r24Of(c));
+    if (mode === "vol") return fmtVol(c.vol24);
+    if (c.tier === "hot") return "RSI " + Math.round(c.rsi);
+    return "LIQ " + sgn(c.liq);
+  }
+
+  function draw(t) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    TIERS.forEach((tier, i) => {
+      const L = lanes[tier]; if (!L) return;
+      const col = colors[tier];
+      const g = vertical ? ctx.createLinearGradient(0, L.s0, 0, L.s1) : ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, rgba(col, dark ? 0.1 : 0.09)); g.addColorStop(0.5, rgba(col, 0.02)); g.addColorStop(1, rgba(col, 0));
+      ctx.fillStyle = g;
+      if (vertical) ctx.fillRect(0, L.s0, W, L.s1 - L.s0); else ctx.fillRect(L.s0, 0, L.s1 - L.s0, H);
+      if (i) {
+        ctx.strokeStyle = colors.line; ctx.lineWidth = 1; ctx.setLineDash([3, 5]); ctx.beginPath();
+        if (vertical) { ctx.moveTo(0, L.s0); ctx.lineTo(W, L.s0); } else { ctx.moveTo(L.s0, 0); ctx.lineTo(L.s0, H); }
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+    });
+    const order = [...nodes].sort((a, b) => (a === hover || a === selected) - (b === hover || b === selected) || b.r - a.r);
+    for (const n of order) bubble(n, t);
+  }
+
+  function bubble(n, t) {
+    const c = n.c, col = colors[c.tier], r = n.r;
+    if (r < 2) return;
+    const focus = selected && selected !== n;
+    ctx.save();
+    ctx.globalAlpha = focus ? 0.28 : 1;
+    const loud = c.tier === "buy" || c.tier === "avoid";
+    if (dark && loud) { ctx.shadowColor = rgba(col, 0.55); ctx.shadowBlur = Math.min(34, r * 0.45); }
+    const g = ctx.createRadialGradient(n.x, n.y - r * 0.15, r * 0.1, n.x, n.y, r);
+    g.addColorStop(0, rgba(col, dark ? 0.05 : 0.08));
+    g.addColorStop(0.7, rgba(col, dark ? 0.16 : 0.18));
+    g.addColorStop(1, rgba(col, dark ? 0.5 : 0.42));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 6.2832); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = n === hover || n === selected ? 3 : c.tier === "wait" ? 1.4 : 2;
+    ctx.strokeStyle = broke(c) ? colors.ink3 : col;
+    if (c.tier === "buy" && !c.confirmed) ctx.setLineDash([6, 5]);
+    ctx.stroke(); ctx.setLineDash([]);
+
+    if (brk(c)) {
+      const k = reduce ? 0.35 : (t % 1600) / 1600;
+      ctx.globalAlpha = (focus ? 0.28 : 1) * (1 - k);
+      ctx.lineWidth = 2; ctx.strokeStyle = col;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 4 + k * 16, 0, 6.2832); ctx.stroke();
+      ctx.globalAlpha = focus ? 0.28 : 1;
+    }
+
+    ctx.fillStyle = colors.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const sym = c.sym;
+    let fs = Math.min(r * 0.5, (r * 1.55) / Math.max(2.2, sym.length * 0.62));
+    fs = Math.max(9, fs);
+    const showSub = r > 23;
+    ctx.font = `800 ${fs}px "Bricolage Grotesque", system-ui, sans-serif`;
+    ctx.fillText(sym, n.x, n.y - (showSub ? fs * 0.32 : 0));
+    if (showSub) {
+      const s2 = Math.max(9, Math.min(r * 0.27, 17));
+      ctx.font = `700 ${s2}px "JetBrains Mono", ui-monospace, monospace`;
+      ctx.fillStyle = brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
+      const txt = brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
+      ctx.fillText(txt, n.x, n.y + fs * 0.5 + s2 * 0.35);
+    }
+    if (c.moved && r > 16) {
+      const bx = n.x + r * 0.72, by = n.y - r * 0.72, br = Math.max(8, Math.min(11, r * 0.2));
+      ctx.fillStyle = c.moved === "up" ? colors.buy : colors.avoid;
+      ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = colors.field; ctx.font = `800 ${br * 1.3}px system-ui, sans-serif`;
+      ctx.fillText(c.moved === "up" ? "↑" : "↓", bx, by + 1);
+    }
+    ctx.restore();
+  }
+
+  let last = 0;
+  function frame(t) {
+    if (DATA) {
+      step(t); draw(t); placeLaneHeads();
+      if (selected && !card.hidden) placeCard();
+      if (t - last > 1000) { last = t; tickLive(); }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- 互動 ----------
+  const pt = (e) => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const hit = (p) => { let best = null; for (const n of nodes) if (Math.hypot(n.x - p.x, n.y - p.y) < n.r && (!best || n.r < best.r)) best = n; return best; };
+  cv.addEventListener("pointerdown", (e) => {
+    const p = pt(e), n = hit(p);
+    if (!n) { drag = { n: null, p0: p }; return; }
+    drag = { n, p0: p, lx: p.x, ly: p.y, moved: false };
+    if (e.pointerType === "mouse") cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener("pointermove", (e) => {
+    const p = pt(e);
+    if (drag?.n) {
+      if (Math.hypot(p.x - drag.p0.x, p.y - drag.p0.y) > 6) { drag.moved = true; cv.classList.add("dragging"); }
+      if (drag.moved) { drag.n.vx = p.x - drag.lx; drag.n.vy = p.y - drag.ly; drag.n.x = p.x; drag.n.y = p.y; }
+      drag.lx = p.x; drag.ly = p.y;
+      return;
+    }
+    if (e.pointerType !== "mouse") return;
+    hover = hit(p);
+    cv.classList.toggle("pointing", !!hover);
+  });
+  cv.addEventListener("pointerup", (e) => {
+    const p = pt(e);
+    if (drag && !drag.moved) {
+      const n = drag.n;
+      if (n) select(n); else if (Math.hypot(p.x - drag.p0.x, p.y - drag.p0.y) < 6) select(null);
+    }
+    if (drag?.n) { drag.n.vx *= 0.6; drag.n.vy *= 0.6; }
+    drag = null; cv.classList.remove("dragging");
+  });
+  cv.addEventListener("pointercancel", () => { drag = null; cv.classList.remove("dragging"); });
+  cv.addEventListener("pointerleave", () => { if (!drag) hover = null; });
+  addEventListener("keydown", (e) => { if (e.key === "Escape") select(null); });
+
+  function select(n) {
+    selected = n;
+    if (!n) { card.hidden = true; return; }
+    renderCard(); card.hidden = false; placeCard();
+  }
+  function selectSym(sym) {
+    const n = nodes.find((x) => x.c.sym === sym);
+    if (!n) return;
+    select(n);
+    if (!vertical) field.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "nearest" });
+  }
+
+  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    $("lg-size").textContent = b.textContent;
+    try { localStorage.setItem("kb-mode", mode); } catch (_) {}
+    if (DATA) layout(false);
+  }));
+
+  // ---------- HTML 區塊 ----------
+  function renderHeader() {
+    const m = DATA.market;
+    const lit = { on: "green", wait: "amber", flat: "amber", off: "red", stale: "red" }[m.mood] || "";
+    $("lamp").dataset.lit = lit;
+    $("head").textContent = m.head;
+    document.title = "Karma Bubbles";
+    renderSub();
+  }
+  function renderSub() {
+    const m = DATA.market;
+    const btc = DATA.coins.find((c) => c.sym === "BTC");
+    const px = btc ? priceOf(btc) : m.btc;
+    const age = DATA.ckTime ? Math.round((Date.now() - new Date(DATA.ckTime)) / 60000) : null;
+    // CoinKarma 整點版約 :15 才出現；下一版＝版本時間 + 75 分
+    const next = DATA.ckTime ? new Date(new Date(DATA.ckTime).getTime() + 75 * 60000) : null;
+    const late = age != null && age > 90;
+    const banner = $("banner");
+    banner.hidden = !(DATA.stale || late);
+    if (!banner.hidden) banner.textContent = `CoinKarma 最後一版是 ${tpe(DATA.ckTime)}，已經 ${age} 分鐘沒出新版（正常每小時 :15 更新）。泡泡位置可能不準，別照著下單。`;
+    $("sub").innerHTML =
+      `<span>BTC <b class="mono">${fmtPx(px)}</b> <span class="mono ${cls(m.btc4h)}">${fmtPct(m.btc4h, 2)}</span> 4H</span>` +
+      `<span>上漲家數 <b class="mono">${Math.round((m.breadth ?? 0) * 100)}%</b></span>` +
+      `<span>CoinKarma <b class="mono">${tpe(DATA.ckTime)}</b> 版，下一版約 <b class="mono">${next && next > Date.now() ? tpe(next.toISOString()) : "隨時"}</b></span>`;
+  }
+
+  function renderBoard() {
+    const by = (t) => DATA.coins.filter((c) => c.tier === t);
+    const buys = by("buy").sort((a, b) => b.karma - a.karma);
+    const hots = by("hot").sort((a, b) => b.rsi - a.rsi);
+    const avoids = by("avoid").sort((a, b) => a.liq - b.liq);
+    const row = (c, extra = "") => `<li><button class="row" type="button" data-sym="${esc(c.sym)}"><b class="t-${c.tier}">${esc(c.sym)}</b><p>${esc(c.why)}</p>${extra}</button></li>`;
+    const buyMeta = (c) => `<span class="meta"><span>觸發 ${fmtPx(c.trigger)}</span><span>失效 ${fmtPx(c.inv)}</span><span data-dist="${esc(c.sym)}"></span></span>`;
+    const col = (t, list, sub, extra) => `<div class="col ${t}"><h2><b class="t-${t}">${NAME[t]}</b><span>${list.length}</span><small>${sub}</small></h2>` +
+      (list.length ? `<ol>${list.map((c) => row(c, extra ? extra(c) : "")).join("")}</ol>` : `<p class="none">這一期沒有。</p>`) + `</div>`;
+    $("board").innerHTML =
+      col("buy", buys, DATA.market.mood === "off" ? "大盤轉弱，只觀察" : "站上觸發價才進", buyMeta) +
+      col("hot", hots, "等回檔") +
+      col("avoid", avoids, "現在買是接刀");
+    const waits = by("wait").sort((a, b) => b.karma - a.karma);
+    $("waitline").innerHTML = `<h2>觀望 ${waits.length}</h2>` + waits.map((c) => `<button type="button" data-sym="${esc(c.sym)}">${esc(c.sym)}</button>`).join("");
+    document.querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    tickLive();
+  }
+
+  function spark(hist, col) {
+    if (!hist?.length) return "";
+    const w = 300, h = 54, pad = 6;
+    const lo = Math.min(0, ...hist), hi = Math.max(0, ...hist), rg = hi - lo || 1;
+    const X = (i) => pad + (w - 2 * pad) * (hist.length === 1 ? 0.5 : i / (hist.length - 1));
+    const Y = (v) => pad + (h - 2 * pad) * (1 - (v - lo) / rg);
+    const pts = hist.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+    const area = `${X(0)},${Y(0)} ${pts} ${X(hist.length - 1)},${Y(0)}`;
+    const lv = hist[hist.length - 1];
+    return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-label="LIQ 近 ${hist.length} 期">
+      <line x1="${pad}" x2="${w - pad}" y1="${Y(0)}" y2="${Y(0)}" stroke="${colors.line}" stroke-dasharray="3 4"/>
+      <polygon points="${area}" fill="${rgba(col, 0.14)}"/>
+      <polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>
+      <circle cx="${X(hist.length - 1)}" cy="${Y(lv)}" r="3.5" fill="${col}"/></svg>`;
+  }
+
+  function renderCard() {
+    const c = selected.c, col = colors[c.tier];
+    const px = priceOf(c), r24 = r24Of(c);
+    const vsBtc = c.rsiDiff == null ? "-" : (c.rsiDiff > 0 ? "強 " : "弱 ") + Math.abs(c.rsiDiff).toFixed(0);
+    const plan = c.tier === "buy" && c.trigger ? `<div class="plan">
+        <div><small>進場：站上</small><b>${fmtPx(c.trigger)}</b></div>
+        <div><small>失效：跌破</small><b>${fmtPx(c.inv)}</b></div>
+        <div><small>現價距觸發</small><b data-dist="${esc(c.sym)}">-</b></div></div>` : "";
+    card.innerHTML = `
+      <div class="card-h"><b>${esc(c.sym)}</b><span class="pill t-${c.tier}">${NAME[c.tier]}</span>
+        <button class="x" type="button" aria-label="關閉">×</button></div>
+      <div class="px"><strong>${fmtPx(px)}</strong><span class="mono ${cls(r24)}">${fmtPct(r24)} 24h</span></div>
+      <p class="why">${esc(c.why)}</p>
+      ${plan}
+      <div class="spark"><small>CoinKarma LIQ 近 ${c.liqHist.length} 期（虛線＝0）</small>${spark(c.liqHist, col)}</div>
+      <dl class="stats">
+        <div><dt>LIQ</dt><dd class="${cls(c.liq)}">${sgn(c.liq)}</dd></div>
+        <div><dt>LIQ 百分位</dt><dd>${c.liqPct ?? "-"}</dd></div>
+        <div><dt>CoinKarma</dt><dd>${esc(c.ck && c.ck !== "-" ? c.ck : "無")}</dd></div>
+        <div><dt>RSI</dt><dd>${c.rsi ?? "-"}</dd></div>
+        <div><dt>RSI 比 BTC</dt><dd>${vsBtc}</dd></div>
+        <div><dt>資金費率</dt><dd>${c.funding == null ? "-" : (c.funding * 100).toFixed(4) + "%"}</dd></div>
+        <div><dt>1H</dt><dd class="${cls(c.r1h)}">${fmtPct(c.r1h, 2)}</dd></div>
+        <div><dt>OI 1H</dt><dd class="${cls(c.oi1h)}">${fmtPct(c.oi1h)}</dd></div>
+        <div><dt>成交量 24h</dt><dd>${fmtVol(c.vol24)}</dd></div>
+      </dl>
+      ${c.ckDesc ? `<p class="why" style="color:var(--ink2);font-size:13px">CoinKarma：${esc(c.ckDesc)}</p>` : ""}
+      <div class="chips">${c.reasons.map(([p, s]) => `<span class="${p > 0 ? "p" : p < 0 ? "n" : ""}">${p > 0 ? "+" : ""}${p} ${esc(s)}</span>`).join("")}</div>`;
+    card.querySelector(".x").addEventListener("click", () => select(null));
+    tickLive();
+  }
+
+  function placeCard() {
+    if (vertical || !selected) return;
+    const n = selected, cw = card.offsetWidth, ch = card.offsetHeight;
+    let x = n.x + n.r + 16;
+    if (x + cw > W - 12) x = n.x - n.r - 16 - cw;
+    if (x < 12) x = Math.max(12, Math.min(W - cw - 12, n.x - cw / 2));
+    const y = Math.max(12, Math.min(H - ch - 12, n.y - ch / 2));
+    card.style.left = x + "px"; card.style.top = y + "px";
+  }
+
+  function tickLive() {
+    if (!DATA) return;
+    document.querySelectorAll("[data-dist]").forEach((el) => {
+      const c = DATA.coins.find((x) => x.sym === el.dataset.dist);
+      if (!c?.trigger) return;
+      const p = priceOf(c), d = (p / c.trigger - 1) * 100;
+      if (broke(c)) { el.textContent = "已跌破失效價"; el.className = "bad"; }
+      else if (d >= 0) { el.textContent = `已站上 ${fmtPct(d, 2)}`; el.className = "go"; }
+      else { el.textContent = `距觸發 ${fmtPct(-d, 2).replace("+", "")}`; el.className = ""; }
+      if (el.tagName === "B") el.className = d >= 0 ? "up" : "";
+    });
+    renderSub();
+    if (selected && !card.hidden) {
+      const s = card.querySelector(".px");
+      if (s) s.innerHTML = `<strong>${fmtPx(priceOf(selected.c))}</strong><span class="mono ${cls(r24Of(selected.c))}">${fmtPct(r24Of(selected.c))} 24h</span>`;
+    }
+  }
+
+  // ---------- 即時價格（幣安 USDⓈ-M miniTicker）----------
+  // 2026 起 USDⓈ-M 行情走 /market 路徑，舊路徑會連上但不推資料，所以留一個備援並加看門狗
+  const WS_URLS = ["wss://fstream.binance.com/market/stream?streams=", "wss://fstream.binance.com/stream?streams="];
+  let ws = null, retry = 0, urlIdx = 0, r24Timer = 0, lastMsg = 0, dog = 0;
+  const mult = (bn) => +(/^(1000+)/.exec(bn)?.[1] || 1);   // 1000PEPEUSDT 報價是 1000 顆的價格
+  function setLive(s) {
+    liveState = s;
+    const el = $("live");
+    el.dataset.s = s;
+    el.querySelector("span").textContent = { on: "即時價格", wait: "連線中", off: "快照" }[s];
+  }
+  function connect() {
+    if (!DATA) return;
+    const syms = [...new Set(DATA.coins.map((c) => c.bn).filter(Boolean))];
+    if (!syms.length) return;
+    clearInterval(dog);
+    if (ws) { ws.onclose = null; try { ws.close(); } catch (_) {} }
+    setLive("wait");
+    const sock = (() => { try { return new WebSocket(WS_URLS[urlIdx] + syms.map((s) => s.toLowerCase() + "@miniTicker").join("/")); } catch (_) { return null; } })();
+    if (!sock) { setLive("off"); return; }
+    ws = sock; lastMsg = performance.now();
+    ws.onmessage = (e) => {
+      const d = JSON.parse(e.data).data;
+      if (!d?.s) return;
+      lastMsg = performance.now(); retry = 0;
+      const k = mult(d.s), c = +d.c / k, o = +d.o / k;
+      live[d.s] = { p: c, r24: o ? (c / o - 1) * 100 : null };
+      if (liveState !== "on") setLive("on");
+      if (mode === "r24" && performance.now() - r24Timer > 3000) { r24Timer = performance.now(); layout(false); }
+    };
+    const again = () => {
+      clearInterval(dog); setLive("off");
+      if (retry++ < 10) { urlIdx = (urlIdx + 1) % WS_URLS.length; setTimeout(connect, Math.min(30000, 1500 * retry)); }
+    };
+    ws.onclose = again;
+    ws.onerror = () => { try { ws.close(); } catch (_) {} };
+    dog = setInterval(() => {
+      if (performance.now() - lastMsg > 15000) { ws.onclose = null; try { ws.close(); } catch (_) {} again(); }
+    }, 5000);
+  }
+
+  // ---------- CoinKarma 新一期：抓同目錄 json，泡泡動畫換道 ----------
+  // 分享版：網頁放 GitHub Pages（不含數據），數據在 secret gist，gist ID 放在連結的 # 後面
+  const GIST = (location.hash.match(/^#([0-9a-f]{20,40})$/) || [])[1] || null;
+  async function poll() {
+    try {
+      const url = GIST ? `https://api.github.com/gists/${GIST}` : "karma_bubbles.json?t=" + Date.now();
+      // gist API 未登入每小時 60 次；no-cache 會帶 ETag 重新驗證，沒變的 304 不算次數
+      const r = await fetch(url, { cache: GIST ? "no-cache" : "no-store" });
+      if (!r.ok) throw r.status;
+      const j = await r.json();
+      const d = GIST ? JSON.parse(j.files["karma_bubbles.json"].content) : j;
+      if (d.runAt !== DATA?.runAt) {
+        const prevSyms = DATA ? DATA.coins.map((c) => c.bn).join() : "";
+        apply(d);
+        if (d.coins.map((c) => c.bn).join() !== prevSyms) connect();
+      }
+    } catch (e) {
+      if (GIST && !DATA) $("head").textContent = e === 404 ? "連結失效：資料不存在" : "資料載入失敗，稍後自動重試";
+      if (location.protocol === "file:" && performance.now() > 15 * 60000) location.reload();
+    }
+  }
+
+  // ---------- 開機 ----------
+  readColors();
+  const mq = matchMedia("(prefers-color-scheme: light)");
+  const retheme = () => { readColors(); if (selected && !card.hidden) renderCard(); };
+  mq.addEventListener?.("change", retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  try {
+    const m = localStorage.getItem("kb-mode");
+    if (m) document.querySelector(`.seg button[data-mode="${m}"]`)?.click();
+  } catch (_) {}
+  let rz = 0;
+  new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => DATA && layout(false)); }).observe(document.body);
+
+  if (DATA0) { apply(DATA0); connect(); setInterval(poll, 60000); }
+  else if (GIST) { poll(); setInterval(poll, 60000); }
+  else { $("head").textContent = "連結不完整：請用含 # 後面那段的完整連結"; }
+  document.fonts?.ready.then(() => DATA && layout(false));
+  requestAnimationFrame(frame);
+})();
+</script>
