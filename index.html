@@ -109,6 +109,18 @@ button { font: inherit; color: inherit; }
 .chips span { font: 500 11px/1 var(--mono); padding: 5px 8px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink2); }
 .chips span.p { color: var(--buy); } .chips span.n { color: var(--avoid); }
 
+/* 分道回測 */
+.track { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 14px 28px; align-items: start; }
+.track h2 { margin: 0 0 6px; font: 800 20px/1.2 var(--display); }
+.track p { margin: 0; color: var(--ink2); max-width: 60ch; }
+.track small { display: block; margin-top: 8px; color: var(--ink3); font-size: 12px; }
+.track-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.track-grid div { display: grid; gap: 4px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.track-grid b { font: 800 16px/1.2 var(--display); }
+.track-grid dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 12px; }
+.track-grid dt { color: var(--ink3); }
+.track-grid dd { margin: 0; text-align: right; font: 700 13px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
+
 /* 動作清單 */
 .board { display: grid; grid-template-columns: 1.35fr 1fr 1fr; gap: 14px; }
 .col { background: var(--panel); border: 1px solid var(--line); border-radius: 18px; padding: 16px 16px 8px; min-width: 0; }
@@ -133,6 +145,7 @@ footer { color: var(--ink3); font-size: 12px; }
 .banner { background: color-mix(in srgb, var(--avoid) 14%, transparent); color: var(--ink); border: 1px solid color-mix(in srgb, var(--avoid) 40%, transparent); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
 
 @media (max-width: 1100px) {
+  .track { grid-template-columns: 1fr; }
   .board { grid-template-columns: 1fr 1fr; }
   .board .col.buy { grid-column: 1 / -1; }
 }
@@ -143,6 +156,7 @@ footer { color: var(--ink3); font-size: 12px; }
   .field { height: auto; }
   .lane-h { top: auto; }
   .board { grid-template-columns: 1fr; }
+  .track-grid { grid-template-columns: 1fr 1fr; }
   .card { position: fixed; left: 12px !important; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); top: auto !important; width: auto; max-width: none; max-height: 72dvh; overflow: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .live[data-s="on"] i { animation: none; } }
@@ -174,12 +188,14 @@ footer { color: var(--ink3); font-size: 12px; }
     <div class="card" id="card" hidden role="dialog" aria-live="polite"></div>
   </section>
   <p class="legend">
-    <span><b>位置</b> 該不該買（<span id="lg-dir">越左越好</span>）</span>
+    <span><b>位置</b> 風險高低（<span id="lg-dir">越左越低</span>）</span>
     <span><b>大小</b> <span id="lg-size">訊號強度</span></span>
     <span><b>虛線圈</b> 買盤只跳一期，還沒確認</span>
     <span><b>↑ ↓</b> 這期剛換道</span>
     <span><b>閃光圈</b> 即時價已站上觸發價</span>
   </p>
+
+  <section class="track" id="track" hidden></section>
 
   <section class="board" id="board"></section>
   <div class="waitline" id="waitline"></div>
@@ -192,7 +208,7 @@ footer { color: var(--ink3); font-size: 12px; }
   const DATA0 = /*__DATA__*/null;
   const TIERS = ["buy", "wait", "hot", "avoid"];
   const NAME = { buy: "可以買", wait: "觀望", hot: "別追", avoid: "別碰" };
-  const HINT = { buy: "買盤先動、還沒噴", wait: "方向不明", hot: "漲過頭", avoid: "賣壓大" };
+  const HINT = { buy: "風險最低", wait: "方向不明", hot: "漲多容易落後", avoid: "賣壓大" };
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = (id) => document.getElementById(id);
   const field = $("field"), cv = $("cv"), ctx = cv.getContext("2d"), card = $("card");
@@ -239,7 +255,7 @@ footer { color: var(--ink3); font-size: 12px; }
       return n;
     });
     if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
-    renderHeader(); renderBoard(); layout(first);
+    renderHeader(); renderTrack(); renderBoard(); layout(first);
     if (selected) renderCard(); else card.hidden = true;
   }
 
@@ -256,7 +272,7 @@ footer { color: var(--ink3); font-size: 12px; }
   function layout(snap) {
     const rect = field.getBoundingClientRect();
     vertical = innerWidth <= 760;
-    $("lg-dir").textContent = vertical ? "越上越好" : "越左越好";
+    $("lg-dir").textContent = vertical ? "越上越低" : "越左越低";
     W = rect.width;
     if (vertical) { H = Math.max(760, Math.min(1250, W * 2.7)); field.style.height = H + "px"; }
     else { field.style.height = ""; H = field.getBoundingClientRect().height; }
@@ -534,6 +550,24 @@ footer { color: var(--ink3); font-size: 12px; }
       `<span>CoinKarma <b class="mono">${tpe(DATA.ckTime)}</b> 版，下一版約 <b class="mono">${next && next > Date.now() ? tpe(next.toISOString()) : "隨時"}</b></span>`;
   }
 
+  function renderTrack() {
+    const S = DATA.stats, el = $("track");
+    el.hidden = !S;
+    if (!S) return;
+    const d = (iso) => new Date(iso).toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric" });
+    const cell = (t) => {
+      const x = S.tiers[t];
+      if (!x) return "";
+      return `<div><b class="t-${t}">${NAME[t]}</b><dl>
+        <dt>跑贏大盤</dt><dd>${Math.round(x.beat * 100)}%</dd>
+        <dt>扣大盤平均</dt><dd class="${cls(x.ex)}">${fmtPct(x.ex, 2)}</dd>
+        <dt>最差一成</dt><dd class="dn">${fmtPct(x.tail)}</dd></dl></div>`;
+    };
+    el.innerHTML = `<div><h2>這套分道過去準不準</h2><p>${esc(S.note)}</p>
+      <small>每輪被分到各道的幣，${S.hours} 小時後的漲跌扣掉同時間全部幣的平均。資料 ${d(S.from)} 到 ${d(S.to)}，共 ${S.runs} 輪，每輪自動重算。</small></div>
+      <div class="track-grid">${TIERS.map(cell).join("")}</div>`;
+  }
+
   function renderBoard() {
     const by = (t) => DATA.coins.filter((c) => c.tier === t);
     const buys = by("buy").sort((a, b) => b.karma - a.karma);
@@ -546,7 +580,7 @@ footer { color: var(--ink3); font-size: 12px; }
     $("board").innerHTML =
       col("buy", buys, DATA.market.mood === "off" ? "大盤轉弱，只觀察" : "站上觸發價才進", buyMeta) +
       col("hot", hots, "等回檔") +
-      col("avoid", avoids, "現在買是接刀");
+      col("avoid", avoids, "別開新多單");
     const waits = by("wait").sort((a, b) => b.karma - a.karma);
     $("waitline").innerHTML = `<h2>觀望 ${waits.length}</h2>` + waits.map((c) => `<button type="button" data-sym="${esc(c.sym)}">${esc(c.sym)}</button>`).join("");
     document.querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
