@@ -96,6 +96,24 @@ button { font: inherit; color: inherit; }
 .say { margin: 0; font: 800 clamp(18px, 1.9vw, 26px)/1.25 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
 .say small { display: block; margin-top: 4px; font: 500 13px/1.4 var(--body); color: var(--ink3); letter-spacing: 0; }
 
+/* 即時異動 */
+.movers { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.movers .lbl { font-size: 12px; color: var(--ink3); margin-right: 2px; }
+.movers .lbl b { color: var(--hot); font-weight: 700; }
+.mv { border: 1px solid color-mix(in srgb, var(--mc) 55%, var(--line)); background: color-mix(in srgb, var(--mc) 12%, var(--panel)); border-radius: 999px; padding: 4px 11px; cursor: pointer; display: inline-flex; gap: 6px; align-items: baseline; }
+.mv b { font: 800 13px/1 var(--display); }
+.mv span { font: 700 12px/1 var(--mono); color: var(--mc); }
+.mv small { font-size: 11px; color: var(--ink3); }
+.movers .note { font-size: 11.5px; color: var(--ink3); }
+
+/* 情緒量表（實驗中） */
+.senti { display: grid; gap: 6px; }
+.senti small { color: var(--ink3); font-size: 11px; }
+.senti .gauge { position: relative; height: 8px; border-radius: 999px; background: linear-gradient(90deg, var(--avoid), var(--wait) 50%, var(--buy)); opacity: .85; }
+.senti .gauge i { position: absolute; top: -4px; width: 4px; height: 16px; border-radius: 2px; background: var(--ink); transform: translateX(-50%); }
+.senti p { margin: 0; font-size: 13px; }
+.senti p b { font: 800 15px var(--display); }
+
 /* 族群熱度條 */
 .heat { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-block: 2px; mask-image: linear-gradient(90deg, #000 94%, transparent); }
 .heat::-webkit-scrollbar { display: none; }
@@ -244,6 +262,7 @@ footer { color: var(--ink3); font-size: 12px; }
           <span><b>大小</b>：<span id="lg-size">24h 漲跌</span>。觀望的幣刻意縮小、淡化。</span>
           <span><b>觀望的底色</b>：24h 漲跌，不是訊號。</span>
           <span><b>！</b>：剛暴漲，點開看 Grok 查到的原因。<b>↑↓</b>：這輪剛換道。</span>
+          <span><b>閃動外圈</b>：即時異動，過去 15 分鐘漲跌 3% 以上或 5 分鐘 2% 以上（幣安即時價格），是提醒不是買點。</span>
           <span><b>上面三個數字、族群熱度</b>都可以點，點了只亮那一群，再點一次取消。</span>
           <span>分道只用幣安價格與量能；CoinKarma 的 LIQ 回測沒有預測力，只放在卡片裡參考。</span>
         </div>
@@ -255,6 +274,8 @@ footer { color: var(--ink3); font-size: 12px; }
     <div class="tally" id="tally"></div>
     <p class="say" id="head">載入中</p>
   </section>
+
+  <div class="movers" id="movers" hidden></div>
 
   <div id="banner" class="banner" hidden></div>
 
@@ -307,6 +328,53 @@ footer { color: var(--ink3); font-size: 12px; }
   let focus = null;         // {tier} 或 {group}：只亮這一群，其餘淡掉
   const inFocus = (c) => !focus || (focus.tier ? c.tier === focus.tier : c.group === focus.group);
   const live = {};          // BNSYMBOL -> {p, r24}
+  const hist = {};          // BNSYMBOL -> [[時間ms, 價格]]，最近 20 分鐘，算即時異動用
+  const MOVE5 = 2, MOVE15 = 3;
+  function pushHist(bn, t, p) {
+    const h = hist[bn] || (hist[bn] = []);
+    if (h.length && t - h[h.length - 1][0] < 10000) { h[h.length - 1][1] = p; return; }
+    h.push([t, p]);
+    while (h.length && t - h[0][0] > 20 * 60000) h.shift();
+  }
+  function moveOf(bn, mins) {
+    const h = hist[bn], p = live[bn]?.p;
+    if (!h?.length || !p) return null;
+    const tgt = Date.now() - mins * 60000;
+    let base = null;
+    for (const [t, v] of h) { if (t <= tgt) base = v; else break; }
+    return base ? (p / base - 1) * 100 : null;
+  }
+  const moving = {};        // BNSYMBOL -> {r5, r15, dir}
+  function scanMovers() {
+    for (const k of Object.keys(moving)) delete moving[k];
+    for (const c of DATA?.coins || []) {
+      const r5 = moveOf(c.bn, 5), r15 = moveOf(c.bn, 15);
+      const up = (r15 ?? 0) >= MOVE15 || (r5 ?? 0) >= MOVE5, dn = (r15 ?? 0) <= -MOVE15 || (r5 ?? 0) <= -MOVE5;
+      if (up || dn) moving[c.bn] = { r5, r15, dir: up ? 1 : -1, sym: c.sym };
+    }
+    const list = Object.values(moving).sort((a, b) => Math.abs(b.r15 ?? b.r5) - Math.abs(a.r15 ?? a.r5));
+    const el = $("movers");
+    el.hidden = !list.length;
+    if (!list.length) return;
+    el.innerHTML = `<span class="lbl"><b>即時異動</b> 過去 15 分鐘</span>` + list.slice(0, 10).map((m) =>
+      `<button type="button" class="mv" style="--mc:${m.dir > 0 ? "var(--hot)" : "var(--avoid)"}" data-mv="${esc(m.sym)}"><b>${esc(m.sym)}</b><span>${fmtPct(m.r15 ?? m.r5)}</span><small>${m.r15 != null ? "15 分" : "5 分"}</small></button>`).join("") +
+      `<span class="note">提醒不是買點；追高過去一年只有四成跑贏大盤</span>`;
+    el.querySelectorAll("[data-mv]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.mv)));
+  }
+  async function seedHist() {
+    const syms = [...new Set((DATA?.coins || []).map((c) => c.bn).filter(Boolean))];
+    for (let i = 0; i < syms.length; i += 8) {
+      await Promise.all(syms.slice(i, i + 8).map(async (s) => {
+        try {
+          const k = await (await fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${s}&interval=1m&limit=17`)).json();
+          const m = +(/^(1000+)/.exec(s)?.[1] || 1);
+          for (const x of k) pushHist(s, x[0] + 60000, +x[4] / m);
+          if (!live[s]) live[s] = { p: +k[k.length - 1][4] / m, r24: null };
+        } catch (_) {}
+      }));
+    }
+    scanMovers();
+  }
   let liveState = "off";
 
   // ---------- 格式 ----------
@@ -517,6 +585,14 @@ footer { color: var(--ink3); font-size: 12px; }
     ctx.strokeStyle = broke(c) ? colors.ink3 : c.tier === "wait" ? rgba(col, 0.55) : col;
     ctx.stroke(); ctx.setLineDash([]);
 
+    const mv = moving[c.bn];
+    if (mv) {
+      const k = reduce ? 0.35 : (t % 1100) / 1100, mc = mv.dir > 0 ? colors.hot : colors.avoid;
+      ctx.globalAlpha = (dim ? 0.2 : 1) * (1 - k);
+      ctx.lineWidth = 3; ctx.strokeStyle = mc;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 3 + k * 18, 0, 6.2832); ctx.stroke();
+      ctx.globalAlpha = dim ? 0.2 : 1;
+    }
     if (brk(c)) {
       const k = reduce ? 0.35 : (t % 1600) / 1600;
       ctx.globalAlpha = (dim ? 0.2 : 1) * (1 - k);
@@ -535,8 +611,8 @@ footer { color: var(--ink3); font-size: 12px; }
     if (showSub) {
       const s2 = Math.max(9, Math.min(r * 0.27, 17));
       ctx.font = `700 ${s2}px "JetBrains Mono", ui-monospace, monospace`;
-      ctx.fillStyle = brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
-      const txt = brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
+      ctx.fillStyle = mv ? (mv.dir > 0 ? colors.hot : colors.avoid) : brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
+      const txt = mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
       ctx.fillText(txt, n.x, n.y + fs * 0.5 + s2 * 0.35);
     }
     const nw = DATA.news?.[c.bn];
@@ -556,12 +632,12 @@ footer { color: var(--ink3); font-size: 12px; }
     ctx.restore();
   }
 
-  let last = 0;
+  let last = 0, scanTick = 0;
   function frame(t) {
     if (DATA) {
       step(t); draw(t); placeLaneHeads();
       if (selected && !card.hidden) placeCard();
-      if (t - last > 1000) { last = t; tickLive(); }
+      if (t - last > 1000) { last = t; tickLive(); if (++scanTick % 5 === 0) scanMovers(); }
     }
     requestAnimationFrame(frame);
   }
@@ -781,6 +857,7 @@ footer { color: var(--ink3); font-size: 12px; }
     if (!nw) return "";
     const tpe = (iso) => iso ? new Date(iso).toLocaleString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }) : "-";
     const when = tpe(nw.detected);
+    if (nw.status === "pending") return `<div class="news"><small>為什麼漲（${when} 偵測到暴漲）</small><p>Grok 正在查 X 和新聞，大約 3 分鐘，查完會自動出現在這裡。</p></div>`;
     if (nw.status !== "done") return `<div class="news"><small>為什麼漲（${when} 查詢）</small><p>這次沒查到原因。</p></div>`;
     const L = nw.lead;
     const lead = L ? `<p class="lead">${esc(L.label)}：新聞前 2 小時 ${fmtPct(L.pre)}，新聞後 2 小時 ${L.post == null ? "還沒滿 2 小時" : fmtPct(L.post)}${L.preVol ? `，新聞前量能最高是平常的 ${L.preVol} 倍` : ""}。</p>` : "";
@@ -788,6 +865,13 @@ footer { color: var(--ink3); font-size: 12px; }
     const src = (nw.sources || []).map((x) => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(x.title || x.url)}</a>${x.time ? `（${tpe(x.time)}）` : ""}</li>`).join("");
     return `<div class="news"><small>為什麼漲：Grok 查 X＋新聞，${when} 查詢，信心${esc(nw.confidence || "-")}；${first}</small>
       <p><span class="cat">${esc(nw.category || "")}</span>${esc(nw.reason || "")}</p>${lead}${src ? `<ul>${src}</ul>` : ""}</div>`;
+  }
+
+  function sentiBlock(sn) {
+    if (!sn) return "";
+    return `<div class="senti"><small>情緒（Jev 讀價格、籌碼、新聞；實驗中，還沒驗證，不影響分道）</small>
+      <div class="gauge"><i style="left:${Math.max(2, Math.min(98, sn.score))}%"></i></div>
+      <p><b>${esc(sn.zh)}</b> ${Math.round(sn.score)}／100${sn.confidence != null ? `，把握 ${Math.round(sn.confidence * 100)}%` : ""}</p></div>`;
   }
 
   function renderCard() {
@@ -803,6 +887,7 @@ footer { color: var(--ink3); font-size: 12px; }
       <div class="px"><strong>${fmtPx(px)}</strong><span class="mono ${cls(r24)}">${fmtPct(r24)} 24h</span></div>
       <p class="why">${esc(c.why)}</p>
       ${newsBlock(DATA.news?.[c.bn])}
+      ${sentiBlock(DATA.sentiment?.[c.bn])}
       ${plan}
       <dl class="stats">
         <div><dt>24h 比大盤</dt><dd class="${cls(c.ex24)}">${fmtPct(c.ex24)}</dd></div>
@@ -873,6 +958,7 @@ footer { color: var(--ink3); font-size: 12px; }
       lastMsg = performance.now(); retry = 0;
       const k = mult(d.s), c = +d.c / k, o = +d.o / k;
       live[d.s] = { p: c, r24: o ? (c / o - 1) * 100 : null };
+      pushHist(d.s, Date.now(), c);
       if (liveState !== "on") setLive("on");
       if (mode === "r24" && performance.now() - r24Timer > 3000) { r24Timer = performance.now(); layout(false); }
     };
@@ -903,7 +989,7 @@ footer { color: var(--ink3); font-size: 12px; }
       if (d.runAt !== DATA?.runAt) {
         const prevSyms = DATA ? DATA.coins.map((c) => c.bn).join() : "";
         apply(d);
-        if (d.coins.map((c) => c.bn).join() !== prevSyms) connect();
+        if (d.coins.map((c) => c.bn).join() !== prevSyms) { connect(); seedHist(); }
       }
     } catch (e) {
       if (GIST && !DATA) $("head").textContent = e === 404 ? "連結失效：資料不存在" : "資料載入失敗，稍後自動重試";
@@ -924,7 +1010,7 @@ footer { color: var(--ink3); font-size: 12px; }
   let rz = 0;
   new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => DATA && layout(false)); }).observe(document.body);
 
-  if (DATA0) { apply(DATA0); connect(); setInterval(poll, 60000); }
+  if (DATA0) { apply(DATA0); connect(); seedHist(); setInterval(poll, 60000); }
   else if (GIST) { poll(); setInterval(poll, 60000); }
   else { $("head").textContent = "連結不完整：請用含 # 後面那段的完整連結"; }
   document.fonts?.ready.then(() => DATA && layout(false));
