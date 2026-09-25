@@ -876,7 +876,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const rows = L.slice(0, 12).map((e) => `<li><div class="top"><span class="k ${kindCls(e.kind)}">${esc(e.kind)}</span><b>${esc(e.base)}</b><span class="when">${tpeFull(e.t)}</span>
         ${e.since != null ? `<span class="since ${cls(e.since)}" title="事件後到現在（幣安合約）">${fmtPct(e.since)}</span>` : e.perp ? "" : `<span class="since" style="color:var(--ink3);font-weight:500">幣安沒有合約</span>`}</div>
         ${e.title ? `<p>${esc(e.title)}</p>` : ""}${e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener noreferrer">公告</a>` : ""}</li>`).join("");
-    el.innerHTML = `<div class="sec-h"><h2>上幣雷達</h2><p>Upbit 公告＋Upbit、幣安、Coinbase 新交易對，每 2 分鐘比對一次</p></div>${tbl}
+    el.innerHTML = `<div class="sec-h"><h2>上幣雷達</h2><p>Upbit、幣安、Bybit、OKX 官方公告＋Upbit、幣安、Coinbase 新交易對，每 2 分鐘比對一次</p></div>${tbl}
       ${L.length ? `<ol>${rows}</ol>` : `<p class="none">最近 7 天沒有新事件。</p>`}`;
   }
 
