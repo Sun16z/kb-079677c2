@@ -83,6 +83,16 @@ button { font: inherit; color: inherit; }
 /* 決策列：三個數字＋一句話 */
 .decide { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px 22px; align-items: center; }
 .tally { display: grid; grid-template-columns: repeat(3, minmax(128px, 1fr)); gap: 8px; }
+.regime { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 14px; align-items: center; margin-bottom: 10px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.regime .rg-l { display: grid; justify-items: start; gap: 2px; }
+.regime .rg-state { font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: .02em; line-height: 1.1; }
+.regime small { font-size: 11px; color: var(--ink3); }
+.regime .rg-m p { margin: 0; font-size: 13px; line-height: 1.45; }
+.regime .rg-m .rg-play { color: var(--ink2); font-size: 12.5px; margin-top: 2px; }
+.regime .rg-r { display: grid; justify-items: end; gap: 2px; }
+.regime svg line { stroke: var(--ink3); stroke-width: 1; stroke-dasharray: 3 3; opacity: .55; vector-effect: non-scaling-stroke; }
+@media (max-width: 640px) { .regime { grid-template-columns: auto 1fr; } .regime .rg-r { display: none; } }
 .tile { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 10px 14px; cursor: pointer; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: baseline; transition: border-color .2s, background .2s, transform .15s; }
 .tile:active { transform: translateY(1px); }
 .tile b { grid-row: span 2; font: 800 34px/1 var(--display); font-variant-numeric: tabular-nums; }
@@ -304,6 +314,7 @@ footer { color: var(--ink3); font-size: 12px; }
   </header>
 
   <section class="decide">
+    <div class="regime" id="regime" hidden></div>
     <div class="tally" id="tally"></div>
     <p class="say" id="head">載入中</p>
   </section>
@@ -779,9 +790,27 @@ footer { color: var(--ink3); font-size: 12px; }
         <b>${n}</b><span>${NAME[t]}</span><small>${w ? "勝率 " + w : ""}</small></button>`;
     }).join("");
     $("tally").querySelectorAll(".tile").forEach((b) => b.addEventListener("click", () => setFocus({ tier: b.dataset.t })));
+    renderRegime();
     $("head").innerHTML = esc(m.head) + (DATA.legacy ? `<small>這輪幣安資料沒抓到，暫時用 CoinKarma 舊分類。</small>` : "");
     document.title = "Karma Bubbles";
     renderSub();
+  }
+
+  function renderRegime() {
+    const R = DATA.regime, el = $("regime");
+    el.hidden = !R?.state;
+    if (el.hidden) return;
+    const cls = { "強牛": "t-buy", "偏多": "t-wait", "偏空": "t-hot", "強熊": "t-avoid" }[R.state] || "t-wait";
+    const h = (R.breadthHist || []).filter((x) => x != null), W = 112, H = 28;
+    const X = (i) => (i / Math.max(1, h.length - 1)) * W, Y = (v) => H - v * H;
+    const spark = h.length > 1 ? `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
+      <line x1="0" x2="${W}" y1="${Y(0.6)}" y2="${Y(0.6)}" class="g6"/><line x1="0" x2="${W}" y1="${Y(0.4)}" y2="${Y(0.4)}" class="g4"/>
+      <polyline points="${h.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>` : "";
+    const days = R.days >= R.maxDays ? `${R.maxDays} 天以上` : `第 ${R.days} 天`;
+    el.innerHTML = `<div class="rg-l"><span class="rg-state ${cls}">${esc(R.state)}</span><small>${days}</small></div>
+      <div class="rg-m"><p>BTC ${Number(R.btc).toLocaleString()}，${R.btcVsMa >= 0 ? "高於" : "低於"} 200 日線 ${Math.abs(R.btcVsMa)}%｜前 ${R.n} 大 <b>${Math.round(R.breadth * 100)}%</b> 站上 50 日線</p>
+      <p class="rg-play">${esc(R.play)}</p></div>
+      <div class="rg-r ${cls}" title="市場廣度 14 天（虛線 60%／40%）">${spark}<small>廣度 14 天</small></div>`;
   }
 
   function setFocus(f) {
