@@ -24,6 +24,7 @@
   --wait: #7f8ea5;
   --hot: #ffb224;
   --avoid: #ff4f61;
+  --liq: #7fe8ff;
   --glow: 1;
   --display: "Bricolage Grotesque", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
   --body: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
@@ -35,14 +36,14 @@
     color-scheme: light;
     --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff; --panel2: #f3f5f8;
     --ink: #0c141e; --ink2: #475262; --ink3: #7a8494; --line: #d3dae3;
-    --buy: #0a9a63; --wait: #5d6c83; --hot: #c96f00; --avoid: #dc1f3c; --glow: 0;
+    --buy: #0a9a63; --wait: #5d6c83; --hot: #c96f00; --avoid: #dc1f3c; --liq: #0b8fc4; --glow: 0;
   }
 }
 :root[data-theme="light"] {
   color-scheme: light;
   --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff; --panel2: #f3f5f8;
   --ink: #0c141e; --ink2: #475262; --ink3: #7a8494; --line: #d3dae3;
-  --buy: #0a9a63; --wait: #5d6c83; --hot: #c96f00; --avoid: #dc1f3c; --glow: 0;
+  --buy: #0a9a63; --wait: #5d6c83; --hot: #c96f00; --avoid: #dc1f3c; --liq: #0b8fc4; --glow: 0;
 }
 
 * { box-sizing: border-box; }
@@ -270,6 +271,7 @@ footer { color: var(--ink3); font-size: 12px; }
           <span><b>觀望的底色</b>：24h 漲跌，不是訊號。</span>
           <span><b>！</b>：剛暴漲，點開看 Grok 查到的原因。<b>↑↓</b>：這輪剛換道。</span>
           <span><b>$</b>：營收轉強、幣價還沒反映（DefiLlama 項目營收 30 天成長 ≥30%），在分道之外、證據偏弱。</span>
+          <span><b>青色發光＋星光</b>：CoinKarma LIQ ≥ 2.5，買盤掛單很強。回測沒有預測力，只是提醒，不影響分道。</span>
           <span><b>閃動外圈</b>：即時異動，過去 15 分鐘漲跌 3% 以上或 5 分鐘 2% 以上（幣安即時價格），是提醒不是買點。</span>
           <span><b>上面三個數字、族群熱度</b>都可以點，點了只亮那一群，再點一次取消。</span>
           <span>分道只用幣安價格與量能；CoinKarma 的 LIQ 回測沒有預測力，只放在卡片裡參考。</span>
@@ -338,6 +340,7 @@ footer { color: var(--ink3); font-size: 12px; }
   const live = {};          // BNSYMBOL -> {p, r24}
   const hist = {};          // BNSYMBOL -> [[時間ms, 價格]]，最近 20 分鐘，算即時異動用
   const MOVE5 = 2, MOVE15 = 3;
+  const LIQ_GLOW = 2.5;     // 使用者要求：CoinKarma LIQ ≥ 2.5 發光提示（回測沒有預測力，只是提醒，不影響分道）
   function pushHist(bn, t, p) {
     const h = hist[bn] || (hist[bn] = []);
     if (h.length && t - h[h.length - 1][0] < 10000) { h[h.length - 1][1] = p; return; }
@@ -402,7 +405,7 @@ footer { color: var(--ink3); font-size: 12px; }
 
   function readColors() {
     const cs = getComputedStyle(document.documentElement);
-    for (const k of [...TIERS, "ink", "ink2", "ink3", "line", "field"]) colors[k] = cs.getPropertyValue("--" + k).trim();
+    for (const k of [...TIERS, "ink", "ink2", "ink3", "line", "field", "liq"]) colors[k] = cs.getPropertyValue("--" + k).trim();
     dark = cs.getPropertyValue("--glow").trim() === "1";
   }
   const rgba = (hex, a) => {
@@ -429,7 +432,8 @@ footer { color: var(--ink3); font-size: 12px; }
   function metric(n) {
     const c = n.c;
     const v = mode === "liq" ? 0.3 + Math.abs(c.liq ?? 0) : mode === "r24" ? 0.25 + Math.abs(r24Of(c) ?? 0) : Math.sqrt(c.vol24 || 1e6) / 1e3;
-    return c.tier === "wait" ? v * 0.3 : v;      // 觀望刻意縮小，把畫面留給要行動的幣
+    if (c.tier !== "wait") return v;
+    return v * ((c.liq ?? -99) >= LIQ_GLOW ? 0.6 : 0.3);   // 觀望刻意縮小；LIQ 發光的留大一點才看得到
   }
 
   function layout(snap) {
@@ -593,6 +597,32 @@ footer { color: var(--ink3); font-size: 12px; }
     ctx.strokeStyle = broke(c) ? colors.ink3 : c.tier === "wait" ? rgba(col, 0.55) : col;
     ctx.stroke(); ctx.setLineDash([]);
 
+    if ((c.liq ?? -99) >= LIQ_GLOW) {
+      const spin = reduce ? 0 : t / 1400, lc = colors.liq;
+      ctx.save();
+      // 外圈光暈：會慢慢呼吸
+      const breathe = reduce ? 0.5 : 0.5 + 0.5 * Math.sin(t / 700 + n.ph);
+      const halo = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, r + 16 + 6 * breathe);
+      halo.addColorStop(0, rgba(lc, (dark ? 0.45 : 0.3) * (dim ? 0.2 : 1)));
+      halo.addColorStop(1, rgba(lc, 0));
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 22, 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = dim ? 0.2 : 1;
+      ctx.shadowColor = lc; ctx.shadowBlur = dark ? 24 : 10;
+      ctx.lineWidth = 2.5; ctx.strokeStyle = lc;
+      ctx.setLineDash([r * 0.5, r * 0.35]); ctx.lineDashOffset = -spin * r * 2;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 5, 0, 6.2832); ctx.stroke();
+      ctx.setLineDash([]); ctx.shadowBlur = dark ? 12 : 4;
+      for (let i = 0; i < 4; i++) {
+        const a = spin * 1.3 + i * 1.5708, tw = reduce ? 0.8 : 0.35 + 0.65 * Math.abs(Math.sin(t / 380 + i * 1.7));
+        const sx = n.x + Math.cos(a) * (r + 5), sy = n.y + Math.sin(a) * (r + 5), sz = 2.5 + 3 * tw;
+        ctx.globalAlpha = (dim ? 0.2 : 1) * tw; ctx.fillStyle = lc;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - sz); ctx.quadraticCurveTo(sx, sy, sx + sz, sy); ctx.quadraticCurveTo(sx, sy, sx, sy + sz);
+        ctx.quadraticCurveTo(sx, sy, sx - sz, sy); ctx.quadraticCurveTo(sx, sy, sx, sy - sz); ctx.fill();
+      }
+      ctx.restore();
+    }
     const mv = moving[c.bn];
     if (mv) {
       const k = reduce ? 0.35 : (t % 1100) / 1100, mc = mv.dir > 0 ? colors.hot : colors.avoid;
@@ -935,7 +965,7 @@ footer { color: var(--ink3); font-size: 12px; }
         <div><dt>主動買</dt><dd>${c.tk == null ? "-" : Math.round(c.tk * 100) + "%"}</dd></div>
         <div><dt>資金費率</dt><dd>${c.funding == null ? "-" : (c.funding * 100).toFixed(4) + "%"}</dd></div>
       </dl>
-      <div class="spark"><small>CoinKarma 參考（回測沒有預測力）：LIQ ${sgn(c.liq)}、狀態 ${esc(c.ck && c.ck !== "-" ? c.ck : "無")}，近 ${c.liqHist.length} 期</small>${spark(c.liqHist, colors.wait)}</div>
+      <div class="spark"><small>CoinKarma 參考（回測沒有預測力）：LIQ ${sgn(c.liq)}${(c.liq ?? -99) >= LIQ_GLOW ? "（≥2.5，發光提示）" : ""}、狀態 ${esc(c.ck && c.ck !== "-" ? c.ck : "無")}，近 ${c.liqHist.length} 期</small>${spark(c.liqHist, colors.wait)}</div>
       ${c.ckDesc ? `<p class="why" style="color:var(--ink2);font-size:13px">CoinKarma：${esc(c.ckDesc)}</p>` : ""}`;
     card.querySelector(".x").addEventListener("click", () => select(null));
     tickLive();
