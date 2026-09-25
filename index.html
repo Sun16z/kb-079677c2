@@ -106,6 +106,13 @@ button { font: inherit; color: inherit; }
 .mv small { font-size: 11px; color: var(--ink3); }
 .movers .note { font-size: 11.5px; color: var(--ink3); }
 
+/* 營收（DefiLlama） */
+.rev { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--buy) 7%, transparent); }
+.rev small { color: var(--ink3); font-size: 11px; }
+.rev p { margin: 0; font-size: 13px; }
+.rev .tag { font-size: 11.5px; font-weight: 700; color: var(--buy); }
+.rev svg { width: 100%; height: 34px; display: block; }
+
 /* 情緒量表（實驗中） */
 .senti { display: grid; gap: 6px; }
 .senti small { color: var(--ink3); font-size: 11px; }
@@ -262,6 +269,7 @@ footer { color: var(--ink3); font-size: 12px; }
           <span><b>大小</b>：<span id="lg-size">24h 漲跌</span>。觀望的幣刻意縮小、淡化。</span>
           <span><b>觀望的底色</b>：24h 漲跌，不是訊號。</span>
           <span><b>！</b>：剛暴漲，點開看 Grok 查到的原因。<b>↑↓</b>：這輪剛換道。</span>
+          <span><b>$</b>：營收轉強、幣價還沒反映（DefiLlama 項目營收 30 天成長 ≥30%），在分道之外、證據偏弱。</span>
           <span><b>閃動外圈</b>：即時異動，過去 15 分鐘漲跌 3% 以上或 5 分鐘 2% 以上（幣安即時價格），是提醒不是買點。</span>
           <span><b>上面三個數字、族群熱度</b>都可以點，點了只亮那一群，再點一次取消。</span>
           <span>分道只用幣安價格與量能；CoinKarma 的 LIQ 回測沒有預測力，只放在卡片裡參考。</span>
@@ -615,6 +623,12 @@ footer { color: var(--ink3); font-size: 12px; }
       const txt = mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
       ctx.fillText(txt, n.x, n.y + fs * 0.5 + s2 * 0.35);
     }
+    if (DATA.revenue?.[c.bn]?.cand && r > 14) {
+      const bx = n.x - r * 0.72, by = n.y + r * 0.72, br = Math.max(8, Math.min(11, r * 0.2));
+      ctx.fillStyle = colors.buy; ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = colors.field; ctx.font = `800 ${br * 1.3}px system-ui, sans-serif`;
+      ctx.fillText("$", bx, by + 1);
+    }
     const nw = DATA.news?.[c.bn];
     if (nw && nw.status === "done" && r > 14) {
       const bx = n.x - r * 0.72, by = n.y - r * 0.72, br = Math.max(8, Math.min(11, r * 0.2));
@@ -805,6 +819,7 @@ footer { color: var(--ink3); font-size: 12px; }
       ["hot", "別追：追龍頭", R.volume?.leadBeat, null, null, "族群龍頭剛噴出時才買"],
       ["avoid", "別碰：急跌中", S.lanes.avoid.beat, S.lanes.avoid.beat1, S.lanes.avoid.beat2, `中位數 ${fmtPct(S.lanes.avoid.median)}`],
       ["wait", "觀望：其他", S.lanes.wait.beat, S.lanes.wait.beat1, S.lanes.wait.beat2, "等於大盤"],
+      ...(S.revenue ? [["buy", "營收轉強（看 30 天）", S.revenue.beat, S.revenue.beat1, S.revenue.beat2, `這些有營收的幣平常 ${Math.round(S.revenue.base * 100)}%；${S.revenue.n} 次，證據偏弱`]] : []),
     ];
     const ns = DATA.newsStats;
     $("track").innerHTML = `<div>
@@ -827,9 +842,19 @@ footer { color: var(--ink3); font-size: 12px; }
     const meta = (c) => c.trigger ? `<span class="meta2"><span>觸發 ${fmtPx(c.trigger)}</span><span>失效 ${fmtPx(c.inv)}</span><span data-dist="${esc(c.sym)}"></span></span>`
       : `<span class="meta2"><span>24h 比大盤 ${fmtPct(c.ex24)}</span><span>RSI ${c.rsi ?? "-"}</span>${c.group ? `<span>${esc(c.group)}</span>` : ""}</span>`;
     const row = (c) => `<li><button class="row" type="button" data-sym="${esc(c.sym)}"><b class="t-${c.tier}">${esc(c.sym)}</b><p>${esc(c.why)}</p>${meta(c)}</button></li>`;
+    const RS = DATA.stats?.revenue;
+    const inField = new Set(DATA.coins.map((c) => c.bn));
+    const revs = Object.entries(DATA.revenue || {}).filter(([, v]) => v.cand).sort((a, b) => (b[1].g30 ?? 0) - (a[1].g30 ?? 0));
+    const revRow = ([bn, v]) => {
+      const sym = DATA.coins.find((c) => c.bn === bn)?.sym || bn.replace(/USDT$/, "").replace(/^1000+/, "");
+      const body = `<b class="t-buy">${esc(sym)}</b><p>${esc(v.type)}近 30 天 ${fmtUsd(v.r30)}，比前 30 天 ${fmtPct(v.g30, 0)}；幣價 30 天比大盤 ${fmtPct(v.ex30)}。</p>`;
+      return inField.has(bn) ? `<li><button class="row" type="button" data-sym="${esc(sym)}">${body}</button></li>` : `<li><div class="row" style="cursor:default">${body}<span class="meta2"><span>不在泡泡圖（CoinKarma 名單外）</span></span></div></li>`;
+    };
     $("board").innerHTML = `<div class="sec-h"><h2>該注意的幣</h2><p>點名字會在泡泡圖上打開卡片</p></div>` + groups.map(([t, list, sub]) =>
       `<h3><span class="t-${t}">${NAME[t]}</span><small>${list.length} 檔｜${sub}${laneWin(t) ? `｜勝率 ${laneWin(t)}` : ""}</small></h3>` +
-      (list.length ? `<ol>${list.map(row).join("")}</ol>` : `<p class="none">這輪沒有。</p>`)).join("");
+      (list.length ? `<ol>${list.map(row).join("")}</ol>` : `<p class="none">這輪沒有。</p>`)).join("") +
+      `<h3><span class="t-buy">營收轉強</span><small>${revs.length} 檔｜項目營收 30 天成長 ≥30%、幣價還沒反映${RS ? `｜30 天勝率 ${Math.round(RS.beat * 100)}%（平常 ${Math.round(RS.base * 100)}%，證據偏弱）` : ""}</small></h3>` +
+      (revs.length ? `<ol>${revs.map(revRow).join("")}</ol>` : `<p class="none">目前沒有。</p>`);
     const waits = by("wait").sort((a, b) => Math.abs(r24Of(b) ?? 0) - Math.abs(r24Of(a) ?? 0));
     $("waitSum").innerHTML = `觀望 ${waits.length} 檔 <small>沒有明顯優勢，跟大盤差不多</small>`;
     $("waitline").innerHTML = waits.map((c) => `<button type="button" data-sym="${esc(c.sym)}">${esc(c.sym)} <span class="${cls(r24Of(c))}">${fmtPct(r24Of(c))}</span></button>`).join("");
@@ -867,6 +892,18 @@ footer { color: var(--ink3); font-size: 12px; }
       <p><span class="cat">${esc(nw.category || "")}</span>${esc(nw.reason || "")}</p>${lead}${src ? `<ul>${src}</ul>` : ""}</div>`;
   }
 
+  const fmtUsd = (v) => v == null ? "-" : Math.abs(v) >= 1e6 ? "$" + (v / 1e6).toFixed(2) + "M" : "$" + Math.round(v / 1e3) + "K";
+  function revBlock(rv) {
+    if (!rv) return "";
+    const w = rv.weeks || [], mx = Math.max(1, ...w.map((x) => Math.abs(x)));
+    const bars = w.map((v, i) => `<rect x="${i * (300 / w.length) + 2}" y="${34 - Math.max(1, 32 * Math.max(0, v) / mx)}" width="${300 / w.length - 4}" height="${Math.max(1, 32 * Math.max(0, v) / mx)}" rx="2" fill="${i === w.length - 1 ? colors.buy : rgba(colors.buy, 0.4)}"/>`).join("");
+    const S = DATA.stats?.revenue;
+    return `<div class="rev"><small>項目營收（DefiLlama，${esc(rv.type)}，資料到 ${esc(rv.asOf)}）</small>
+      <p>近 30 天 <b>${fmtUsd(rv.r30)}</b>，比前 30 天 <span class="${cls(rv.g30)}">${rv.g30 == null ? "-" : fmtPct(rv.g30, 0)}</span>；近 7 天 ${fmtUsd(rv.r7)}（${rv.g7 == null ? "-" : fmtPct(rv.g7, 0)}）。幣價 30 天比大盤 ${fmtPct(rv.ex30)}。</p>
+      ${rv.cand ? `<p class="tag">營收轉強、幣價還沒反映${S ? `：過去一年這種情況 30 天後 ${Math.round(S.beat * 100)}% 跑贏大盤（這些有營收的幣平常 ${Math.round(S.base * 100)}%，${S.n} 次，證據偏弱）` : ""}</p>` : ""}
+      ${w.length ? `<svg viewBox="0 0 300 34" preserveAspectRatio="none" aria-label="近 12 週營收">${bars}</svg><small>近 12 週每週營收</small>` : ""}</div>`;
+  }
+
   function sentiBlock(sn) {
     if (!sn) return "";
     return `<div class="senti"><small>情緒（Jev 讀價格、籌碼、新聞；實驗中，還沒驗證，不影響分道）</small>
@@ -887,6 +924,7 @@ footer { color: var(--ink3); font-size: 12px; }
       <div class="px"><strong>${fmtPx(px)}</strong><span class="mono ${cls(r24)}">${fmtPct(r24)} 24h</span></div>
       <p class="why">${esc(c.why)}</p>
       ${newsBlock(DATA.news?.[c.bn])}
+      ${revBlock(DATA.revenue?.[c.bn])}
       ${sentiBlock(DATA.sentiment?.[c.bn])}
       ${plan}
       <dl class="stats">
