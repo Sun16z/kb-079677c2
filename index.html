@@ -22,7 +22,7 @@
   --line: #1b2532;
   --buy: #2bd98a;
   --wait: #7f8ea5;
-  --hot: #ffb224;
+  --hot: #ff7a3d;
   --avoid: #ff4f61;
   --liq: #7fe8ff;
   --nh: #ffd84d;
@@ -30,21 +30,22 @@
   --display: "Bricolage Grotesque", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
   --body: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
-  --r: 16px;
+  --r: 14px;
+  --fh: clamp(460px, calc(100dvh - 170px), 860px);
 }
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     color-scheme: light;
     --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff; --panel2: #f3f5f8;
     --ink: #0c141e; --ink2: #475262; --ink3: #7a8494; --line: #d3dae3;
-    --buy: #0a9a63; --wait: #5d6c83; --hot: #c96f00; --avoid: #dc1f3c; --liq: #0b8fc4; --nh: #b07d00; --glow: 0;
+    --buy: #0a9a63; --wait: #5d6c83; --hot: #c2410c; --avoid: #dc1f3c; --liq: #0b8fc4; --nh: #b07d00; --glow: 0;
   }
 }
 :root[data-theme="light"] {
   color-scheme: light;
   --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff; --panel2: #f3f5f8;
   --ink: #0c141e; --ink2: #475262; --ink3: #7a8494; --line: #d3dae3;
-  --buy: #0a9a63; --wait: #5d6c83; --hot: #c96f00; --avoid: #dc1f3c; --liq: #0b8fc4; --nh: #b07d00; --glow: 0;
+  --buy: #0a9a63; --wait: #5d6c83; --hot: #c2410c; --avoid: #dc1f3c; --liq: #0b8fc4; --nh: #b07d00; --glow: 0;
 }
 
 * { box-sizing: border-box; }
@@ -74,17 +75,72 @@ button { font: inherit; color: inherit; }
 .live[data-s="on"] i { background: var(--buy); animation: blink 2s infinite; }
 .live[data-s="wait"] i { background: var(--hot); }
 @keyframes blink { 50% { opacity: .35; } }
-.howto { position: relative; }
-.howto summary { list-style: none; cursor: pointer; font-size: 12.5px; color: var(--ink2); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
-.howto summary::-webkit-details-marker { display: none; }
-.howto[open] summary { color: var(--ink); border-color: var(--ink3); }
-.howto .pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 5; width: min(360px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); display: grid; gap: 8px; font-size: 13px; color: var(--ink2); }
-.howto .pop b { color: var(--ink); }
+.menu { position: relative; }
+.menu > summary { list-style: none; cursor: pointer; font-size: 12.5px; color: var(--ink2); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); }
+.menu > summary::-webkit-details-marker { display: none; }
+.menu[open] > summary { color: var(--ink); border-color: var(--ink3); }
+.pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 6; width: min(380px, calc(100vw - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); display: grid; gap: 10px; font-size: 13px; color: var(--ink2); }
+.pop b { color: var(--ink); }
+.pop .seg { justify-self: start; }
 
-/* 決策列：三個數字＋一句話 */
-.decide { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px 22px; align-items: center; }
-.tally { display: grid; grid-template-columns: repeat(3, minmax(128px, 1fr)); gap: 8px; }
-.nhbar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+/* 決策列：牛熊＋四個數字（手機固定在頂部） */
+.dbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.rgd { position: relative; }
+.rgd > summary { list-style: none; cursor: pointer; height: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
+.rgd > summary::-webkit-details-marker { display: none; }
+.rgd[open] > summary { border-color: var(--ink3); }
+.rgd .rg-state { font: 800 21px/1 var(--display); letter-spacing: .02em; white-space: nowrap; }
+.rgd .rg-sub { display: grid; font-size: 11.5px; line-height: 1.35; color: var(--ink2); }
+.rgd .rg-sub b { font-family: var(--mono); color: var(--ink); font-weight: 700; }
+.rgd svg { display: block; }
+.rgd svg line { stroke: var(--ink3); stroke-width: 1; stroke-dasharray: 3 3; opacity: .55; vector-effect: non-scaling-stroke; }
+.rgd .pop { left: 0; right: auto; }
+.tally { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; min-width: min(100%, 460px); }
+.tile { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 8px 14px; cursor: pointer; display: flex; align-items: baseline; gap: 8px; transition: border-color .2s, background .2s, transform .15s; min-width: 0; }
+.tile:active { transform: translateY(1px); }
+.tile b { font: 800 26px/1 var(--display); font-variant-numeric: tabular-nums; }
+.tile span { font: 700 13px/1.2 var(--body); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile.zero b { color: var(--ink3); }
+.tile.t-buy:not(.zero) { border-color: color-mix(in srgb, var(--buy) 45%, var(--line)); background: color-mix(in srgb, var(--buy) 8%, var(--panel)); }
+.tile.t-nh { color: var(--nh); }
+.tile.t-nh:not(.zero) { border-color: color-mix(in srgb, var(--nh) 50%, var(--line)); background: color-mix(in srgb, var(--nh) 8%, var(--panel)); }
+.tile.t-hot:not(.zero) { border-color: color-mix(in srgb, var(--hot) 45%, var(--line)); background: color-mix(in srgb, var(--hot) 7%, var(--panel)); }
+.tile.t-avoid:not(.zero) { border-color: color-mix(in srgb, var(--avoid) 45%, var(--line)); background: color-mix(in srgb, var(--avoid) 7%, var(--panel)); }
+.tile[aria-pressed="true"] { outline: 2px solid currentColor; outline-offset: -2px; }
+
+/* 主畫面：泡泡圖＋行動欄 */
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 12px; align-items: start; }
+.rail { display: grid; gap: 10px; align-content: start; max-height: var(--fh); overflow: auto; scrollbar-width: thin; }
+.say { margin: 2px 2px 0; font: 800 17px/1.3 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
+.say small { display: block; margin-top: 4px; font: 500 12px/1.4 var(--body); color: var(--ink3); letter-spacing: 0; }
+.rc { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 4px; min-width: 0; }
+.rc h3 { margin: 0 0 2px; display: flex; align-items: baseline; gap: 8px; font: 800 14px/1.2 var(--display); }
+.rc h3 small { font: 500 11.5px var(--mono); color: var(--ink3); }
+.rc ol { list-style: none; margin: 0; padding: 0; display: grid; }
+.rc li + li { border-top: 1px solid var(--line); }
+.rc .it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 10px; align-items: baseline; width: 100%; text-align: left; background: none; border: 0; padding: 7px 2px; cursor: pointer; color: inherit; text-decoration: none; border-radius: 8px; }
+.rc .it:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.rc .it b { font: 800 15px/1.25 var(--display); }
+.rc .it span { font-size: 12px; color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rc .it em { font: 700 12px var(--mono); font-style: normal; white-space: nowrap; }
+.rc .it small { grid-column: 2 / -1; font: 500 11px/1.4 var(--mono); color: var(--ink3); }
+.rc .rule { margin: 2px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--ink3); }
+.rc .link { justify-self: start; font-size: 12px; color: var(--ink2); background: none; border: 0; padding: 2px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.rc .none { padding: 2px 0 4px; }
+.rc.weak ol, .rc.weak h3 { opacity: .55; }
+.rc.weak .rule { color: var(--hot); }
+
+/* 下方分頁 */
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--line); margin-top: 4px; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { flex: none; border: 0; background: none; padding: 10px 14px; font: 700 14px/1 var(--display); color: var(--ink3); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+.tabs button:hover { color: var(--ink); }
+.panel:not(.on) { display: none; }
+.panels > .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+.panel .evt { background: var(--panel2); }
+body.simple .adv { display: none !important; }
+.nhbar .chips { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
 .nhbar .lbl { font-size: 12px; color: var(--ink2); margin-right: 2px; }
 .nhbar .lbl b { color: var(--nh); font-family: var(--mono); }
 .nhbar .nh { display: inline-flex; align-items: baseline; gap: 5px; padding: 4px 10px; border-radius: 999px; font: inherit; font-size: 12px;
@@ -97,43 +153,20 @@ button { font: inherit; color: inherit; }
 .nhbar .nh.far { opacity: .5; border-color: var(--line); background: none; box-shadow: none; }
 .nhbar .nh.far span { color: var(--ink3); }
 .nhbar .lbl em { font-style: normal; color: var(--ink3); margin-left: 4px; }
-.nhbar.weak > :not(.nh-note) { opacity: .45; }
+.nhbar.weak .chips { opacity: .45; }
 .nhbar.weak .nh-note { color: var(--hot); }
 .nhbar .nh:hover, .nhbar .nh:focus-visible { border-color: var(--nh); outline: none; }
 .nhbar .none { font-size: 12px; color: var(--ink3); }
 .nhbar .nh-more { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink2); cursor: pointer; }
-.nhbar .nh-note { flex-basis: 100%; font-size: 11px; color: var(--ink3); }
+.nhbar .nh-note { margin: 10px 0 0; font-size: 12px; color: var(--ink3); max-width: 90ch; }
 .nhcard { border-color: color-mix(in srgb, var(--nh) 45%, transparent) !important; }
 .nhcard small { color: var(--nh) !important; }
-.regime { grid-column: 1 / -1; display: grid; grid-template-columns: auto 1fr auto; gap: 6px 14px; align-items: center;
-  padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
-.regime .rg-l { display: grid; justify-items: start; gap: 2px; }
-.regime .rg-state { font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: .02em; line-height: 1.1; }
-.regime small { font-size: 11px; color: var(--ink3); }
-.regime .rg-m p { margin: 0; font-size: 13px; line-height: 1.45; }
-.regime .rg-m .rg-play { color: var(--ink2); font-size: 12.5px; margin-top: 2px; }
-.regime .rg-r { display: grid; justify-items: end; gap: 2px; }
-.regime svg line { stroke: var(--ink3); stroke-width: 1; stroke-dasharray: 3 3; opacity: .55; vector-effect: non-scaling-stroke; }
-@media (max-width: 640px) { .regime { grid-template-columns: auto 1fr; } .regime .rg-r { display: none; } }
-.tile { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 10px 14px; cursor: pointer; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 10px; align-items: baseline; transition: border-color .2s, background .2s, transform .15s; }
-.tile:active { transform: translateY(1px); }
-.tile b { grid-row: span 2; font: 800 34px/1 var(--display); font-variant-numeric: tabular-nums; }
-.tile span { font: 700 14px/1.2 var(--body); }
-.tile small { color: var(--ink3); font: 500 11.5px/1.3 var(--mono); }
-.tile.zero b { color: var(--ink3); }
-.tile.t-buy:not(.zero) { border-color: color-mix(in srgb, var(--buy) 45%, var(--line)); background: color-mix(in srgb, var(--buy) 8%, var(--panel)); }
-.tile.t-hot:not(.zero) { border-color: color-mix(in srgb, var(--hot) 45%, var(--line)); background: color-mix(in srgb, var(--hot) 7%, var(--panel)); }
-.tile.t-avoid:not(.zero) { border-color: color-mix(in srgb, var(--avoid) 45%, var(--line)); background: color-mix(in srgb, var(--avoid) 7%, var(--panel)); }
-.tile[aria-pressed="true"] { outline: 2px solid currentColor; outline-offset: -2px; }
-.tile span, .tile small { color: var(--ink2); }
-.say { margin: 0; font: 800 clamp(18px, 1.9vw, 26px)/1.25 var(--display); letter-spacing: -0.01em; text-wrap: balance; }
-.say small { display: block; margin-top: 4px; font: 500 13px/1.4 var(--body); color: var(--ink3); letter-spacing: 0; }
 
 /* 即時異動 */
 .movers { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .movers .lbl { font-size: 12px; color: var(--ink3); margin-right: 2px; }
 .movers .lbl b { color: var(--hot); font-weight: 700; }
-.mv { border: 1px solid color-mix(in srgb, var(--mc) 55%, var(--line)); background: color-mix(in srgb, var(--mc) 12%, var(--panel)); border-radius: 999px; padding: 4px 11px; cursor: pointer; display: inline-flex; gap: 6px; align-items: baseline; }
+.mv { border: 1px solid color-mix(in srgb, var(--mc) 55%, var(--line)); background: color-mix(in srgb, var(--mc) 12%, var(--panel)); border-radius: 999px; padding: 4px 10px; cursor: pointer; display: inline-flex; gap: 6px; align-items: baseline; }
 .mv b { font: 800 13px/1 var(--display); }
 .mv span { font: 700 12px/1 var(--mono); color: var(--mc); }
 .mv small { font-size: 11px; color: var(--ink3); }
@@ -158,7 +191,7 @@ button { font: inherit; color: inherit; }
 .heat { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-block: 2px; mask-image: linear-gradient(90deg, #000 94%, transparent); }
 .heat::-webkit-scrollbar { display: none; }
 .heat .lbl { flex: none; align-self: center; font-size: 12px; color: var(--ink3); padding-right: 4px; white-space: nowrap; }
-.hc { flex: none; display: inline-flex; align-items: baseline; gap: 7px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; white-space: nowrap;
+.hc { flex: none; display: inline-flex; align-items: baseline; gap: 6px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; white-space: nowrap;
   background: color-mix(in srgb, var(--hc) calc(var(--k) * 32%), var(--panel)); }
 .hc span { font-size: 12.5px; }
 .hc b { font: 700 12px/1 var(--mono); color: var(--hc); }
@@ -166,7 +199,7 @@ button { font: inherit; color: inherit; }
 .hc[aria-pressed="true"] { border-color: var(--ink); }
 
 /* 泡泡場 */
-.field { position: relative; background: var(--field); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; height: clamp(460px, calc(100dvh - 250px), 820px); touch-action: pan-y; }
+.field { position: relative; background: var(--field); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; height: var(--fh); touch-action: pan-y; }
 .field canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
 .field canvas.pointing { cursor: pointer; }
 .field canvas.dragging { cursor: grabbing; }
@@ -202,7 +235,6 @@ button { font: inherit; color: inherit; }
 .news a { color: var(--ink2); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
 
 /* 下方兩欄：族群輪動｜該注意的幣 */
-.split { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; align-items: start; }
 .sec-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 2px 2px 8px; }
 .sec-h h2 { margin: 0; font: 800 20px/1.2 var(--display); }
 .sec-h p { margin: 0; color: var(--ink3); font-size: 12.5px; }
@@ -240,7 +272,6 @@ button { font: inherit; color: inherit; }
 .none { color: var(--ink3); padding: 4px 4px 8px; margin: 0; font-size: 12.5px; }
 
 /* 上幣雷達、熱門新聞 */
-.col-l, .col-r { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .lst, .hot { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 8px; }
 .lst .sec-h, .hot .sec-h { margin: 0; }
 .lst ol, .hot ol { list-style: none; margin: 0; padding: 0; display: grid; }
@@ -262,14 +293,7 @@ button { font: inherit; color: inherit; }
 .hot .trend { margin: 0 0 10px; font-size: 12px; color: var(--ink3); }
 .hot .trend b { font-family: var(--mono, monospace); color: var(--ink2, inherit); margin-right: 6px; }
 
-/* 收合區 */
-.more { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); }
-.more > summary { cursor: pointer; padding: 12px 16px; font: 700 14px/1.3 var(--display); list-style: none; display: flex; gap: 10px; align-items: baseline; }
-.more > summary::-webkit-details-marker { display: none; }
-.more > summary::before { content: "▸"; color: var(--ink3); transition: transform .2s; display: inline-block; }
-.more[open] > summary::before { transform: rotate(90deg); }
-.more > summary small { font: 500 12px var(--body); color: var(--ink3); }
-.more > div { padding: 0 16px 16px; }
+/* 勝率回顧、觀望 */
 .track { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 14px 28px; align-items: start; }
 .track p { margin: 0 0 8px; color: var(--ink2); max-width: 64ch; font-size: 13px; }
 .track small { display: block; color: var(--ink3); font-size: 12px; }
@@ -280,107 +304,121 @@ button { font: inherit; color: inherit; }
 .track-grid dt { color: var(--ink3); }
 .track-grid dd { margin: 0; text-align: right; font: 700 13px/1.4 var(--mono); }
 .waitline { display: flex; flex-wrap: wrap; gap: 6px; }
-.waitline button { border: 1px solid var(--line); background: var(--panel2); border-radius: 999px; padding: 4px 11px; cursor: pointer; font: 500 12px var(--mono); color: var(--ink2); }
+.waitline button { border: 1px solid var(--line); background: var(--panel2); border-radius: 999px; padding: 4px 10px; cursor: pointer; font: 500 12px var(--mono); color: var(--ink2); }
 .waitline button:hover { color: var(--ink); border-color: var(--ink3); }
 footer { color: var(--ink3); font-size: 12px; }
 .banner { background: color-mix(in srgb, var(--avoid) 14%, transparent); color: var(--ink); border: 1px solid color-mix(in srgb, var(--avoid) 40%, transparent); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
 
 @media (max-width: 1100px) {
-  .split { grid-template-columns: 1fr; }
+  .stage { grid-template-columns: 1fr; }
+  .rail { max-height: none; overflow: visible; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .rail .say { grid-column: 1 / -1; }
   .track { grid-template-columns: 1fr; }
 }
 @media (max-width: 760px) {
   .app { padding-inline: 16px; padding-block: 10px 32px; gap: 10px; }
-  .controls { margin-left: 0; width: 100%; justify-content: space-between; }
-  .decide { grid-template-columns: 1fr; gap: 10px; }
-  .tally { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .tile { grid-template-columns: 1fr; padding: 9px 10px; }
-  .tile b { grid-row: auto; font-size: 28px; }
-  .tile small { display: none; }
+  .controls { margin-left: auto; }
+  .dbar { position: sticky; top: 0; z-index: 4; background: var(--bg); margin-inline: -16px; padding: 6px 16px 8px; border-bottom: 1px solid var(--line); }
+  .rgd { flex: 1 1 100%; }
+  .rgd > summary { padding: 6px 12px; }
+  .rgd .rg-state { font-size: 18px; }
+  .rgd svg { margin-left: auto; }
+  .tally { min-width: 0; gap: 6px; }
+  .tile { flex-direction: column; gap: 2px; padding: 6px 8px; }
+  .tile b { font-size: 22px; }
+  .tile span { font-size: 11.5px; }
   .field { height: auto; }
   .lane-h { top: auto; }
   .evt-body { grid-template-columns: 1fr; }
   .track-grid { grid-template-columns: 1fr 1fr; }
-  .card { position: fixed; left: 12px !important; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); top: auto !important; width: auto; max-width: none; max-height: 72dvh; overflow: auto; }
+  .panels > .panel { padding: 12px; }
+  .card { position: fixed; left: 12px !important; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); top: auto !important; width: auto; max-width: none; max-height: 72dvh; overflow: auto; z-index: 8; }
 }
 @media (prefers-reduced-motion: reduce) { .live[data-s="on"] i { animation: none; } .tile { transition: none; } }
 </style>
 
-<div class="app">
+<div class="app" id="app">
   <header class="bar">
     <div class="brand">Karma <span>Bubbles</span></div>
     <div class="meta" id="sub"></div>
     <div class="controls">
-      <div class="seg size" role="group" aria-label="泡泡大小">
-        <span>大小</span>
-        <button type="button" data-mode="r24" aria-pressed="true">24h 漲跌</button>
-        <button type="button" data-mode="vol" aria-pressed="false">成交量</button>
-        <button type="button" data-mode="liq" aria-pressed="false">LIQ</button>
-      </div>
-      <div class="seg theme" role="group" aria-label="外觀">
-        <span>外觀</span>
-        <button type="button" data-set="auto" aria-pressed="true" title="跟著手機／電腦的深淺色設定">自動</button>
-        <button type="button" data-set="dark" aria-pressed="false">深色</button>
-        <button type="button" data-set="light" aria-pressed="false">淺色</button>
-      </div>
       <span class="live" id="live" data-s="off"><i></i><span>快照</span></span>
-      <details class="howto">
+      <details class="menu">
+        <summary>設定</summary>
+        <div class="pop">
+          <div class="seg view" role="group" aria-label="顯示模式">
+            <span>模式</span>
+            <button type="button" data-view="simple" aria-pressed="true" title="只看決策列、泡泡圖、行動欄">簡易</button>
+            <button type="button" data-view="adv" aria-pressed="false" title="加上族群熱度、即時異動、所有分頁與細節">進階</button>
+          </div>
+          <div class="seg size adv" role="group" aria-label="泡泡大小">
+            <span>大小</span>
+            <button type="button" data-mode="r24" aria-pressed="true">24h 漲跌</button>
+            <button type="button" data-mode="vol" aria-pressed="false">成交量</button>
+            <button type="button" data-mode="liq" aria-pressed="false">LIQ</button>
+          </div>
+          <div class="seg theme" role="group" aria-label="外觀">
+            <span>外觀</span>
+            <button type="button" data-set="auto" aria-pressed="true" title="跟著手機／電腦的深淺色設定">自動</button>
+            <button type="button" data-set="dark" aria-pressed="false">深色</button>
+            <button type="button" data-set="light" aria-pressed="false">淺色</button>
+          </div>
+        </div>
+      </details>
+      <details class="menu">
         <summary>怎麼看</summary>
         <div class="pop">
-          <span><b>位置</b>：越左邊，過去一年的勝率越高。可以埋伏＝族群龍頭剛噴、它還沒跟上；追高風險高＝過熱或正在噴的龍頭；別碰＝還在急跌。</span>
-          <span><b>大小</b>：<span id="lg-size">24h 漲跌</span>。觀望的幣刻意縮小、淡化。</span>
-          <span><b>觀望的底色</b>：24h 漲跌，不是訊號。</span>
-          <span><b>！</b>：剛暴漲，點開看查到的原因。<b>↑↓</b>：這輪剛換道。</span>
-          <span><b>$</b>：營收轉強、幣價還沒反映（DefiLlama 項目營收 30 天成長 ≥30%），在分道之外、證據偏弱。</span>
-          <span><b>青色發光＋星光</b>：CoinKarma LIQ ≥ 2.5，買盤掛單很強。回測沒有預測力，只是提醒，不影響分道。</span>
-          <span><b>金色放射光</b>：24 小時內突破 20 天新高、現在還站在前高之上（即時價格判斷），觀望道的也會放大；離前高超過 8% 改成灰色虛線、標「追太遠」。頂部清單另外涵蓋幣安成交額前 100，不在泡泡圖上的點了開幣安。</span>
-          <span><b>閃動外圈</b>：即時異動，過去 15 分鐘漲跌 3% 以上或 5 分鐘 2% 以上（幣安即時價格），是提醒不是買點。</span>
-          <span><b>上面三個數字、族群熱度</b>都可以點，點了只亮那一群，再點一次取消。</span>
-          <span>分道只用幣安價格與量能；CoinKarma 的 LIQ 回測沒有預測力，只放在卡片裡參考。</span>
+          <span><b>位置</b>：由左到右是可以埋伏、觀望、追高風險高、別碰。越左邊，過去一年的勝率越高。</span>
+          <span><b>顏色</b>：綠＝可以埋伏，橘紅＝追高風險高，紅＝別碰。觀望道的底色只是 24h 漲跌。</span>
+          <span><b>金色光芒</b>：24 小時內突破 20 天新高、離前高 8% 以內，可以追強（強牛才適用）。</span>
+          <span><b>閃動外圈</b>：即時異動，15 分鐘漲跌 3% 或 5 分鐘 2% 以上。是提醒，不是買點。</span>
+          <span><b>左上角小標</b>：<b>！</b>查到暴漲原因，<b>↑↓</b>這輪剛換道，<b>$</b>營收轉強。一顆泡泡只顯示最重要的一個。</span>
+          <span><b>大小</b>：<span id="lg-size">24h 漲跌</span>。觀望的幣刻意縮小。</span>
+          <span>上方的數字、右邊的清單都可以點。細節都在點開泡泡後的卡片裡，CoinKarma 的 LIQ 也在卡片裡（回測沒有預測力）。</span>
         </div>
       </details>
     </div>
   </header>
 
-  <section class="decide">
-    <div class="regime" id="regime" hidden></div>
+  <section class="dbar" aria-label="現在的市況與分道">
+    <details class="rgd" id="regime" hidden></details>
     <div class="tally" id="tally"></div>
-    <p class="say" id="head">載入中</p>
-    <div class="nhbar" id="nhbar" hidden></div>
   </section>
-
-  <div class="movers" id="movers" hidden></div>
 
   <div id="banner" class="banner" hidden></div>
+  <div class="movers adv" id="movers" hidden></div>
+  <nav class="heat adv" id="heat" aria-label="族群 24 小時強弱"></nav>
 
-  <nav class="heat" id="heat" aria-label="族群 24 小時強弱"></nav>
-
-  <section class="field" id="field" aria-label="泡泡圖：依可以埋伏、觀望、追高風險高、別碰分四區">
-    <canvas id="cv"></canvas>
-    <div id="lanes"></div>
-    <div class="card" id="card" hidden role="dialog" aria-live="polite"></div>
-  </section>
-
-  <div class="split">
-    <div class="col-l">
-      <section class="rot" id="rot" hidden></section>
-      <section class="lst" id="lst" hidden></section>
-    </div>
-    <div class="col-r">
-      <section class="watch" id="board"></section>
-      <section class="hot" id="hot" hidden></section>
-    </div>
+  <div class="stage">
+    <section class="field" id="field" aria-label="泡泡圖：依可以埋伏、觀望、追高風險高、別碰分四區">
+      <canvas id="cv"></canvas>
+      <div id="lanes"></div>
+      <div class="card" id="card" hidden role="dialog" aria-live="polite"></div>
+    </section>
+    <aside class="rail" aria-label="現在可以做什麼">
+      <p class="say" id="head">載入中</p>
+      <section class="rc" id="rcAmbush"></section>
+      <section class="rc" id="rcChase"></section>
+      <section class="rc" id="rcEvents"></section>
+    </aside>
   </div>
 
-  <details class="more" id="trackBox" hidden>
-    <summary>這套分道過去準不準 <small id="trackSum"></small></summary>
-    <div><section class="track" id="track"></section></div>
-  </details>
-
-  <details class="more">
-    <summary id="waitSum">觀望</summary>
-    <div><div class="waitline" id="waitline"></div></div>
-  </details>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="更多資訊"></nav>
+  <div class="panels">
+    <section class="panel nhbar" id="nhbar" role="tabpanel" hidden></section>
+    <section class="panel lst" id="lst" role="tabpanel" hidden></section>
+    <section class="panel hot" id="hot" role="tabpanel" hidden></section>
+    <section class="panel rot" id="rot" role="tabpanel" hidden></section>
+    <section class="panel watch" id="board" role="tabpanel"></section>
+    <section class="panel" id="trackBox" role="tabpanel" hidden>
+      <div class="sec-h"><h2>這套分道過去準不準</h2><p id="trackSum"></p></div>
+      <section class="track" id="track"></section>
+    </section>
+    <section class="panel" id="waitBox" role="tabpanel">
+      <div class="sec-h"><h2 id="waitSum">觀望</h2></div>
+      <div class="waitline" id="waitline"></div>
+    </section>
+  </div>
 
   <footer>資料：CoinKarma 山寨幣篩選器（LIQ、RSI、狀態）＋ Binance USDⓈ-M 永續行情。分類只針對做多，不是投資建議。</footer>
 </div>
@@ -504,7 +542,7 @@ footer { color: var(--ink3); font-size: 12px; }
       return n;
     });
     if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
-    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); layout(first);
+    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderRail(); nhSig = ""; renderNH(); renderTabs(); layout(first);
     if (selected) renderCard(); else card.hidden = true;
   }
 
@@ -512,8 +550,8 @@ footer { color: var(--ink3); font-size: 12px; }
     const c = n.c;
     const v = mode === "liq" ? 0.3 + Math.abs(c.liq ?? 0) : mode === "r24" ? 0.25 + Math.abs(r24Of(c) ?? 0) : Math.sqrt(c.vol24 || 1e6) / 1e3;
     if (c.tier !== "wait") return v;
-    if (isNH(c) && !nhFar(c)) return v * 0.85;             // 剛突破的不縮小，一眼要看得到
-    return v * ((c.liq ?? -99) >= LIQ_GLOW ? 0.6 : 0.3);   // 觀望刻意縮小；LIQ 發光的留大一點才看得到
+    if (isNH(c) && !nhFar(c)) return v * 0.85;             // 可追的新高不縮小，一眼要看得到
+    return v * 0.3;                                         // 觀望刻意縮小
   }
 
   function layout(snap) {
@@ -677,36 +715,8 @@ footer { color: var(--ink3); font-size: 12px; }
     ctx.strokeStyle = broke(c) ? colors.ink3 : c.tier === "wait" ? rgba(col, 0.55) : col;
     ctx.stroke(); ctx.setLineDash([]);
 
-    if ((c.liq ?? -99) >= LIQ_GLOW) {
-      const spin = reduce ? 0 : t / 1400, lc = colors.liq;
-      ctx.save();
-      // 外圈光暈：會慢慢呼吸
-      const breathe = reduce ? 0.5 : 0.5 + 0.5 * Math.sin(t / 700 + n.ph);
-      const halo = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, r + 16 + 6 * breathe);
-      halo.addColorStop(0, rgba(lc, (dark ? 0.45 : 0.3) * (dim ? 0.2 : 1)));
-      halo.addColorStop(1, rgba(lc, 0));
-      ctx.fillStyle = halo;
-      ctx.beginPath(); ctx.arc(n.x, n.y, r + 22, 0, 6.2832); ctx.fill();
-      ctx.globalAlpha = dim ? 0.2 : 1;
-      ctx.shadowColor = lc; ctx.shadowBlur = dark ? 24 : 10;
-      ctx.lineWidth = 2.5; ctx.strokeStyle = lc;
-      ctx.setLineDash([r * 0.5, r * 0.35]); ctx.lineDashOffset = -spin * r * 2;
-      ctx.beginPath(); ctx.arc(n.x, n.y, r + 5, 0, 6.2832); ctx.stroke();
-      ctx.setLineDash([]); ctx.shadowBlur = dark ? 12 : 4;
-      for (let i = 0; i < 4; i++) {
-        const a = spin * 1.3 + i * 1.5708, tw = reduce ? 0.8 : 0.35 + 0.65 * Math.abs(Math.sin(t / 380 + i * 1.7));
-        const sx = n.x + Math.cos(a) * (r + 5), sy = n.y + Math.sin(a) * (r + 5), sz = 2.5 + 3 * tw;
-        ctx.globalAlpha = (dim ? 0.2 : 1) * tw; ctx.fillStyle = lc;
-        ctx.beginPath();
-        ctx.moveTo(sx, sy - sz); ctx.quadraticCurveTo(sx, sy, sx + sz, sy); ctx.quadraticCurveTo(sx, sy, sx, sy + sz);
-        ctx.quadraticCurveTo(sx, sy, sx - sz, sy); ctx.quadraticCurveTo(sx, sy, sx, sy - sz); ctx.fill();
-      }
-      ctx.restore();
-    }
-    if (isNH(c) && nhFar(c)) {                               // 追太遠：只畫灰色虛線外圈
-      ctx.save(); ctx.globalAlpha = dim ? 0.2 : 0.8; ctx.lineWidth = 2; ctx.strokeStyle = colors.ink3; ctx.setLineDash([4, 4]);
-      ctx.beginPath(); ctx.arc(n.x, n.y, r + 4, 0, 6.2832); ctx.stroke(); ctx.restore();
-    } else if (isNH(c)) {
+    if (isNH(c) && !nhFar(c)) {
+      // 金色光芒：24h 內突破 20 天新高、離前高 8% 以內（研究 D115）
       const spin = reduce ? 0 : t / 2600, gc = colors.nh, a0 = dim ? 0.2 : 1;
       const pulse = reduce ? 0.6 : 0.5 + 0.5 * Math.sin(t / 420 + n.ph);
       ctx.save();
@@ -736,13 +746,6 @@ footer { color: var(--ink3); font-size: 12px; }
       ctx.beginPath(); ctx.arc(n.x, n.y, r + 3 + k * 18, 0, 6.2832); ctx.stroke();
       ctx.globalAlpha = dim ? 0.2 : 1;
     }
-    if (brk(c)) {
-      const k = reduce ? 0.35 : (t % 1600) / 1600;
-      ctx.globalAlpha = (dim ? 0.2 : 1) * (1 - k);
-      ctx.lineWidth = 2; ctx.strokeStyle = col;
-      ctx.beginPath(); ctx.arc(n.x, n.y, r + 4 + k * 16, 0, 6.2832); ctx.stroke();
-      ctx.globalAlpha = dim ? 0.2 : 1;
-    }
 
     ctx.fillStyle = c.tier === "wait" ? colors.ink2 : colors.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const sym = c.sym;
@@ -754,29 +757,19 @@ footer { color: var(--ink3); font-size: 12px; }
     if (showSub) {
       const s2 = Math.max(9, Math.min(r * 0.27, 17));
       ctx.font = `700 ${s2}px "JetBrains Mono", ui-monospace, monospace`;
-      ctx.fillStyle = mv ? (mv.dir > 0 ? colors.hot : colors.avoid) : isNH(c) ? (nhFar(c) ? colors.ink3 : colors.nh) : brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
-      const txt = mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : isNH(c) ? `${nhFar(c) ? "追太遠" : "新高"} ${fmtPct(nhAbove(c), 1)}` : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
+      ctx.fillStyle = mv ? (mv.dir > 0 ? colors.hot : colors.avoid) : isNH(c) && !nhFar(c) ? colors.nh : brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
+      const txt = mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : isNH(c) && !nhFar(c) ? `新高 ${fmtPct(nhAbove(c), 1)}` : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
       ctx.fillText(txt, n.x, n.y + fs * 0.5 + s2 * 0.35);
     }
-    if (DATA.revenue?.[c.bn]?.cand && r > 14) {
-      const bx = n.x - r * 0.72, by = n.y + r * 0.72, br = Math.max(8, Math.min(11, r * 0.2));
-      ctx.fillStyle = colors.buy; ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = colors.field; ctx.font = `800 ${br * 1.3}px system-ui, sans-serif`;
-      ctx.fillText("$", bx, by + 1);
-    }
+    // 左上角只放一個標記：！查到原因 > ↑↓ 剛換道 > $ 營收轉強
     const nw = DATA.news?.[c.bn];
-    if (nw && nw.status === "done" && r > 14) {
+    const badge = nw && nw.status === "done" ? ["!", colors.hot] : c.moved ? [c.moved === "up" ? "↑" : "↓", c.moved === "up" ? colors.buy : colors.avoid]
+      : DATA.revenue?.[c.bn]?.cand ? ["$", colors.buy] : null;
+    if (badge && r > 14) {
       const bx = n.x - r * 0.72, by = n.y - r * 0.72, br = Math.max(8, Math.min(11, r * 0.2));
-      ctx.fillStyle = colors.hot; ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = colors.field; ctx.font = `800 ${br * 1.4}px system-ui, sans-serif`;
-      ctx.fillText("!", bx, by + 1);
-    }
-    if (c.moved && r > 16) {
-      const bx = n.x + r * 0.72, by = n.y - r * 0.72, br = Math.max(8, Math.min(11, r * 0.2));
-      ctx.fillStyle = c.moved === "up" ? colors.buy : colors.avoid;
-      ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.2832); ctx.fill();
-      ctx.fillStyle = colors.field; ctx.font = `800 ${br * 1.3}px system-ui, sans-serif`;
-      ctx.fillText(c.moved === "up" ? "↑" : "↓", bx, by + 1);
+      ctx.fillStyle = badge[1]; ctx.beginPath(); ctx.arc(bx, by, br, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = colors.field; ctx.font = `800 ${br * 1.35}px system-ui, sans-serif`;
+      ctx.fillText(badge[0], bx, by + 1);
     }
     ctx.restore();
   }
@@ -847,16 +840,22 @@ footer { color: var(--ink3); font-size: 12px; }
   }));
 
   // ---------- HTML 區塊 ----------
+  function chaseList() {
+    return (DATA.newHighs || []).filter((x) => isNH(x) && !nhFar(x)).sort((a, b) => nhAbove(a) - nhAbove(b));
+  }
   function renderHeader() {
-    const m = DATA.market, cnt = (t) => DATA.coins.filter((c) => c.tier === t).length;
-    $("tally").innerHTML = ["buy", "hot", "avoid"].map((t) => {
-      const n = cnt(t), w = laneWin(t);
-      return `<button type="button" class="tile t-${t}${n ? "" : " zero"}" data-t="${t}" aria-pressed="${focus?.tier === t}">
-        <b>${n}</b><span>${NAME[t]}</span><small>${w ? "勝率 " + w : ""}</small></button>`;
+    const cnt = (t) => DATA.coins.filter((c) => c.tier === t).length;
+    const tiles = [["buy", cnt("buy"), NAME.buy], ["nh", chaseList().length, "追強"], ["hot", cnt("hot"), "追高風險高"], ["avoid", cnt("avoid"), NAME.avoid]];
+    $("tally").innerHTML = tiles.map(([t, n, name]) => {
+      const w = t === "nh" ? "強牛時勝率約四成、每筆 +5.5%（D115）" : laneWin(t) ? `過去一年 24h 勝率 ${laneWin(t)}` : "";
+      return `<button type="button" class="tile t-${t}${n ? "" : " zero"}" data-t="${t}" aria-pressed="${focus?.tier === t}" title="${esc(w)}"><b>${n}</b><span>${name}</span></button>`;
     }).join("");
-    $("tally").querySelectorAll(".tile").forEach((b) => b.addEventListener("click", () => setFocus({ tier: b.dataset.t })));
+    $("tally").querySelectorAll(".tile").forEach((b) => b.addEventListener("click", () => {
+      if (b.dataset.t === "nh") { openTab("nh", true); return; }
+      setFocus({ tier: b.dataset.t });
+    }));
     renderRegime();
-    $("head").innerHTML = esc(m.head) + (DATA.legacy ? `<small>這輪幣安資料沒抓到，暫時用 CoinKarma 舊分類。</small>` : "");
+    $("head").innerHTML = esc(DATA.market.head) + (DATA.legacy ? `<small>這輪幣安資料沒抓到，暫時用 CoinKarma 舊分類。</small>` : "");
     document.title = "Karma Bubbles";
     renderSub();
   }
@@ -866,16 +865,109 @@ footer { color: var(--ink3); font-size: 12px; }
     el.hidden = !R?.state;
     if (el.hidden) return;
     const cls = { "強牛": "t-buy", "偏多": "t-wait", "偏空": "t-hot", "強熊": "t-avoid" }[R.state] || "t-wait";
-    const h = (R.breadthHist || []).filter((x) => x != null), W = 112, H = 28;
+    const h = (R.breadthHist || []).filter((x) => x != null), W = 84, H = 26;
     const X = (i) => (i / Math.max(1, h.length - 1)) * W, Y = (v) => H - v * H;
-    const spark = h.length > 1 ? `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
-      <line x1="0" x2="${W}" y1="${Y(0.6)}" y2="${Y(0.6)}" class="g6"/><line x1="0" x2="${W}" y1="${Y(0.4)}" y2="${Y(0.4)}" class="g4"/>
+    const spark = h.length > 1 ? `<svg class="${cls}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
+      <line x1="0" x2="${W}" y1="${Y(0.6)}" y2="${Y(0.6)}"/><line x1="0" x2="${W}" y1="${Y(0.4)}" y2="${Y(0.4)}"/>
       <polyline points="${h.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>` : "";
     const days = R.days >= R.maxDays ? `${R.maxDays} 天以上` : `第 ${R.days} 天`;
-    el.innerHTML = `<div class="rg-l"><span class="rg-state ${cls}">${esc(R.state)}</span><small>${days}</small></div>
-      <div class="rg-m"><p>BTC ${Number(R.btc).toLocaleString()}，${R.btcVsMa >= 0 ? "高於" : "低於"} 200 日線 ${Math.abs(R.btcVsMa)}%｜前 ${R.n} 大 <b>${Math.round(R.breadth * 100)}%</b> 站上 50 日線</p>
-      <p class="rg-play">${esc(R.play)}</p></div>
-      <div class="rg-r ${cls}" title="市場廣度 14 天（虛線 60%／40%）">${spark}<small>廣度 14 天</small></div>`;
+    const open = el.open;
+    el.innerHTML = `<summary><span class="rg-state ${cls}">${esc(R.state)}</span>
+        <span class="rg-sub"><span>${days}</span><span>廣度 <b>${Math.round(R.breadth * 100)}%</b>｜BTC 距 200 日線 <b>${fmtPct(R.btcVsMa, 0)}</b></span></span>${spark}</summary>
+      <div class="pop"><span><b>判斷方式</b>：BTC 在 200 日線上，而且成交額前 ${R.n} 大有 60% 以上站上 50 日線＝強牛；兩個都不成立＝強熊。一天算一次，日線收盤後更新。</span>
+        <span><b>現在</b>：BTC ${Number(R.btc).toLocaleString()}，${R.btcVsMa >= 0 ? "高於" : "低於"} 200 日線 ${Math.abs(R.btcVsMa)}%；${Math.round(R.breadth * 100)}% 站上 50 日線（小圖是 14 天走勢，虛線 60%／40%）。</span>
+        <span><b>該怎麼做</b>：${esc(R.play)}</span></div>`;
+    el.open = open;
+  }
+
+  // ---------- 行動欄：現在可以做什麼 ----------
+  const hrs = (ms) => Math.round(ms / 3600000);
+  function renderRail() {
+    const bull = ["強牛", "偏多"].includes(DATA.regime?.state);
+    // 可以埋伏：附出場時間（事件後 48–72 小時，研究 D114）
+    const evOf = (sym) => (DATA.rotation?.events || []).filter((e) => e.cands.some((x) => x.base === sym)).sort((a, b) => b.t.localeCompare(a.t))[0];
+    const buys = DATA.coins.filter((c) => c.tier === "buy").sort((a, b) => b.karma - a.karma);
+    const amb = buys.map((c) => {
+      const e = evOf(c.sym);
+      const lead = e ? `${e.leadBase} 領漲 ${fmtPct(e.leadEx24, 0)}` : esc(c.group || "");
+      let due = "";
+      if (e) {
+        const t0 = new Date(e.t).getTime(), now = Date.now(), d48 = t0 + 48 * 3600000, d72 = t0 + 72 * 3600000;
+        due = now < d48 ? `抱到 ${tpeFull(new Date(d48).toISOString())}～${tpeFull(new Date(d72).toISOString())}，還有 ${hrs(d48 - now)}–${hrs(d72 - now)} 小時`
+          : now < d72 ? `已過 48 小時，${tpeFull(new Date(d72).toISOString())} 前出場` : "已過 72 小時，該出場了";
+      }
+      return `<li><button type="button" class="it" data-sym="${esc(c.sym)}"><b class="t-buy">${esc(c.sym)}</b><span>${lead}</span><em class="${cls(r24Of(c))}">${fmtPct(r24Of(c))}</em>${due ? `<small>${due}</small>` : ""}</button></li>`;
+    }).join("");
+    $("rcAmbush").innerHTML = `<h3><span class="t-buy">可以埋伏</span><small>${buys.length} 檔</small></h3>
+      ${buys.length ? `<ol>${amb}</ol>` : `<p class="none">這輪沒有龍頭剛噴、同族群還沒跟上的幣。</p>`}
+      <p class="rule">${bull ? "牛市：不設小停利，抱 48–72 小時到時間就賣，停損 −8～−12%。" : "非牛市：最多抱 24–48 小時，優勢很小。"}</p>`;
+    // 重大事件：上幣／下架（48h）、暴漲原因（24h）、多站核實的新聞
+    const now = Date.now(), ev = [];
+    for (const e of DATA.listings || []) if (now - new Date(e.t) < 48 * 3600000)
+      ev.push({ t: e.t, html: `<a class="it" href="${esc(e.url || `https://www.binance.com/zh-TC/futures/${e.base}USDT`)}" target="_blank" rel="noopener noreferrer"><b class="${kindCls(e.kind)}">${esc(e.base)}</b><span>${esc(e.kind)}</span><em class="${cls(e.since)}">${e.since != null ? fmtPct(e.since) : ""}</em><small>${tpeFull(e.t)}</small></a>` });
+    for (const [bn, nw] of Object.entries(DATA.news || {})) if (nw.status === "done" && now - new Date(nw.detected) < 24 * 3600000) {
+      const c = DATA.coins.find((x) => x.bn === bn);
+      if (!c) continue;
+      ev.push({ t: nw.detected, html: `<button type="button" class="it" data-sym="${esc(c.sym)}"><b>${esc(c.sym)}</b><span>${esc(nw.reason || "")}</span><em></em><small>暴漲原因｜${tpeFull(nw.detected)}${nw.verify?.n ? `｜${nw.verify.n} 站核實` : ""}</small></button>` });
+    }
+    for (const x of (DATA.hotNews?.items || []).slice(0, 6)) if (x.verify?.level === "高" && x.time && now - new Date(x.time) < 12 * 3600000)
+      ev.push({ t: x.time, html: `<a class="it" href="${esc(x.url || "#")}" target="_blank" rel="noopener noreferrer"><b class="${x.impact === "利多" ? "t-buy" : x.impact === "利空" ? "t-avoid" : "t-wait"}">${esc(x.impact || "新聞")}</b><span>${esc(x.title)}</span><em></em><small>${x.verify.n} 站核實｜${tpeFull(x.time)}</small></a>` });
+    ev.sort((a, b) => String(b.t).localeCompare(String(a.t)));
+    $("rcEvents").innerHTML = `<h3>重大事件<small>上幣、下架、暴漲原因、新聞</small></h3>
+      ${ev.length ? `<ol>${ev.slice(0, 6).map((x) => `<li>${x.html}</li>`).join("")}</ol>` : `<p class="none">過去 48 小時沒有重大事件。</p>`}`;
+    $("rcAmbush").querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    $("rcEvents").querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    railSig = "";
+    renderRailChase();
+  }
+  let railSig = "";
+  function renderRailChase() {
+    const list = chaseList(), sb = strongBull();
+    const sig = sb + list.map((x) => x.bn + nhAbove(x).toFixed(1)).join();
+    if (sig === railSig) return;
+    railSig = sig;
+    const t = $("tally")?.querySelector('[data-t="nh"]');
+    if (t) { t.querySelector("b").textContent = list.length; t.classList.toggle("zero", !list.length); }
+    const el = $("rcChase");
+    el.classList.toggle("weak", !sb);
+    const row = (x) => {
+      const a = nhAbove(x), w = nhWave(x);
+      const body = `<b style="color:var(--nh)">${esc(x.sym)}</b><span>${w != null ? `這波 +${Math.round(w)}%` : ""}${x.onPage ? "" : "｜不在泡泡圖"}</span><em>▲${a.toFixed(1)}%</em>`;
+      return `<li>${x.onPage ? `<button type="button" class="it" data-sym="${esc(x.sym)}">${body}</button>` : `<a class="it" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
+    };
+    el.innerHTML = `<h3><span style="color:var(--nh)">追強</span><small>離前高 8% 以內 ${list.length} 檔</small></h3>
+      ${list.length ? `<ol>${list.slice(0, 5).map(row).join("")}</ol>` : `<p class="none">現在沒有 24 小時內剛突破 20 天新高的幣。</p>`}
+      <p class="rule">${sb ? "強牛做法：離前高 ≤3% 最好；停損 −20%，不設停利，從最高收盤回落 20% 才賣。" : "現在不是強牛：非強牛時追突破常整年虧錢，只當參考。"}</p>
+      ${list.length > 5 ? `<button type="button" class="link">看全部 ${list.length} 檔</button>` : ""}`;
+    el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    el.querySelector(".link")?.addEventListener("click", () => openTab("nh", true));
+  }
+
+  // ---------- 分頁 ----------
+  const TABS = [["nh", "追強清單", "nhbar", false], ["lst", "上幣雷達", "lst", false], ["hot", "熱門新聞", "hot", false],
+    ["rot", "族群輪動", "rot", true], ["board", "分道明細", "board", true], ["track", "勝率回顧", "trackBox", true], ["wait", "觀望", "waitBox", true]];
+  let tab = (() => { try { return localStorage.getItem("kb-tab") || "nh"; } catch (_) { return "nh"; } })();
+  function renderTabs() {
+    const nav = $("tabs");
+    if (!nav.children.length) {
+      nav.innerHTML = TABS.map(([k, name, , adv]) => `<button type="button" role="tab" data-tab="${k}"${adv ? ' class="adv"' : ""}>${name}</button>`).join("");
+      nav.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => openTab(b.dataset.tab)));
+    }
+    const simple = document.body.classList.contains("simple");
+    const ok = (k) => { const d = TABS.find((x) => x[0] === k); return d && !$(d[2]).hidden && !(simple && d[3]); };
+    if (!ok(tab)) tab = TABS.map((x) => x[0]).find(ok) || "nh";
+    for (const [k, , id] of TABS) {
+      const b = nav.querySelector(`[data-tab="${k}"]`), panel = $(id);
+      b.hidden = panel.hidden;
+      b.setAttribute("aria-selected", k === tab);
+      panel.classList.toggle("on", k === tab);
+    }
+  }
+  function openTab(k, scroll) {
+    tab = k;
+    try { localStorage.setItem("kb-tab", k); } catch (_) {}
+    renderTabs();
+    if (scroll) $("tabs").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }
 
   function setFocus(f) {
@@ -1040,9 +1132,10 @@ footer { color: var(--ink3); font-size: 12px; }
       `<h3><span class="t-buy">營收轉強</span><small>${revs.length} 檔｜項目營收 30 天成長 ≥30%、幣價還沒反映${RS ? `｜30 天勝率 ${Math.round(RS.beat * 100)}%（平常 ${Math.round(RS.base * 100)}%，證據偏弱）` : ""}</small></h3>` +
       (revs.length ? `<ol>${revs.map(revRow).join("")}</ol>` : `<p class="none">目前沒有。</p>`);
     const waits = by("wait").sort((a, b) => Math.abs(r24Of(b) ?? 0) - Math.abs(r24Of(a) ?? 0));
-    $("waitSum").innerHTML = `觀望 ${waits.length} 檔 <small>沒有明顯優勢，跟大盤差不多</small>`;
+    $("waitBox").hidden = !waits.length;
+    $("waitSum").innerHTML = `觀望 ${waits.length} 檔 <small style="font:500 12.5px var(--body);color:var(--ink3)">沒有明顯優勢，跟大盤差不多</small>`;
     $("waitline").innerHTML = waits.map((c) => `<button type="button" data-sym="${esc(c.sym)}">${esc(c.sym)} <span class="${cls(r24Of(c))}">${fmtPct(r24Of(c))}</span></button>`).join("");
-    document.querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    ["board", "waitline"].forEach((id) => $(id).querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym))));
     tickLive();
   }
 
@@ -1112,7 +1205,7 @@ footer { color: var(--ink3); font-size: 12px; }
 
   function sentiBlock(sn) {
     if (!sn) return "";
-    return `<div class="senti"><small>情緒（Jev 讀價格、籌碼、新聞；實驗中，還沒驗證，不影響分道）</small>
+    return `<div class="senti adv"><small>情緒（Jev 讀價格、籌碼、新聞；實驗中，還沒驗證，不影響分道）</small>
       <div class="gauge"><i style="left:${Math.max(2, Math.min(98, sn.score))}%"></i></div>
       <p><b>${esc(sn.zh)}</b> ${Math.round(sn.score)}／100${sn.confidence != null ? `，把握 ${Math.round(sn.confidence * 100)}%` : ""}</p></div>`;
   }
@@ -1144,8 +1237,8 @@ footer { color: var(--ink3); font-size: 12px; }
         <div><dt>主動買</dt><dd>${c.tk == null ? "-" : Math.round(c.tk * 100) + "%"}</dd></div>
         <div><dt>資金費率</dt><dd>${c.funding == null ? "-" : (c.funding * 100).toFixed(4) + "%"}</dd></div>
       </dl>
-      <div class="spark"><small>CoinKarma 參考（回測沒有預測力）：LIQ ${sgn(c.liq)}${(c.liq ?? -99) >= LIQ_GLOW ? "（≥2.5，發光提示）" : ""}、狀態 ${esc(c.ck && c.ck !== "-" ? c.ck : "無")}，近 ${c.liqHist.length} 期</small>${spark(c.liqHist, colors.wait)}</div>
-      ${c.ckDesc ? `<p class="why" style="color:var(--ink2);font-size:13px">CoinKarma：${esc(c.ckDesc)}</p>` : ""}`;
+      <div class="spark adv"><small>CoinKarma 參考（回測沒有預測力）：LIQ ${sgn(c.liq)}${(c.liq ?? -99) >= LIQ_GLOW ? "（≥2.5，買盤掛單很強）" : ""}、狀態 ${esc(c.ck && c.ck !== "-" ? c.ck : "無")}，近 ${c.liqHist.length} 期</small>${spark(c.liqHist, colors.wait)}</div>
+      ${c.ckDesc ? `<p class="why adv" style="color:var(--ink2);font-size:13px">CoinKarma：${esc(c.ckDesc)}</p>` : ""}`;
     card.querySelector(".x").addEventListener("click", () => select(null));
     tickLive();
   }
@@ -1160,7 +1253,7 @@ footer { color: var(--ink3); font-size: 12px; }
     card.style.left = x + "px"; card.style.top = y + "px";
   }
 
-  let nhSig = "", nhOpen = false;
+  let nhSig = "";
   function renderNH() {
     const el = $("nhbar"), all = DATA.newHighs || [];
     const hits = all.filter(isNH).sort((a, b) => nhFar(a) - nhFar(b) || nhAbove(a) - nhAbove(b));
@@ -1168,30 +1261,29 @@ footer { color: var(--ink3); font-size: 12px; }
     const sig = sb + hits.map((x) => x.bn + nhAbove(x).toFixed(1)).join();
     if (sig === nhSig) return;
     nhSig = sig;
+    const wasHidden = el.hidden;
     el.hidden = !all.length;
+    if (wasHidden !== el.hidden) renderTabs();
     if (!all.length) return;
     el.classList.toggle("weak", !sb);
     const ok = hits.filter((x) => !nhFar(x)).length;
     const chip = (x) => {
       const a = nhAbove(x), far = a > NH_FAR, fresh = a <= NH_FRESH, w = nhWave(x);
-      const cls = `nh${fresh ? " strong" : ""}${far ? " far" : ""}${x.onPage ? "" : " off"}`;
-      const inner = `<b>${esc(x.sym)}</b><span>${far ? "追太遠 " : "▲"}${a.toFixed(1)}%</span>${w != null ? `<small>波 ${Math.round(w)}%</small>` : ""}`;
+      const c2 = `nh${fresh ? " strong" : ""}${far ? " far" : ""}${x.onPage ? "" : " off"}`;
+      const inner = `<b>${esc(x.sym)}</b><span>${far ? "追太遠 " : "▲"}${a.toFixed(1)}%</span>${w != null ? `<small>這波 ${Math.round(w)}%</small>` : ""}`;
       const tip = `20 天前高 ${fmtPx(x.hi20)}｜離前高 ${a.toFixed(1)}%${w != null ? `｜20 天低點起 ${Math.round(w)}%` : ""}`;
-      return x.onPage ? `<button type="button" class="${cls}" data-sym="${esc(x.sym)}" title="${esc(tip)}">${inner}</button>`
-        : `<a class="${cls}" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer" title="${esc(tip + "｜不在泡泡圖上，點開幣安")}">${inner}</a>`;
+      return x.onPage ? `<button type="button" class="${c2}" data-sym="${esc(x.sym)}" title="${esc(tip)}">${inner}</button>`
+        : `<a class="${c2}" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer" title="${esc(tip + "｜不在泡泡圖上，點開幣安")}">${inner}</a>`;
     };
-    const cap = matchMedia("(max-width: 640px)").matches && !nhOpen ? 8 : 30;
-    const more = hits.length > cap ? `<button type="button" class="nh-more">更多 ${hits.length - cap}</button>` : "";
-    el.innerHTML = `<span class="lbl">24 小時內突破 20 天新高 <b>${ok}</b>${hits.length > ok ? `<em>（另 ${hits.length - ok} 檔追太遠）</em>` : ""}</span>
-      ${hits.length ? hits.slice(0, cap).map(chip).join("") + more : `<span class="none">目前沒有</span>`}
-      <small class="nh-note">${sb ? "" : "⚠️ "}${esc(sb ? CHASE_PLAY : CHASE_WARN)} 實心＝離前高 ≤3%。範圍：泡泡圖＋幣安成交額前 100。</small>`;
+    el.innerHTML = `<div class="sec-h"><h2>追強清單</h2><p>24 小時內突破 20 天新高、現在還站在前高之上：可追 ${ok} 檔${hits.length > ok ? `，另 ${hits.length - ok} 檔離前高超過 8%（追太遠）` : ""}。範圍是泡泡圖加上幣安成交額前 100。</p></div>
+      <div class="chips">${hits.length ? hits.map(chip).join("") : `<span class="none">目前沒有</span>`}</div>
+      <p class="nh-note">${esc(sb ? CHASE_PLAY : CHASE_WARN)} 實心＝離前高 3% 以內；虛線框＝不在泡泡圖上，點了開幣安。</p>`;
     el.querySelectorAll("button.nh").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
-    el.querySelector(".nh-more")?.addEventListener("click", () => { nhOpen = true; nhSig = ""; renderNH(); });
   }
 
   function tickLive() {
     if (!DATA) return;
-    renderNH();
+    renderNH(); renderRailChase();
     document.querySelectorAll("[data-dist]").forEach((el) => {
       const c = DATA.coins.find((x) => x.sym === el.dataset.dist);
       if (!c?.trigger) return;
@@ -1273,6 +1365,19 @@ footer { color: var(--ink3); font-size: 12px; }
       if (location.protocol === "file:" && performance.now() > 15 * 60000) location.reload();
     }
   }
+
+  // ---------- 簡易／進階：朋友預設簡易，各自記在瀏覽器 ----------
+  function setView(v) {
+    document.body.classList.toggle("simple", v !== "adv");
+    document.querySelectorAll(".seg.view button").forEach((x) => x.setAttribute("aria-pressed", x.dataset.view === (v === "adv" ? "adv" : "simple")));
+    if (v !== "adv" && mode !== "r24") document.querySelector('.seg.size button[data-mode="r24"]')?.click();
+    if (DATA) { renderTabs(); layout(false); }
+  }
+  document.querySelectorAll(".seg.view button").forEach((b) => b.addEventListener("click", () => {
+    setView(b.dataset.view);
+    try { localStorage.setItem("kb-view", b.dataset.view); } catch (_) {}
+  }));
+  try { setView(localStorage.getItem("kb-view") || "simple"); } catch (_) { setView("simple"); }
 
   // ---------- 外觀：自動（跟系統）／深色／淺色，記在各自的瀏覽器 ----------
   function setTheme(v) {
