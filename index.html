@@ -928,7 +928,7 @@ footer { color: var(--ink3); font-size: 12px; }
         const name = onPage ? `<button type="button" data-sym="${esc(whaleCoin(p.coin))}">${esc(p.coin)}</button>` : esc(p.coin);
         return `<tr><td class="${p.side === "多" ? "up" : "dn"}">${name}</td><td>${p.side}</td><td>${fmtUsd2(p.value)}</td><td>${p.lev}x</td><td>${fmtPx(p.entry)}</td><td class="${cls(p.upnl)}">${fmtUsd2(p.upnl)}</td><td>${tw ? `<b class="t-hot">TWAP ${/Close/.test(tw.dir) ? "平倉" : "開倉"} ${fmtUsd2(tw.perHour)}/時</b>` : ""}</td></tr>`;
       }).join("");
-      return `<article class="wh"><div class="wh-h"><b>${esc(whaleName(w))}</b><span>帳戶 ${fmtUsd2(w.value)}｜${tpeFull(w.at)} 更新</span>
+      return `<article class="wh"><div class="wh-h"><b>${esc(whaleName(w))}</b><span>合約帳戶 ${fmtUsd2(w.value)}${w.usdc ? `＋現貨 USDC ${fmtUsd2(w.usdc)}` : ""}｜總部位 ${fmtUsd2(w.positions.reduce((a, p) => a + p.value, 0))}｜${tpeFull(w.at)} 更新</span>
           <a href="https://hypurrscan.io/address/${esc(w.address)}" target="_blank" rel="noopener noreferrer">${esc(w.address.slice(0, 6))}…${esc(w.address.slice(-4))}</a></div>
         <div class="tbl"><table><tr><th>幣</th><th>方向</th><th>部位</th><th>槓桿</th><th>進場</th><th>未實現</th><th></th></tr>${rows || `<tr><td colspan="7">目前沒有部位</td></tr>`}</table></div>
         ${e.length ? `<ol>${e.map((x) => `<li><span class="when">${tpeFull(x.t)}</span> ${esc(x.text)}</li>`).join("")}</ol>` : `<p class="none">開始追蹤後還沒有新動作。</p>`}</article>`;
