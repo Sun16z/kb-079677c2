@@ -265,7 +265,7 @@ footer { color: var(--ink3); font-size: 12px; }
       <details class="howto">
         <summary>怎麼看</summary>
         <div class="pop">
-          <span><b>位置</b>：越左邊，過去一年的勝率越高。可以埋伏＝族群龍頭剛噴、它還沒跟上；別追＝過熱或正在噴的龍頭；別碰＝還在急跌。</span>
+          <span><b>位置</b>：越左邊，過去一年的勝率越高。可以埋伏＝族群龍頭剛噴、它還沒跟上；追高風險高＝過熱或正在噴的龍頭；別碰＝還在急跌。</span>
           <span><b>大小</b>：<span id="lg-size">24h 漲跌</span>。觀望的幣刻意縮小、淡化。</span>
           <span><b>觀望的底色</b>：24h 漲跌，不是訊號。</span>
           <span><b>！</b>：剛暴漲，點開看 Grok 查到的原因。<b>↑↓</b>：這輪剛換道。</span>
@@ -289,7 +289,7 @@ footer { color: var(--ink3); font-size: 12px; }
 
   <nav class="heat" id="heat" aria-label="族群 24 小時強弱"></nav>
 
-  <section class="field" id="field" aria-label="泡泡圖：依可以埋伏、觀望、別追、別碰分四區">
+  <section class="field" id="field" aria-label="泡泡圖：依可以埋伏、觀望、追高風險高、別碰分四區">
     <canvas id="cv"></canvas>
     <div id="lanes"></div>
     <div class="card" id="card" hidden role="dialog" aria-live="polite"></div>
@@ -317,8 +317,8 @@ footer { color: var(--ink3); font-size: 12px; }
 (() => {
   const DATA0 = /*__DATA__*/null;
   const TIERS = ["buy", "wait", "hot", "avoid"];
-  const NAME = { buy: "可以埋伏", wait: "觀望", hot: "別追", avoid: "別碰" };
-  const HINT = { buy: "龍頭噴了、它還沒跟", wait: "沒有優勢", hot: "過熱或正在噴的龍頭", avoid: "還在急跌" };
+  const NAME = { buy: "可以埋伏", wait: "觀望", hot: "追高風險高", avoid: "別碰" };
+  const HINT = { buy: "龍頭噴了、它還沒跟", wait: "沒有優勢", hot: "過熱或正在噴的龍頭，追高風險也高", avoid: "還在急跌" };
   // 各道過去一年 24h 跑贏大盤的比例（winrate_stats.json）
   const laneWin = (t) => {
     const S = DATA?.stats;
@@ -815,8 +815,8 @@ footer { color: var(--ink3); font-size: 12px; }
     const cells = [
       ["buy", "可以埋伏（細分族群）", R.volume?.lagBeat, null, null, `比平常多 ${fmtPct((R.volume?.lagEx ?? 0) - (R.volume?.lagBase ?? 0), 2)}`],
       ["buy", "可以埋伏（敘事表）", R.narrative?.lagBeat, null, null, `比平常多 ${fmtPct((R.narrative?.lagEx ?? 0) - (R.narrative?.lagBase ?? 0), 2)}，可能有事後挑選`],
-      ["hot", "別追：過熱", S.lanes.hot.beat, S.lanes.hot.beat1, S.lanes.hot.beat2, `中位數 ${fmtPct(S.lanes.hot.median)}`],
-      ["hot", "別追：追龍頭", R.volume?.leadBeat, null, null, "族群龍頭剛噴出時才買"],
+      ["hot", "追高風險高：過熱", S.lanes.hot.beat, S.lanes.hot.beat1, S.lanes.hot.beat2, `中位數 ${fmtPct(S.lanes.hot.median)}`],
+      ["hot", "追高風險高：追龍頭", R.volume?.leadBeat, null, null, "族群龍頭剛噴出時才買"],
       ["avoid", "別碰：急跌中", S.lanes.avoid.beat, S.lanes.avoid.beat1, S.lanes.avoid.beat2, `中位數 ${fmtPct(S.lanes.avoid.median)}`],
       ["wait", "觀望：其他", S.lanes.wait.beat, S.lanes.wait.beat1, S.lanes.wait.beat2, "等於大盤"],
       ...(S.revenue ? [["buy", "營收轉強（看 30 天）", S.revenue.beat, S.revenue.beat1, S.revenue.beat2, `這些有營收的幣平常 ${Math.round(S.revenue.base * 100)}%；${S.revenue.n} 次，證據偏弱`]] : []),
@@ -836,7 +836,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const by = (t) => DATA.coins.filter((c) => c.tier === t);
     const groups = [
       ["buy", by("buy").sort((a, b) => b.karma - a.karma), "龍頭噴了、它還沒跟上"],
-      ["hot", by("hot").sort((a, b) => a.karma - b.karma), "追高多半會輸"],
+      ["hot", by("hot").sort((a, b) => a.karma - b.karma), "追高風險也高"],
       ["avoid", by("avoid").sort((a, b) => b.karma - a.karma), "還在急跌"],
     ];
     const meta = (c) => c.trigger ? `<span class="meta2"><span>觸發 ${fmtPx(c.trigger)}</span><span>失效 ${fmtPx(c.inv)}</span><span data-dist="${esc(c.sym)}"></span></span>`
