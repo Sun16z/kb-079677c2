@@ -306,11 +306,17 @@ footer { color: var(--ink3); font-size: 12px; }
     <div class="brand">Karma <span>Bubbles</span></div>
     <div class="meta" id="sub"></div>
     <div class="controls">
-      <div class="seg" role="group" aria-label="泡泡大小">
+      <div class="seg size" role="group" aria-label="泡泡大小">
         <span>大小</span>
         <button type="button" data-mode="r24" aria-pressed="true">24h 漲跌</button>
         <button type="button" data-mode="vol" aria-pressed="false">成交量</button>
         <button type="button" data-mode="liq" aria-pressed="false">LIQ</button>
+      </div>
+      <div class="seg theme" role="group" aria-label="外觀">
+        <span>外觀</span>
+        <button type="button" data-set="auto" aria-pressed="true" title="跟著手機／電腦的深淺色設定">自動</button>
+        <button type="button" data-set="dark" aria-pressed="false">深色</button>
+        <button type="button" data-set="light" aria-pressed="false">淺色</button>
       </div>
       <span class="live" id="live" data-s="off"><i></i><span>快照</span></span>
       <details class="howto">
@@ -821,9 +827,9 @@ footer { color: var(--ink3); font-size: 12px; }
     if (!vertical) field.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
   }
 
-  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".seg.size button").forEach((b) => b.addEventListener("click", () => {
     mode = b.dataset.mode;
-    document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-pressed", x === b));
+    document.querySelectorAll(".seg.size button").forEach((x) => x.setAttribute("aria-pressed", x === b));
     $("lg-size").textContent = b.textContent;
     try { localStorage.setItem("kb-mode", mode); } catch (_) {}
     if (DATA) layout(false);
@@ -1243,6 +1249,18 @@ footer { color: var(--ink3); font-size: 12px; }
     }
   }
 
+  // ---------- 外觀：自動（跟系統）／深色／淺色，記在各自的瀏覽器 ----------
+  function setTheme(v) {
+    if (v === "dark" || v === "light") document.documentElement.dataset.theme = v;
+    else delete document.documentElement.dataset.theme;
+    document.querySelectorAll(".seg.theme button").forEach((x) => x.setAttribute("aria-pressed", x.dataset.set === (v || "auto")));
+  }
+  document.querySelectorAll(".seg.theme button").forEach((b) => b.addEventListener("click", () => {
+    setTheme(b.dataset.set);
+    try { localStorage.setItem("kb-theme", b.dataset.set); } catch (_) {}
+  }));
+  try { setTheme(localStorage.getItem("kb-theme") || "auto"); } catch (_) { setTheme("auto"); }
+
   // ---------- 開機 ----------
   readColors();
   const mq = matchMedia("(prefers-color-scheme: light)");
@@ -1251,7 +1269,7 @@ footer { color: var(--ink3); font-size: 12px; }
   new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   try {
     const m = localStorage.getItem("kb-mode");
-    if (m) document.querySelector(`.seg button[data-mode="${m}"]`)?.click();
+    if (m) document.querySelector(`.seg.size button[data-mode="${m}"]`)?.click();
   } catch (_) {}
   let rz = 0;
   new ResizeObserver(() => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => DATA && layout(false)); }).observe(document.body);
