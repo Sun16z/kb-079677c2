@@ -143,6 +143,8 @@ button { font: inherit; color: inherit; }
 .wh td button { font: 700 12px var(--mono); color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .wh ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; font-size: 12.5px; color: var(--ink2); }
 .wh .when { font: 500 11px var(--mono); color: var(--ink3); }
+.twcard { background: color-mix(in srgb, var(--avoid) 9%, transparent) !important; }
+.twcard a { font-size: 11.5px; }
 .whcard { background: color-mix(in srgb, var(--liq) 9%, transparent) !important; }
 
 /* 下方分頁 */
@@ -387,7 +389,7 @@ footer { color: var(--ink3); font-size: 12px; }
           <span><b>顏色</b>：綠＝可以埋伏，橘紅＝追高風險高，紅＝別碰。觀望道的底色只是 24h 漲跌。</span>
           <span><b>金色光芒</b>：24 小時內突破 20 天新高、離前高 8% 以內，可以追強（強牛才適用）。</span>
           <span><b>閃動外圈</b>：即時異動，15 分鐘漲跌 3% 或 5 分鐘 2% 以上。是提醒，不是買點。</span>
-          <span><b>左上角小標</b>：<b>！</b>查到暴漲原因，<b>↑↓</b>這輪剛換道，<b>$</b>營收轉強。一顆泡泡只顯示最重要的一個。</span>
+          <span><b>左上角小標</b>：<b>T</b>有大戶正在 Hyperliquid 用 TWAP 分批賣（紅）或買（綠），<b>！</b>查到暴漲原因，<b>↑↓</b>這輪剛換道，<b>$</b>營收轉強。一顆泡泡只顯示最重要的一個。</span>
           <span><b>大小</b>：<span id="lg-size">24h 漲跌</span>。觀望的幣刻意縮小。</span>
           <span>上方的數字、右邊的清單都可以點。細節都在點開泡泡後的卡片裡，CoinKarma 的 LIQ 也在卡片裡（回測沒有預測力）。</span>
         </div>
@@ -412,6 +414,7 @@ footer { color: var(--ink3); font-size: 12px; }
     </section>
     <aside class="rail" aria-label="現在可以做什麼">
       <p class="say" id="head">載入中</p>
+      <section class="rc" id="rcTwap" hidden></section>
       <section class="rc" id="rcAmbush"></section>
       <section class="rc" id="rcChase"></section>
       <section class="rc" id="rcEvents"></section>
@@ -558,7 +561,7 @@ footer { color: var(--ink3); font-size: 12px; }
       return n;
     });
     if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
-    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderRail(); nhSig = ""; renderNH(); renderTabs(); layout(first);
+    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderRailTwap(); renderRail(); nhSig = ""; renderNH(); renderTabs(); layout(first);
     if (selected) renderCard(); else card.hidden = true;
   }
 
@@ -779,7 +782,8 @@ footer { color: var(--ink3); font-size: 12px; }
     }
     // 左上角只放一個標記：！查到原因 > ↑↓ 剛換道 > $ 營收轉強
     const nw = DATA.news?.[c.bn];
-    const badge = nw && nw.status === "done" ? ["!", colors.hot] : c.moved ? [c.moved === "up" ? "↑" : "↓", c.moved === "up" ? colors.buy : colors.avoid]
+    const tws = twapsOn(c.sym);
+    const badge = tws.length ? ["T", tws.some((g) => !g.buy) ? colors.avoid : colors.buy] : nw && nw.status === "done" ? ["!", colors.hot] : c.moved ? [c.moved === "up" ? "↑" : "↓", c.moved === "up" ? colors.buy : colors.avoid]
       : DATA.revenue?.[c.bn]?.cand ? ["$", colors.buy] : null;
     if (badge && r > 14) {
       const bx = n.x - r * 0.72, by = n.y - r * 0.72, br = Math.max(8, Math.min(11, r * 0.2));
@@ -909,6 +913,34 @@ footer { color: var(--ink3); font-size: 12px; }
     }
     return out;
   }
+  // 全 Hyperliquid TWAP 雷達：同一個幣的進行中大單
+  const twapsOn = (sym) => (DATA.twaps?.active || []).filter((g) => whaleCoin(g.base || g.coin) === sym && g.market !== "美股／HIP-3");
+  const twapLine = (g) => {
+    const sell = !g.buy;
+    const pos = g.pos ? `｜他${g.pos.side}單 ${fmtUsd2(g.pos.value)}，未實現 <span class="${cls(g.pos.upnl)}">${fmtUsd2(g.pos.upnl)}</span>` : "";
+    return `<b class="${sell ? "dn" : "up"}">${esc(g.side)}</b> ${fmtUsd2(g.usd)}，每小時 ${fmtUsd2(g.perHour)}${g.impact ? `（佔成交 ${Math.round(g.impact * 100)}%）` : ""}，剩 ${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分${pos}`;
+  };
+  function twapBlock(c) {
+    const L = twapsOn(c.sym);
+    if (!L.length) return "";
+    return `<div class="news twcard"><small>Hyperliquid 大戶 TWAP 進行中（全鏈掃描）</small>${L.map((g) => `<p>${twapLine(g)}　<a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></p>`).join("")}</div>`;
+  }
+  function renderRailTwap() {
+    const T = DATA.twaps, el = $("rcTwap");
+    const list = (T?.active || []).filter((g) => (new Date(g.end) - Date.now()) > 0);
+    el.hidden = !T;
+    if (!T) return;
+    const row = (g) => {
+      const sym = whaleCoin(g.base || g.coin), on = DATA.coins.some((c) => c.sym === sym) && g.market !== "美股／HIP-3";
+      const body = `<b class="${g.buy ? "up" : "dn"}">${esc(g.coin.replace(/^xyz:/, ""))}</b><span>${esc(g.side)} ${fmtUsd2(g.usd)}${g.market !== "合約" ? `｜${esc(g.market)}` : ""}</span><em class="${g.buy ? "up" : "dn"}">${g.impact ? Math.round(g.impact * 100) + "%" : ""}</em>
+        <small>每小時 ${fmtUsd2(g.perHour)}｜剩 ${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分${g.pos ? `｜他${g.pos.side}單未實現 ${fmtUsd2(g.pos.upnl)}` : ""}</small>`;
+      return `<li>${on ? `<button type="button" class="it" data-sym="${esc(sym)}">${body}</button>` : `<a class="it" href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
+    };
+    el.innerHTML = `<h3><span>巨鯨 TWAP</span><small>全 Hyperliquid 進行中 ${T.activeCount} 筆，大單 ${list.length}</small></h3>
+      ${list.length ? `<ol>${list.slice(0, 6).map(row).join("")}</ol>` : `<p class="none">現在沒有夠大的 TWAP。</p>`}
+      <p class="rule">右邊％＝每小時下單量佔該幣每小時成交額。紅色是分批賣出，綠色是分批買入。</p>`;
+    el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+  }
   function whaleBlock(c) {
     const L = whalesOn(c.sym);
     if (!L.length) return "";
@@ -917,9 +949,14 @@ footer { color: var(--ink3); font-size: 12px; }
   }
   function renderWhales() {
     const W = DATA.whales, el = $("whaleBox");
-    el.hidden = !W?.wallets?.length;
+    const T = DATA.twaps;
+    el.hidden = !W?.wallets?.length && !T;
     if (el.hidden) return;
-    const evs = (W.events || []).slice().reverse();
+    const evs = (W?.events || []).slice().reverse();
+    const twTable = T ? `<article class="wh"><div class="wh-h"><b>全 Hyperliquid TWAP 大單</b><span>進行中 ${T.activeCount} 筆，下面是名目 ≥50 萬美元且佔成交 ≥3%（或 ≥500 萬美元）｜${tpeFull(T.at)} 更新</span></div>
+      <div class="tbl"><table><tr><th>幣</th><th>市場</th><th>動作</th><th>金額</th><th>每小時</th><th>佔成交</th><th>剩</th><th>他的部位</th><th>地址</th></tr>
+      ${(T.active || []).map((g) => `<tr><td class="${g.buy ? "up" : "dn"}">${esc(g.coin)}</td><td>${esc(g.market)}</td><td>${esc(g.side)}</td><td>${fmtUsd2(g.usd)}</td><td>${fmtUsd2(g.perHour)}</td><td>${g.impact ? Math.round(g.impact * 100) + "%" : "-"}</td><td>${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分</td>
+        <td>${g.pos ? `${g.pos.side} ${fmtUsd2(g.pos.value)}（<span class="${cls(g.pos.upnl)}">${fmtUsd2(g.pos.upnl)}</span>）` : "-"}</td><td><a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></td></tr>`).join("") || `<tr><td colspan="9">現在沒有夠大的 TWAP。</td></tr>`}</table></div></article>` : "";
     const card = (w) => {
       const e = evs.filter((x) => x.address === w.address).slice(0, 6);
       const rows = w.positions.map((p) => {
@@ -933,8 +970,8 @@ footer { color: var(--ink3); font-size: 12px; }
         <div class="tbl"><table><tr><th>幣</th><th>方向</th><th>部位</th><th>槓桿</th><th>進場</th><th>未實現</th><th></th></tr>${rows || `<tr><td colspan="7">目前沒有部位</td></tr>`}</table></div>
         ${e.length ? `<ol>${e.map((x) => `<li><span class="when">${tpeFull(x.t)}</span> ${esc(x.text)}</li>`).join("")}</ol>` : `<p class="none">開始追蹤後還沒有新動作。</p>`}</article>`;
     };
-    el.innerHTML = `<div class="sec-h"><h2>巨鯨</h2><p>Hyperliquid 公開持倉，每 2 分鐘比對一次：開倉、平倉、加減碼（≥50 萬美元且 ≥20%）、TWAP 分批下單。只是跟蹤，他們進場時我們通常已經晚了。</p></div>
-      <div class="wh-list">${W.wallets.map(card).join("")}</div>`;
+    el.innerHTML = `<div class="sec-h"><h2>巨鯨</h2><p>每 2 分鐘掃一次全 Hyperliquid 的 TWAP 分批下單，並追蹤指定錢包的持倉。大戶 TWAP 出貨時，該幣常比大盤跌更多（9/26 NEAR、INJ 開始後 23 分鐘 −3%，BTC 同時 +0.2%）。</p></div>
+      <div class="wh-list">${twTable}${(W?.wallets || []).map(card).join("")}</div>`;
     el.querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
 
@@ -1287,6 +1324,7 @@ footer { color: var(--ink3); font-size: 12px; }
       <p class="why">${esc(c.why)}</p>
       ${(DATA.listings || []).filter((e) => e.base === c.sym).slice(0, 2).map((e) => `<div class="news"><small>${esc(e.kind)}（${tpeFull(e.t)}）</small><p>${esc(e.advice || e.title || "")}${e.since != null ? `　事件後到現在 <b class="${cls(e.since)}">${fmtPct(e.since)}</b>` : ""}</p></div>`).join("")}
       ${nhBlock(c)}
+      ${twapBlock(c)}
       ${whaleBlock(c)}
       ${ambushBlock(c)}
       ${newsBlock(DATA.news?.[c.bn])}
