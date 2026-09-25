@@ -96,6 +96,7 @@ button { font: inherit; color: inherit; }
 .nhbar .nh.off { border-style: dashed; }
 .nhbar .nh:hover, .nhbar .nh:focus-visible { border-color: var(--nh); outline: none; }
 .nhbar .none { font-size: 12px; color: var(--ink3); }
+.nhbar .nh-more { font: inherit; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--panel); color: var(--ink2); cursor: pointer; }
 .nhbar .nh-note { flex-basis: 100%; font-size: 11px; color: var(--ink3); }
 .nhcard { border-color: color-mix(in srgb, var(--nh) 45%, transparent) !important; }
 .nhcard small { color: var(--nh) !important; }
@@ -1129,7 +1130,7 @@ footer { color: var(--ink3); font-size: 12px; }
     card.style.left = x + "px"; card.style.top = y + "px";
   }
 
-  let nhSig = "";
+  let nhSig = "", nhOpen = false;
   function renderNH() {
     const el = $("nhbar"), all = DATA.newHighs || [];
     const hits = all.filter(isNH).sort((a, b) => nhAbove(b) - nhAbove(a));
@@ -1148,10 +1149,13 @@ footer { color: var(--ink3); font-size: 12px; }
       return x.onPage ? `<button type="button" class="nh${strong ? " strong" : ""}" data-sym="${esc(x.sym)}" title="${esc(tip)}">${inner}</button>`
         : `<a class="nh off${strong ? " strong" : ""}" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer" title="${esc(tip + "｜不在泡泡圖上，點開幣安")}">${inner}</a>`;
     };
+    const cap = matchMedia("(max-width: 640px)").matches && !nhOpen ? 8 : 24;
+    const more = hits.length > cap ? `<button type="button" class="nh-more">更多 ${hits.length - cap}</button>` : "";
     el.innerHTML = `<span class="lbl">4 小時內創 20 天新高 <b>${hits.length}</b></span>
-      ${hits.length ? hits.slice(0, 18).map(chip).join("") : `<span class="none">目前沒有</span>`}
+      ${hits.length ? hits.slice(0, cap).map(chip).join("") + more : `<span class="none">目前沒有</span>`}
       <small class="nh-note">${esc(note)} 範圍：泡泡圖＋幣安成交額前 100。</small>`;
     el.querySelectorAll("button.nh").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    el.querySelector(".nh-more")?.addEventListener("click", () => { nhOpen = true; nhSig = ""; renderNH(); });
   }
 
   function tickLive() {
