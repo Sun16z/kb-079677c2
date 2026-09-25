@@ -128,6 +128,21 @@ button { font: inherit; color: inherit; }
 .rc .link { justify-self: start; font-size: 12px; color: var(--ink2); background: none; border: 0; padding: 2px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .rc .none { padding: 2px 0 4px; }
 .rc.weak ol, .rc.weak h3 { opacity: .55; }
+.rc .it.dim { opacity: .6; }
+.rc .it.cancel { border: 1px dashed var(--hot); margin: 3px 0; padding: 7px 8px; }
+.rc .it.cancel strong { color: var(--hot); }
+.rc .it.sig { --sc: var(--avoid); position: relative; overflow: hidden; margin: 3px 0; padding: 7px 8px; border: 1px solid var(--sc);
+  background: color-mix(in srgb, var(--sc) 12%, transparent); animation: sigglow 1.6s ease-in-out infinite; }
+.rc .it.sig.long { --sc: var(--buy); }
+.rc .it.sig strong { color: var(--sc); }
+.rc .it.sig::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / .22) 50%, transparent 65%); background-size: 250% 100%; animation: shimmer 2.4s linear infinite; }
+.rc.hasSig { border-color: color-mix(in srgb, var(--avoid) 50%, var(--line)); }
+@keyframes sigglow { 50% { box-shadow: 0 0 16px 1px color-mix(in srgb, var(--sc) 55%, transparent); } }
+@keyframes shimmer { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+.sigline { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--avoid); background: color-mix(in srgb, var(--avoid) 12%, transparent); }
+.sigline.long { border-color: var(--buy); background: color-mix(in srgb, var(--buy) 12%, transparent); }
+.sigline b { color: var(--avoid); } .sigline.long b { color: var(--buy); }
+@media (prefers-reduced-motion: reduce) { .rc .it.sig, .rc .it.sig::after { animation: none; } }
 .rc.weak .rule { color: var(--hot); }
 
 /* 巨鯨 */
@@ -388,6 +403,7 @@ footer { color: var(--ink3); font-size: 12px; }
           <span><b>位置</b>：由左到右是可以埋伏、觀望、追高風險高、別碰。越左邊，過去一年的勝率越高。</span>
           <span><b>顏色</b>：綠＝可以埋伏，橘紅＝追高風險高，紅＝別碰。觀望道的底色只是 24h 漲跌。</span>
           <span><b>金色光芒</b>：24 小時內突破 20 天新高、離前高 8% 以內，可以追強（強牛才適用）。</span>
+          <span><b>紅／綠閃亮外圈＋星光</b>：Hyperliquid 大戶正在用 TWAP 大量賣出（紅，可做空）或買入（綠，可做多），每小時量 ≥ 成交量 10%。TWAP 結束就平倉。</span>
           <span><b>閃動外圈</b>：即時異動，15 分鐘漲跌 3% 或 5 分鐘 2% 以上。是提醒，不是買點。</span>
           <span><b>左上角小標</b>：<b>T</b>有大戶正在 Hyperliquid 用 TWAP 分批賣（紅）或買（綠），<b>！</b>查到暴漲原因，<b>↑↓</b>這輪剛換道，<b>$</b>營收轉強。一顆泡泡只顯示最重要的一個。</span>
           <span><b>大小</b>：<span id="lg-size">24h 漲跌</span>。觀望的幣刻意縮小。</span>
@@ -569,7 +585,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const c = n.c;
     const v = mode === "liq" ? 0.3 + Math.abs(c.liq ?? 0) : mode === "r24" ? 0.25 + Math.abs(r24Of(c) ?? 0) : Math.sqrt(c.vol24 || 1e6) / 1e3;
     if (c.tier !== "wait") return v;
-    if (isNH(c) && !nhFar(c)) return v * 0.85;             // 可追的新高不縮小，一眼要看得到
+    if (sigOn(c.sym) || (isNH(c) && !nhFar(c))) return v * 0.85;   // TWAP 訊號、可追的新高不縮小
     return v * 0.3;                                         // 觀望刻意縮小
   }
 
@@ -707,7 +723,7 @@ footer { color: var(--ink3); font-size: 12px; }
         ctx.stroke(); ctx.setLineDash([]);
       }
     });
-    const order = [...nodes].sort((a, b) => (a === hover || a === selected) - (b === hover || b === selected) || (isNH(a.c) && !nhFar(a.c)) - (isNH(b.c) && !nhFar(b.c)) || b.r - a.r);
+    const order = [...nodes].sort((a, b) => (a === hover || a === selected) - (b === hover || b === selected) || !!sigOn(a.c.sym) - !!sigOn(b.c.sym) || (isNH(a.c) && !nhFar(a.c)) - (isNH(b.c) && !nhFar(b.c)) || b.r - a.r);
     for (const n of order) bubble(n, t);
   }
 
@@ -757,6 +773,29 @@ footer { color: var(--ink3); font-size: 12px; }
       ctx.beginPath(); ctx.arc(n.x, n.y, r + 2, 0, 6.2832); ctx.stroke();
       ctx.restore();
     }
+    const sg = sigOn(c.sym);
+    if (sg) {
+      // TWAP 訊號：旋轉亮邊＋外圈光暈＋星光（使用者要求閃亮）
+      const sc = sg.signal === "short" ? colors.avoid : colors.buy, spin = reduce ? 0 : t / 1100, a0 = dim ? 0.2 : 1;
+      const br = reduce ? 0.6 : 0.5 + 0.5 * Math.sin(t / 300 + n.ph);
+      ctx.save();
+      const halo = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, r + 20 + 8 * br);
+      halo.addColorStop(0, rgba(sc, (dark ? 0.55 : 0.35) * a0)); halo.addColorStop(1, rgba(sc, 0));
+      ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(n.x, n.y, r + 28, 0, 6.2832); ctx.fill();
+      ctx.globalAlpha = a0; ctx.shadowColor = sc; ctx.shadowBlur = dark ? 22 : 8;
+      ctx.lineWidth = 3; ctx.strokeStyle = sc;
+      ctx.setLineDash([r * 0.45, r * 0.3]); ctx.lineDashOffset = -spin * r * 2;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 6, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]);
+      for (let i = 0; i < 5; i++) {
+        const a = spin * 1.4 + i * 1.2566, tw = reduce ? 0.8 : 0.35 + 0.65 * Math.abs(Math.sin(t / 260 + i * 1.3));
+        const sx = n.x + Math.cos(a) * (r + 6), sy = n.y + Math.sin(a) * (r + 6), sz = 3 + 4 * tw;
+        ctx.globalAlpha = a0 * tw; ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(sx, sy - sz); ctx.quadraticCurveTo(sx, sy, sx + sz, sy); ctx.quadraticCurveTo(sx, sy, sx, sy + sz);
+        ctx.quadraticCurveTo(sx, sy, sx - sz, sy); ctx.quadraticCurveTo(sx, sy, sx, sy - sz); ctx.fill();
+      }
+      ctx.restore();
+    }
     const mv = moving[c.bn];
     if (mv) {
       const k = reduce ? 0.35 : (t % 1100) / 1100, mc = mv.dir > 0 ? colors.hot : colors.avoid;
@@ -776,8 +815,8 @@ footer { color: var(--ink3); font-size: 12px; }
     if (showSub) {
       const s2 = Math.max(9, Math.min(r * 0.27, 17));
       ctx.font = `700 ${s2}px "JetBrains Mono", ui-monospace, monospace`;
-      ctx.fillStyle = mv ? (mv.dir > 0 ? colors.hot : colors.avoid) : isNH(c) && !nhFar(c) ? colors.nh : brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
-      const txt = mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : isNH(c) && !nhFar(c) ? `新高 ${fmtPct(nhAbove(c), 1)}` : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
+      ctx.fillStyle = sg ? (sg.signal === "short" ? colors.avoid : colors.buy) : mv ? (mv.dir > 0 ? colors.hot : colors.avoid) : isNH(c) && !nhFar(c) ? colors.nh : brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
+      const txt = sg ? (sg.signal === "short" ? "可做空" : "可做多") : mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : isNH(c) && !nhFar(c) ? `新高 ${fmtPct(nhAbove(c), 1)}` : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
       ctx.fillText(txt, n.x, n.y + fs * 0.5 + s2 * 0.35);
     }
     // 左上角只放一個標記：！查到原因 > ↑↓ 剛換道 > $ 營收轉強
@@ -915,6 +954,10 @@ footer { color: var(--ink3); font-size: 12px; }
   }
   // 全 Hyperliquid TWAP 雷達：同一個幣的進行中大單
   const twapsOn = (sym) => (DATA.twaps?.active || []).filter((g) => whaleCoin(g.base || g.coin) === sym && g.market !== "美股／HIP-3");
+  const sigName = (g) => g.signal === "short" ? (g.strong ? "可做空（大戶出貨）" : "可做空") : g.signal === "long" ? "可做多" : "";
+  const leftOf = (g) => Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000));
+  const sigExit = (g) => `TWAP 結束 ${tpeFull(new Date(g.end).toISOString())} 平倉（剩 ${leftOf(g)} 分）`;
+  const sigOn = (sym) => twapsOn(sym).find((g) => g.signal && leftOf(g) > 0);
   const twapLine = (g) => {
     const sell = !g.buy;
     const pos = g.pos ? `｜他${g.pos.side}單 ${fmtUsd2(g.pos.value)}，未實現 <span class="${cls(g.pos.upnl)}">${fmtUsd2(g.pos.upnl)}</span>` : "";
@@ -923,22 +966,31 @@ footer { color: var(--ink3); font-size: 12px; }
   function twapBlock(c) {
     const L = twapsOn(c.sym);
     if (!L.length) return "";
-    return `<div class="news twcard"><small>Hyperliquid 大戶 TWAP 進行中（全鏈掃描）</small>${L.map((g) => `<p>${twapLine(g)}　<a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></p>`).join("")}</div>`;
+    const S = L.find((g) => g.signal && leftOf(g) > 0);
+    const sig = S ? `<p class="sigline ${S.signal}"><b>${sigName(S)}</b>：${sigExit(S)}。回測（D119）衝擊 ≥10% 勝率約 58–62%，每筆平均 +0.25～0.5%，優勢不大；抱到 24 小時平均轉負。</p>` : "";
+    return `<div class="news twcard"><small>Hyperliquid 大戶 TWAP 進行中（全鏈掃描）</small>${sig}${L.map((g) => `<p>${twapLine(g)}　<a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></p>`).join("")}</div>`;
   }
   function renderRailTwap() {
     const T = DATA.twaps, el = $("rcTwap");
-    const list = (T?.active || []).filter((g) => (new Date(g.end) - Date.now()) > 0);
+    const list = (T?.active || []).filter((g) => leftOf(g) > 0);
     el.hidden = !T;
     if (!T) return;
+    const nSig = list.filter((g) => g.signal).length;
     const row = (g) => {
       const sym = whaleCoin(g.base || g.coin), on = DATA.coins.some((c) => c.sym === sym) && g.market !== "美股／HIP-3";
-      const body = `<b class="${g.buy ? "up" : "dn"}">${esc(g.coin.replace(/^xyz:/, ""))}</b><span>${esc(g.side)} ${fmtUsd2(g.usd)}${g.market !== "合約" ? `｜${esc(g.market)}` : ""}</span><em class="${g.buy ? "up" : "dn"}">${g.impact ? Math.round(g.impact * 100) + "%" : ""}</em>
-        <small>每小時 ${fmtUsd2(g.perHour)}｜剩 ${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分${g.pos ? `｜他${g.pos.side}單未實現 ${fmtUsd2(g.pos.upnl)}` : ""}</small>`;
-      return `<li>${on ? `<button type="button" class="it" data-sym="${esc(sym)}">${body}</button>` : `<a class="it" href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
+      const body = `<b class="${g.buy ? "up" : "dn"}">${esc(g.coin.replace(/^xyz:/, ""))}</b><span>${g.signal ? `<strong>${sigName(g)}</strong>` : esc(g.side)} ${fmtUsd2(g.usd)}${g.market !== "合約" ? `｜${esc(g.market)}` : ""}</span><em class="${g.buy ? "up" : "dn"}">${g.impact ? Math.round(g.impact * 100) + "%" : ""}</em>
+        <small>${g.signal ? sigExit(g) : `每小時 ${fmtUsd2(g.perHour)}｜剩 ${leftOf(g)} 分`}${g.pos ? `｜他${g.pos.side}單未實現 ${fmtUsd2(g.pos.upnl)}` : ""}</small>`;
+      const c2 = `it${g.signal ? ` sig ${g.signal}` : " dim"}`;
+      return `<li>${on ? `<button type="button" class="${c2}" data-sym="${esc(sym)}">${body}</button>` : `<a class="${c2}" href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
     };
-    el.innerHTML = `<h3><span>巨鯨 TWAP</span><small>全 Hyperliquid 進行中 ${T.activeCount} 筆，大單 ${list.length}</small></h3>
+    // 最近 2 小時被取消的訊號：提醒平倉
+    const cancels = (T.ended || []).filter((e) => e.why === "取消" && e.signal && Date.now() - e.at < 2 * 3600000).reverse();
+    const cRows = cancels.slice(0, 3).map((e) => `<li><a class="it cancel" href="https://hypurrscan.io/address/${esc(e.user)}" target="_blank" rel="noopener noreferrer"><b>${esc(e.coin)}</b><span><strong>訊號結束：大戶取消 TWAP</strong></span><em></em><small>原本${esc(e.side)} ${fmtUsd2(e.usd)}｜${tpeFull(new Date(e.at).toISOString())} 取消，跟單的該平倉</small></a></li>`).join("");
+    el.classList.toggle("hasSig", nSig > 0);
+    el.innerHTML = `<h3><span>巨鯨 TWAP</span><small>${nSig ? `訊號 ${nSig}｜` : ""}全 Hyperliquid 進行中 ${T.activeCount} 筆</small></h3>
+      ${cRows ? `<ol>${cRows}</ol>` : ""}
       ${list.length ? `<ol>${list.slice(0, 6).map(row).join("")}</ol>` : `<p class="none">現在沒有夠大的 TWAP。</p>`}
-      <p class="rule">右邊％＝每小時下單量佔該幣每小時成交額。紅色是分批賣出，綠色是分批買入。</p>`;
+      <p class="rule">發光＝訊號：大戶每小時下單量 ≥ 該幣成交量 10%（右邊％）。跟著做，TWAP 結束就平倉；大戶中途取消 TWAP 也要馬上平倉（取消後常反彈）。回測勝率約 58–62%，每筆 +0.25～0.5%。</p>`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
   function whaleBlock(c) {
@@ -954,9 +1006,9 @@ footer { color: var(--ink3); font-size: 12px; }
     if (el.hidden) return;
     const evs = (W?.events || []).slice().reverse();
     const twTable = T ? `<article class="wh"><div class="wh-h"><b>全 Hyperliquid TWAP 大單</b><span>進行中 ${T.activeCount} 筆，下面是名目 ≥50 萬美元且佔成交 ≥3%（或 ≥500 萬美元）｜${tpeFull(T.at)} 更新</span></div>
-      <div class="tbl"><table><tr><th>幣</th><th>市場</th><th>動作</th><th>金額</th><th>每小時</th><th>佔成交</th><th>剩</th><th>他的部位</th><th>地址</th></tr>
-      ${(T.active || []).map((g) => `<tr><td class="${g.buy ? "up" : "dn"}">${esc(g.coin)}</td><td>${esc(g.market)}</td><td>${esc(g.side)}</td><td>${fmtUsd2(g.usd)}</td><td>${fmtUsd2(g.perHour)}</td><td>${g.impact ? Math.round(g.impact * 100) + "%" : "-"}</td><td>${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分</td>
-        <td>${g.pos ? `${g.pos.side} ${fmtUsd2(g.pos.value)}（<span class="${cls(g.pos.upnl)}">${fmtUsd2(g.pos.upnl)}</span>）` : "-"}</td><td><a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></td></tr>`).join("") || `<tr><td colspan="9">現在沒有夠大的 TWAP。</td></tr>`}</table></div></article>` : "";
+      <div class="tbl"><table><tr><th>幣</th><th>訊號</th><th>市場</th><th>動作</th><th>金額</th><th>每小時</th><th>佔成交</th><th>剩</th><th>他的部位</th><th>地址</th></tr>
+      ${(T.active || []).map((g) => `<tr><td class="${g.buy ? "up" : "dn"}">${esc(g.coin)}</td><td>${g.signal ? `<b class="${g.buy ? "up" : "dn"}">${sigName(g)}</b>` : ""}</td><td>${esc(g.market)}</td><td>${esc(g.side)}</td><td>${fmtUsd2(g.usd)}</td><td>${fmtUsd2(g.perHour)}</td><td>${g.impact ? Math.round(g.impact * 100) + "%" : "-"}</td><td>${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分</td>
+        <td>${g.pos ? `${g.pos.side} ${fmtUsd2(g.pos.value)}（<span class="${cls(g.pos.upnl)}">${fmtUsd2(g.pos.upnl)}</span>）` : "-"}</td><td><a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></td></tr>`).join("") || `<tr><td colspan="10">現在沒有夠大的 TWAP。</td></tr>`}</table></div></article>` : "";
     const card = (w) => {
       const e = evs.filter((x) => x.address === w.address).slice(0, 6);
       const rows = w.positions.map((p) => {
