@@ -95,6 +95,8 @@ button { font: inherit; color: inherit; }
 .rgd svg { display: block; }
 .rgd svg line { stroke: var(--ink3); stroke-width: 1; stroke-dasharray: 3 3; opacity: .55; vector-effect: non-scaling-stroke; }
 .rgd .pop { left: 0; right: auto; }
+.rgd .rg-hot { font: 700 12px/1 var(--body); color: var(--hot); border: 1px solid var(--hot); border-radius: 999px; padding: 4px 9px; background: color-mix(in srgb, var(--hot) 12%, transparent); white-space: nowrap; }
+.rgd .rg-hotnote { color: var(--ink); border-left: 3px solid var(--hot); padding-left: 8px; }
 .tally { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; min-width: min(100%, 460px); }
 .tile { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 8px 14px; cursor: pointer; display: flex; align-items: baseline; gap: 8px; transition: border-color .2s, background .2s, transform .15s; min-width: 0; }
 .tile:active { transform: translateY(1px); }
@@ -932,10 +934,11 @@ footer { color: var(--ink3); font-size: 12px; }
     const days = R.days >= R.maxDays ? `${R.maxDays} 天以上` : `第 ${R.days} 天`;
     const open = el.open;
     el.innerHTML = `<summary><span class="rg-state ${cls}">${esc(R.state)}</span>
-        <span class="rg-sub"><span>${days}</span><span>廣度 <b>${Math.round(R.breadth * 100)}%</b>｜BTC 距 200 日線 <b>${fmtPct(R.btcVsMa, 0)}</b></span></span>${spark}</summary>
+        <span class="rg-sub"><span>${days}${R.r7 != null ? `｜7 天普漲 <b>${fmtPct(R.r7, 0)}</b>` : ""}</span><span>廣度 <b>${Math.round(R.breadth * 100)}%</b>｜BTC 距 200 日線 <b>${fmtPct(R.btcVsMa, 0)}</b></span></span>${R.hot ? `<span class="rg-hot" title="${esc(R.hotNote)}">過熱</span>` : ""}${spark}</summary>
       <div class="pop"><span><b>判斷方式</b>：BTC 在 200 日線上，而且成交額前 ${R.n} 大有 60% 以上站上 50 日線＝強牛；兩個都不成立＝強熊。一天算一次，日線收盤後更新。</span>
         <span><b>現在</b>：BTC ${Number(R.btc).toLocaleString()}，${R.btcVsMa >= 0 ? "高於" : "低於"} 200 日線 ${Math.abs(R.btcVsMa)}%；${Math.round(R.breadth * 100)}% 站上 50 日線（小圖是 14 天走勢，虛線 60%／40%）。</span>
-        <span><b>該怎麼做</b>：${esc(R.play)}</span></div>`;
+        <span><b>該怎麼做</b>：${esc(R.play)}</span>
+        ${R.hot ? `<span class="rg-hotnote"><b>過熱提醒</b>：${esc(R.hotNote)}</span>` : ""}</div>`;
     el.open = open;
   }
 
@@ -1089,7 +1092,7 @@ footer { color: var(--ink3); font-size: 12px; }
     };
     el.innerHTML = `<h3><span style="color:var(--nh)">追強</span><small>離前高 8% 以內 ${list.length} 檔</small></h3>
       ${list.length ? `<ol>${list.slice(0, 5).map(row).join("")}</ol>` : `<p class="none">現在沒有 24 小時內剛突破 20 天新高的幣。</p>`}
-      <p class="rule">${sb ? "強牛做法：離前高 ≤3% 最好；停損 −20%，不設停利，從最高收盤回落 20% 才賣。" : "現在不是強牛：非強牛時追突破常整年虧錢，只當參考。"}</p>
+      <p class="rule">${sb ? "強牛做法：離前高 ≤3% 最好；停損 −20%，不設停利，從最高收盤回落 20% 才賣。" : "現在不是強牛：非強牛時追突破常整年虧錢，只當參考。"}${DATA.regime?.hot ? `<br><b style="color:var(--hot)">市場過熱</b>：2–4 週後回落機率偏高，新倉縮小。` : ""}</p>
       ${list.length > 5 ? `<button type="button" class="link">看全部 ${list.length} 檔</button>` : ""}`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
     el.querySelector(".link")?.addEventListener("click", () => openTab("nh", true));
