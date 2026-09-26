@@ -1617,7 +1617,7 @@ footer { color: var(--ink3); font-size: 12px; }
       const r = await fetch(url, { cache: "no-store" });
       if (!r.ok) throw r.status;
       const d = await r.json();
-      if (d.runAt !== DATA?.runAt) {
+      if (d.runAt !== DATA?.runAt || (d.updatedAt && d.updatedAt !== DATA?.updatedAt)) {   // watch 每 2 分鐘的更新也要重畫
         const prevSyms = DATA ? DATA.coins.map((c) => c.bn).join() : "";
         apply(d);
         if (d.coins.map((c) => c.bn).join() !== prevSyms) { connect(); seedHist(); }
