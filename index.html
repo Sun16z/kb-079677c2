@@ -131,6 +131,11 @@ button { font: inherit; color: inherit; }
 .rc .none { padding: 2px 0 4px; }
 .rc.weak ol, .rc.weak h3 { opacity: .55; }
 .rc .it.dim { opacity: .6; }
+.rc .it.fresh { --sc: var(--nh); position: relative; overflow: hidden; margin: 3px 0; padding: 7px 8px; border: 1px solid var(--nh);
+  background: color-mix(in srgb, var(--nh) 14%, transparent); animation: sigglow 1.4s ease-in-out infinite; }
+.rc .it.fresh strong { color: var(--nh); }
+.rc .it.fresh::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / .25) 50%, transparent 65%); background-size: 250% 100%; animation: shimmer 2s linear infinite; }
+.nhbar .nh.sun { box-shadow: 0 0 16px color-mix(in srgb, var(--nh) 60%, transparent); animation: sigglow 1.4s ease-in-out infinite; --sc: var(--nh); }
 .rc .it.cancel { border: 1px dashed var(--hot); margin: 3px 0; padding: 7px 8px; }
 .rc .it.cancel strong { color: var(--hot); }
 .rc .it.sig { --sc: var(--avoid); position: relative; overflow: hidden; margin: 3px 0; padding: 7px 8px; border: 1px solid var(--sc);
@@ -144,7 +149,7 @@ button { font: inherit; color: inherit; }
 .sigline { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--avoid); background: color-mix(in srgb, var(--avoid) 12%, transparent); }
 .sigline.long { border-color: var(--buy); background: color-mix(in srgb, var(--buy) 12%, transparent); }
 .sigline b { color: var(--avoid); } .sigline.long b { color: var(--buy); }
-@media (prefers-reduced-motion: reduce) { .rc .it.sig, .rc .it.sig::after { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .rc .it.sig, .rc .it.sig::after, .rc .it.fresh, .rc .it.fresh::after, .nhbar .nh.sun { animation: none; } }
 .rc.weak .rule { color: var(--hot); }
 
 /* 巨鯨 */
@@ -404,7 +409,7 @@ footer { color: var(--ink3); font-size: 12px; }
         <div class="pop">
           <span><b>位置</b>：由左到右是可以埋伏、觀望、追高風險高、別碰。越左邊，過去一年的勝率越高。</span>
           <span><b>顏色</b>：綠＝可以埋伏，橘紅＝追高風險高，紅＝別碰。觀望道的底色只是 24h 漲跌。</span>
-          <span><b>金色光芒</b>：24 小時內突破 20 天新高、離前高 8% 以內，可以追強（強牛才適用）。</span>
+          <span><b>金色太陽</b>：24 小時內突破 20 天新高、離前高 8% 以內，可以追強（強牛才適用）。<b>大太陽</b>＝30 分鐘內剛刷新新高（放大、光芒更強），30 分鐘沒再創高就變回<b>小太陽</b>。</span>
           <span><b>紅／綠閃亮外圈＋星光</b>：Hyperliquid 大戶正在用 TWAP 大量賣出（紅，可做空）或買入（綠，可做多），每小時量 ≥ 成交量 10%。TWAP 結束就平倉。</span>
           <span><b>閃動外圈</b>：即時異動，15 分鐘漲跌 3% 或 5 分鐘 2% 以上。是提醒，不是買點。</span>
           <span><b>左上角小標</b>：<b>T</b>有大戶正在 Hyperliquid 用 TWAP 分批賣（紅）或買（綠），<b>！</b>查到暴漲原因，<b>↑↓</b>這輪剛換道，<b>$</b>營收轉強。一顆泡泡只顯示最重要的一個。</span>
@@ -553,6 +558,19 @@ footer { color: var(--ink3); font-size: 12px; }
   const nhFar = (x) => nhAbove(x) > NH_FAR;
   const nhWave = (x) => x.lo20 > 0 ? ((nhPx(x) ?? x.lo20) / x.lo20 - 1) * 100 : null;
   const strongBull = () => DATA?.regime?.state === "強牛";
+  // 大太陽／小太陽：30 分鐘內刷新過 20 天新高＝大太陽（使用者 2026-09-26，即時監控用）
+  const FRESH_MS = 30 * 60000;
+  const peaks = {};
+  function peakOf(x) {
+    let p = peaks[x.bn];
+    const srv = x.hiMax ?? x.hi20;
+    if (!p || srv > p.px) p = peaks[x.bn] = { px: srv, t: x.hiMaxT || 0 };
+    const lp = live[x.bn]?.p;
+    if (lp && lp > p.px) { p.px = lp; p.t = Date.now(); }
+    return p;
+  }
+  const nhFresh = (x) => isNH(x) && !nhFar(x) && Date.now() - peakOf(x).t < FRESH_MS;
+  const freshAgo = (x) => Math.max(0, Math.round((Date.now() - peakOf(x).t) / 60000));
   const r24Of = (c) => live[c.bn]?.r24 ?? c.r24;
   const brk = (c) => c.tier === "buy" && c.trigger && priceOf(c) >= c.trigger;
   const broke = (c) => c.tier === "buy" && c.inv && priceOf(c) < c.inv;
@@ -586,7 +604,8 @@ footer { color: var(--ink3); font-size: 12px; }
   function metric(n) {
     const c = n.c;
     const v = mode === "liq" ? 0.3 + Math.abs(c.liq ?? 0) : mode === "r24" ? 0.25 + Math.abs(r24Of(c) ?? 0) : Math.sqrt(c.vol24 || 1e6) / 1e3;
-    if (c.tier !== "wait") return v;
+    if (c.tier !== "wait") return nhFresh(c) ? v * 1.2 : v;
+    if (nhFresh(c)) return v * 1.15;                                  // 大太陽：剛創新高，放大
     if (sigOn(c.sym) || (isNH(c) && !nhFar(c))) return v * 0.85;   // TWAP 訊號、可追的新高不縮小
     return v * 0.3;                                         // 觀望刻意縮小
   }
@@ -725,7 +744,7 @@ footer { color: var(--ink3); font-size: 12px; }
         ctx.stroke(); ctx.setLineDash([]);
       }
     });
-    const order = [...nodes].sort((a, b) => (a === hover || a === selected) - (b === hover || b === selected) || !!sigOn(a.c.sym) - !!sigOn(b.c.sym) || (isNH(a.c) && !nhFar(a.c)) - (isNH(b.c) && !nhFar(b.c)) || b.r - a.r);
+    const order = [...nodes].sort((a, b) => (a === hover || a === selected) - (b === hover || b === selected) || !!sigOn(a.c.sym) - !!sigOn(b.c.sym) || nhFresh(a.c) - nhFresh(b.c) || (isNH(a.c) && !nhFar(a.c)) - (isNH(b.c) && !nhFar(b.c)) || b.r - a.r);
     for (const n of order) bubble(n, t);
   }
 
@@ -753,26 +772,34 @@ footer { color: var(--ink3); font-size: 12px; }
     ctx.stroke(); ctx.setLineDash([]);
 
     if (isNH(c) && !nhFar(c)) {
-      // 金色光芒：24h 內突破 20 天新高、離前高 8% 以內（研究 D115）
-      const spin = reduce ? 0 : t / 2600, gc = colors.nh, a0 = dim ? 0.2 : 1;
-      const pulse = reduce ? 0.6 : 0.5 + 0.5 * Math.sin(t / 420 + n.ph);
+      // 金色光芒：大太陽＝30 分鐘內刷新 20 天新高；小太陽＝之前突破、還站在前高上
+      const big = nhFresh(c), gc = colors.nh, a0 = dim ? 0.2 : 1;
+      const spin = reduce ? 0 : t / (big ? 1400 : 4200);
+      const pulse = reduce ? 0.6 : 0.5 + 0.5 * Math.sin(t / (big ? 260 : 700) + n.ph);
       ctx.save();
-      const halo = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, r + 26 + 8 * pulse);
-      halo.addColorStop(0, rgba(gc, (dark ? 0.55 : 0.35) * a0)); halo.addColorStop(1, rgba(gc, 0));
-      ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(n.x, n.y, r + 34, 0, 6.2832); ctx.fill();
-      // 放射光芒：12 道，慢慢轉
-      ctx.globalAlpha = a0 * (0.55 + 0.45 * pulse); ctx.fillStyle = gc;
-      if (dark) { ctx.shadowColor = gc; ctx.shadowBlur = 14; }
-      for (let i = 0; i < 12; i++) {
-        const a = spin + i * 0.5236, len = (i % 2 ? 9 : 16) + 6 * pulse, w = i % 2 ? 0.07 : 0.1;
+      const hr = big ? r + 44 + 14 * pulse : r + 12 + 3 * pulse;
+      const halo = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, hr);
+      halo.addColorStop(0, rgba(gc, (big ? (dark ? 0.75 : 0.5) : (dark ? 0.28 : 0.18)) * a0)); halo.addColorStop(1, rgba(gc, 0));
+      ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(n.x, n.y, hr + 6, 0, 6.2832); ctx.fill();
+      const nr = big ? 16 : 8;
+      ctx.globalAlpha = a0 * (big ? 0.75 + 0.25 * pulse : 0.45 + 0.2 * pulse); ctx.fillStyle = gc;
+      if (dark && big) { ctx.shadowColor = gc; ctx.shadowBlur = 22; }
+      for (let i = 0; i < nr; i++) {
+        const a = spin + i * (6.2832 / nr);
+        const len = big ? (i % 2 ? 16 : 30) + 12 * pulse : (i % 2 ? 5 : 8) + 2 * pulse, w = big ? (i % 2 ? 0.06 : 0.09) : 0.08;
         ctx.beginPath();
-        ctx.moveTo(n.x + Math.cos(a - w) * (r + 4), n.y + Math.sin(a - w) * (r + 4));
-        ctx.lineTo(n.x + Math.cos(a) * (r + 4 + len), n.y + Math.sin(a) * (r + 4 + len));
-        ctx.lineTo(n.x + Math.cos(a + w) * (r + 4), n.y + Math.sin(a + w) * (r + 4));
+        ctx.moveTo(n.x + Math.cos(a - w) * (r + 3), n.y + Math.sin(a - w) * (r + 3));
+        ctx.lineTo(n.x + Math.cos(a) * (r + 3 + len), n.y + Math.sin(a) * (r + 3 + len));
+        ctx.lineTo(n.x + Math.cos(a + w) * (r + 3), n.y + Math.sin(a + w) * (r + 3));
         ctx.fill();
       }
-      ctx.globalAlpha = a0; ctx.lineWidth = 3; ctx.strokeStyle = gc;
+      ctx.shadowBlur = 0; ctx.globalAlpha = a0; ctx.lineWidth = big ? 3.5 : 2; ctx.strokeStyle = gc;
       ctx.beginPath(); ctx.arc(n.x, n.y, r + 2, 0, 6.2832); ctx.stroke();
+      if (big && !reduce) {                     // 大太陽：外圈再一道擴散波
+        const k = (t % 1500) / 1500;
+        ctx.globalAlpha = a0 * (1 - k) * 0.8; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(n.x, n.y, r + 6 + k * 40, 0, 6.2832); ctx.stroke();
+      }
       ctx.restore();
     }
     const sg = sigOn(c.sym);
@@ -818,7 +845,7 @@ footer { color: var(--ink3); font-size: 12px; }
       const s2 = Math.max(9, Math.min(r * 0.27, 17));
       ctx.font = `700 ${s2}px "JetBrains Mono", ui-monospace, monospace`;
       ctx.fillStyle = sg ? (sg.signal === "short" ? colors.avoid : colors.buy) : mv ? (mv.dir > 0 ? colors.hot : colors.avoid) : isNH(c) && !nhFar(c) ? colors.nh : brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
-      const txt = sg ? (sg.signal === "short" ? "可做空" : "可做多") : mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : isNH(c) && !nhFar(c) ? `新高 ${fmtPct(nhAbove(c), 1)}` : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
+      const txt = sg ? (sg.signal === "short" ? "可做空" : "可做多") : mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : isNH(c) && !nhFar(c) ? (nhFresh(c) ? `剛創高 ${freshAgo(c)}分` : `新高 ${fmtPct(nhAbove(c), 1)}`) : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
       ctx.fillText(txt, n.x, n.y + fs * 0.5 + s2 * 0.35);
     }
     // 左上角只放一個標記：！查到原因 > ↑↓ 剛換道 > $ 營收轉強
@@ -902,7 +929,7 @@ footer { color: var(--ink3); font-size: 12px; }
 
   // ---------- HTML 區塊 ----------
   function chaseList() {
-    return (DATA.newHighs || []).filter((x) => isNH(x) && !nhFar(x)).sort((a, b) => nhAbove(a) - nhAbove(b));
+    return (DATA.newHighs || []).filter((x) => isNH(x) && !nhFar(x)).sort((a, b) => nhFresh(b) - nhFresh(a) || nhAbove(a) - nhAbove(b));
   }
   function renderHeader() {
     const cnt = (t) => DATA.coins.filter((c) => c.tier === t).length;
@@ -1078,7 +1105,7 @@ footer { color: var(--ink3); font-size: 12px; }
   let railSig = "";
   function renderRailChase() {
     const list = chaseList(), sb = strongBull();
-    const sig = sb + list.map((x) => x.bn + nhAbove(x).toFixed(1)).join();
+    const sig = sb + list.map((x) => x.bn + nhAbove(x).toFixed(1) + (nhFresh(x) ? "f" + freshAgo(x) : "")).join();
     if (sig === railSig) return;
     railSig = sig;
     const t = $("tally")?.querySelector('[data-t="nh"]');
@@ -1087,10 +1114,13 @@ footer { color: var(--ink3); font-size: 12px; }
     el.classList.toggle("weak", !sb);
     const row = (x) => {
       const a = nhAbove(x), w = nhWave(x);
-      const body = `<b style="color:var(--nh)">${esc(x.sym)}</b><span>${w != null ? `這波 +${Math.round(w)}%` : ""}${x.onPage ? "" : "｜不在泡泡圖"}</span><em>▲${a.toFixed(1)}%</em>`;
-      return `<li>${x.onPage ? `<button type="button" class="it" data-sym="${esc(x.sym)}">${body}</button>` : `<a class="it" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
+      const fr = nhFresh(x);
+      const body = `<b style="color:var(--nh)">${esc(x.sym)}</b><span>${fr ? `<strong>剛創新高 ${freshAgo(x)} 分鐘前</strong>｜` : ""}${w != null ? `這波 +${Math.round(w)}%` : ""}${x.onPage ? "" : "｜不在泡泡圖"}</span><em>▲${a.toFixed(1)}%</em>`;
+      const c3 = `it${fr ? " fresh" : ""}`;
+      return `<li>${x.onPage ? `<button type="button" class="${c3}" data-sym="${esc(x.sym)}">${body}</button>` : `<a class="${c3}" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
     };
-    el.innerHTML = `<h3><span style="color:var(--nh)">追強</span><small>離前高 8% 以內 ${list.length} 檔</small></h3>
+    const nf = list.filter(nhFresh).length;
+    el.innerHTML = `<h3><span style="color:var(--nh)">追強</span><small>${nf ? `剛創新高 ${nf}｜` : ""}離前高 8% 以內 ${list.length} 檔</small></h3>
       ${list.length ? `<ol>${list.slice(0, 5).map(row).join("")}</ol>` : `<p class="none">現在沒有 24 小時內剛突破 20 天新高的幣。</p>`}
       <p class="rule">${sb ? "強牛做法：離前高 ≤3% 最好；停損 −20%，不設停利，從最高收盤回落 20% 才賣。" : "現在不是強牛：非強牛時追突破常整年虧錢，只當參考。"}${DATA.regime?.hot ? `<br><b style="color:var(--hot)">市場過熱</b>：2–4 週後回落機率偏高，新倉縮小。` : ""}</p>
       ${list.length > 5 ? `<button type="button" class="link">看全部 ${list.length} 檔</button>` : ""}`;
@@ -1415,7 +1445,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const el = $("nhbar"), all = DATA.newHighs || [];
     const hits = all.filter(isNH).sort((a, b) => nhFar(a) - nhFar(b) || nhAbove(a) - nhAbove(b));
     const sb = strongBull();
-    const sig = sb + hits.map((x) => x.bn + nhAbove(x).toFixed(1)).join();
+    const sig = sb + hits.map((x) => x.bn + nhAbove(x).toFixed(1) + (nhFresh(x) ? "f" : "")).join();
     if (sig === nhSig) return;
     nhSig = sig;
     const wasHidden = el.hidden;
@@ -1426,7 +1456,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const ok = hits.filter((x) => !nhFar(x)).length;
     const chip = (x) => {
       const a = nhAbove(x), far = a > NH_FAR, fresh = a <= NH_FRESH, w = nhWave(x);
-      const c2 = `nh${fresh ? " strong" : ""}${far ? " far" : ""}${x.onPage ? "" : " off"}`;
+      const c2 = `nh${fresh ? " strong" : ""}${far ? " far" : ""}${x.onPage ? "" : " off"}${!far && nhFresh(x) ? " sun" : ""}`;
       const inner = `<b>${esc(x.sym)}</b><span>${far ? "追太遠 " : "▲"}${a.toFixed(1)}%</span>${w != null ? `<small>這波 ${Math.round(w)}%</small>` : ""}`;
       const tip = `20 天前高 ${fmtPx(x.hi20)}｜離前高 ${a.toFixed(1)}%${w != null ? `｜20 天低點起 ${Math.round(w)}%` : ""}`;
       return x.onPage ? `<button type="button" class="${c2}" data-sym="${esc(x.sym)}" title="${esc(tip)}">${inner}</button>`
@@ -1438,9 +1468,12 @@ footer { color: var(--ink3); font-size: 12px; }
     el.querySelectorAll("button.nh").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
 
+  let freshSig = "";
   function tickLive() {
     if (!DATA) return;
     renderNH(); renderRailChase();
+    const fs = DATA.coins.filter(nhFresh).map((c) => c.sym).join();   // 大小太陽切換時重新排版（泡泡放大縮小）
+    if (fs !== freshSig) { freshSig = fs; layout(false); }
     document.querySelectorAll("[data-dist]").forEach((el) => {
       const c = DATA.coins.find((x) => x.sym === el.dataset.dist);
       if (!c?.trigger) return;
