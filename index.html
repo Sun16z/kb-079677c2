@@ -131,6 +131,7 @@ button { font: inherit; color: inherit; }
 .rc .none { padding: 2px 0 4px; }
 .rc.weak ol, .rc.weak h3 { opacity: .55; }
 .rc .it.dim { opacity: .6; }
+.rc .it .src { font-style: normal; font: 700 10.5px/1 var(--body); color: var(--ink2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 6px; margin-right: 6px; }
 .rc .it.fresh { --sc: var(--nh); position: relative; overflow: hidden; margin: 3px 0; padding: 7px 8px; border: 1px solid var(--nh);
   background: color-mix(in srgb, var(--nh) 14%, transparent); animation: sigglow 1.4s ease-in-out infinite; }
 .rc .it.fresh strong { color: var(--nh); }
@@ -1073,11 +1074,25 @@ footer { color: var(--ink3); font-size: 12px; }
         due = now < d48 ? `抱到 ${tpeFull(new Date(d48).toISOString())}～${tpeFull(new Date(d72).toISOString())}，還有 ${hrs(d48 - now)}–${hrs(d72 - now)} 小時`
           : now < d72 ? `已過 48 小時，${tpeFull(new Date(d72).toISOString())} 前出場` : "已過 72 小時，該出場了";
       }
-      return `<li><button type="button" class="it" data-sym="${esc(c.sym)}"><b class="t-buy">${esc(c.sym)}</b><span>${lead}</span><em class="${cls(r24Of(c))}">${fmtPct(r24Of(c))}</em>${due ? `<small>${due}</small>` : ""}</button></li>`;
+      return `<li><button type="button" class="it" data-sym="${esc(c.sym)}"><b class="t-buy">${esc(c.sym)}</b><span><i class="src">輪動</i>${lead}${c.extra ? "｜HL" : ""}</span><em class="${cls(r24Of(c))}">${fmtPct(r24Of(c))}</em>${due ? `<small>${due}</small>` : ""}</button></li>`;
     }).join("");
-    $("rcAmbush").innerHTML = `<h3><span class="t-buy">可以埋伏</span><small>${buys.length} 檔</small></h3>
-      ${buys.length ? `<ol>${amb}</ol>` : `<p class="none">這輪沒有龍頭剛噴、同族群還沒跟上的幣。</p>`}
-      <p class="rule">${bull ? "牛市：不設小停利，抱 48–72 小時到時間就賣，停損 −8～−12%。" : "非牛市：最多抱 24–48 小時，優勢很小。"}</p>`;
+    // 大戶 TWAP 開新多單（D119 可做多）
+    const twl = (DATA.twaps?.active || []).filter((g) => g.signal === "long" && leftOf(g) > 0).map((g) => {
+      const sym = whaleCoin(g.base || g.coin), on = DATA.coins.some((c) => c.sym === sym);
+      const body = `<b class="up">${esc(g.coin)}</b><span><i class="src">TWAP</i>大戶分批買 ${fmtUsd2(g.usd)}（佔成交 ${Math.round((g.impact || 0) * 100)}%）</span><em></em><small>${sigExit(g)}</small>`;
+      return `<li>${on ? `<button type="button" class="it sig long" data-sym="${esc(sym)}">${body}</button>` : `<a class="it sig long" href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
+    }).join("");
+    // 追蹤中的巨鯨，24 小時內開新多單或加碼多單
+    const wl = (DATA.whales?.events || []).filter((x) => /開倉|加碼/.test(x.kind) && /多/.test(x.text) && Date.now() - new Date(x.t) < 24 * 3600000).slice(-4).reverse().map((x) => {
+      const sym = whaleCoin(x.coin), on = DATA.coins.some((c) => c.sym === sym);
+      const body = `<b class="up">${esc(x.coin)}</b><span><i class="src">巨鯨</i>${esc(x.label || x.address.slice(0, 8))}：${esc(x.text)}</span><em></em><small>${tpeFull(x.t)}</small>`;
+      return `<li>${on ? `<button type="button" class="it" data-sym="${esc(sym)}">${body}</button>` : `<a class="it" href="https://hypurrscan.io/address/${esc(x.address)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
+    }).join("");
+    const total = buys.length + (twl.match(/<li>/g) || []).length + (wl.match(/<li>/g) || []).length;
+    $("rcAmbush").innerHTML = `<h3><span class="t-buy">提前埋伏</span><small>${total} 個機會</small></h3>
+      ${total ? `<ol>${twl}${amb}${wl}</ol>` : `<p class="none">現在沒有族群輪動候選、大戶 TWAP 買入或巨鯨新多單。</p>`}
+      <p class="rule"><b>輪動</b>：同族群龍頭剛噴、它還沒跟上。${bull ? "牛市不設小停利，抱 48–72 小時，停損 −8～−12%。" : "非牛市最多抱 24–48 小時，優勢很小。"}<br><b>TWAP</b>：大戶正在分批買（勝率約 62%），TWAP 結束或取消就平倉。<br><b>巨鯨</b>：追蹤中的大戶剛開多，只是參考，沒有回測。</p>`;
+
     // 重大事件：上幣／下架（48h）、暴漲原因（24h）、多站核實的新聞
     const now = Date.now(), ev = [];
     for (const e of DATA.listings || []) if (now - new Date(e.t) < 48 * 3600000)
@@ -1097,7 +1112,7 @@ footer { color: var(--ink3); font-size: 12px; }
     ev.sort((a, b) => String(b.t).localeCompare(String(a.t)));
     $("rcEvents").innerHTML = `<h3>重大事件<small>上幣、巨鯨、暴漲原因、新聞</small></h3>
       ${ev.length ? `<ol>${ev.slice(0, 6).map((x) => `<li>${x.html}</li>`).join("")}</ol>` : `<p class="none">過去 48 小時沒有重大事件。</p>`}`;
-    $("rcAmbush").querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    $("rcAmbush").querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
     $("rcEvents").querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
     railSig = "";
     renderRailChase();
