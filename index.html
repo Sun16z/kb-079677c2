@@ -414,7 +414,7 @@ footer { color: var(--ink3); font-size: 12px; }
           <span><b>紅／綠閃亮外圈＋星光</b>：Hyperliquid 大戶正在用 TWAP 大量賣出（紅，可做空）或買入（綠，可做多），每小時量 ≥ 成交量 10%。TWAP 結束就平倉。</span>
           <span><b>閃動外圈</b>：即時異動，15 分鐘漲跌 3% 或 5 分鐘 2% 以上。是提醒，不是買點。</span>
           <span><b>左上角小標</b>：<b>T</b>有大戶正在 Hyperliquid 用 TWAP 分批賣（紅）或買（綠），<b>！</b>查到暴漲原因，<b>↑↓</b>這輪剛換道，<b>$</b>營收轉強。一顆泡泡只顯示最重要的一個。</span>
-          <span><b>大小</b>：<span id="lg-size">24h 漲跌</span>。觀望的幣刻意縮小。</span>
+          <span><b>大小</b>：<span id="lg-size">24h 漲跌</span>。觀望的幣刻意縮小。切到 LIQ 或成交量時，泡泡裡的數字也跟著換成 LIQ 或成交量；新高、訊號看光芒和外圈。</span>
           <span>上方的數字、右邊的清單都可以點。細節都在點開泡泡後的卡片裡，CoinKarma 的 LIQ 也在卡片裡（回測沒有預測力）。</span>
         </div>
       </details>
@@ -726,7 +726,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const c = n.c;
     if (mode === "r24") return fmtPct(r24Of(c));
     if (mode === "vol") return fmtVol(c.vol24);
-    return "LIQ " + sgn(c.liq);
+    return c.liq == null ? "無 LIQ" : "LIQ " + sgn(c.liq);
   }
 
   function draw(t) {
@@ -860,8 +860,9 @@ footer { color: var(--ink3); font-size: 12px; }
     if (showSub) {
       const s2 = Math.max(9, Math.min(r * 0.27, 17));
       ctx.font = `700 ${s2}px "JetBrains Mono", ui-monospace, monospace`;
-      const subCol = sg ? (sg.signal === "short" ? colors.avoid : colors.buy) : mv ? (mv.dir > 0 ? colors.hot : colors.avoid) : isNH(c) && !nhFar(c) ? (dark ? "#fff3c4" : colors.nh) : brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
-      const txt = sg ? (sg.signal === "short" ? "可做空" : "可做多") : mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : isNH(c) && !nhFar(c) ? (nhFresh(c) ? `剛創高 ${freshAgo(c)}分` : `新高 ${fmtPct(nhAbove(c), 1)}`) : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
+      const byMode = mode !== "r24";              // LIQ／成交量模式：一律顯示該數值，狀態交給光芒和外圈
+      const subCol = byMode ? (mode === "liq" ? (c.liq == null ? colors.ink3 : c.liq >= LIQ_GLOW ? colors.liq : c.liq > 0 ? colors.buy : c.liq < 0 ? colors.avoid : colors.ink2) : colors.ink2) : sg ? (sg.signal === "short" ? colors.avoid : colors.buy) : mv ? (mv.dir > 0 ? colors.hot : colors.avoid) : isNH(c) && !nhFar(c) ? (dark ? "#fff3c4" : colors.nh) : brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
+      const txt = byMode ? label(n) : sg ? (sg.signal === "short" ? "可做空" : "可做多") : mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : isNH(c) && !nhFar(c) ? (nhFresh(c) ? `剛創高 ${freshAgo(c)}分` : `新高 ${fmtPct(nhAbove(c), 1)}`) : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
       label2(txt, n.x, n.y + fs * 0.5 + s2 * 0.35, subCol, s2);
     }
     // 左上角只放一個標記：！查到原因 > ↑↓ 剛換道 > $ 營收轉強
