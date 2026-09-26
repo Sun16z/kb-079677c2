@@ -781,7 +781,7 @@ footer { color: var(--ink3); font-size: 12px; }
       const hr = big ? r + 26 + 8 * pulse : r + 10 + 3 * pulse;
       const halo = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, hr);
       halo.addColorStop(0, rgba(gc, (big ? (dark ? 0.75 : 0.5) : (dark ? 0.28 : 0.18)) * a0)); halo.addColorStop(1, rgba(gc, 0));
-      ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(n.x, n.y, hr + 6, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(n.x, n.y, hr + 6, 0, 6.2832); ctx.arc(n.x, n.y, r, 0, 6.2832, true); ctx.fill();
       const nr = big ? 16 : 8;
       ctx.globalAlpha = a0 * (big ? 0.75 + 0.25 * pulse : 0.45 + 0.2 * pulse); ctx.fillStyle = gc;
       if (dark && big) { ctx.shadowColor = gc; ctx.shadowBlur = 22; }
@@ -811,7 +811,7 @@ footer { color: var(--ink3); font-size: 12px; }
       ctx.save();
       const halo = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, r + 20 + 8 * br);
       halo.addColorStop(0, rgba(sc, (dark ? 0.55 : 0.35) * a0)); halo.addColorStop(1, rgba(sc, 0));
-      ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(n.x, n.y, r + 28, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(n.x, n.y, r + 28, 0, 6.2832); ctx.arc(n.x, n.y, r, 0, 6.2832, true); ctx.fill();
       ctx.globalAlpha = a0; ctx.shadowColor = sc; ctx.shadowBlur = dark ? 22 : 8;
       ctx.lineWidth = 3; ctx.strokeStyle = sc;
       ctx.setLineDash([r * 0.45, r * 0.3]); ctx.lineDashOffset = -spin * r * 2;
@@ -835,19 +835,34 @@ footer { color: var(--ink3); font-size: 12px; }
       ctx.globalAlpha = dim ? 0.2 : 1;
     }
 
-    ctx.fillStyle = c.tier === "wait" ? colors.ink2 : colors.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const lit = sg || (isNH(c) && !nhFar(c));
+    if (lit && r > 10) {                         // 發光的泡泡：中間墊一層深底，字才看得清楚
+      ctx.save();
+      const core = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, r);
+      core.addColorStop(0, rgba(colors.field, dark ? 0.78 : 0.82)); core.addColorStop(0.8, rgba(colors.field, dark ? 0.62 : 0.7)); core.addColorStop(1, rgba(colors.field, 0));
+      ctx.fillStyle = core; ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, 6.2832); ctx.fill();
+      ctx.restore();
+    }
+    // 字加一圈背景色描邊，壓在光芒或亮色底上也清楚
+    const label2 = (txt, x, y, fill, size) => {
+      ctx.lineJoin = "round"; ctx.lineWidth = Math.max(2.5, size * 0.22);
+      ctx.strokeStyle = rgba(colors.field, 0.85); ctx.strokeText(txt, x, y);
+      ctx.fillStyle = fill; ctx.fillText(txt, x, y);
+    };
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const symCol = lit ? colors.ink : c.tier === "wait" ? colors.ink2 : colors.ink;
     const sym = c.sym;
     let fs = Math.min(r * 0.5, (r * 1.55) / Math.max(2.2, sym.length * 0.62));
     fs = Math.max(9, fs);
     const showSub = r > 23;
     ctx.font = `800 ${fs}px "Bricolage Grotesque", system-ui, sans-serif`;
-    ctx.fillText(sym, n.x, n.y - (showSub ? fs * 0.32 : 0));
+    label2(sym, n.x, n.y - (showSub ? fs * 0.32 : 0), symCol, fs);
     if (showSub) {
       const s2 = Math.max(9, Math.min(r * 0.27, 17));
       ctx.font = `700 ${s2}px "JetBrains Mono", ui-monospace, monospace`;
-      ctx.fillStyle = sg ? (sg.signal === "short" ? colors.avoid : colors.buy) : mv ? (mv.dir > 0 ? colors.hot : colors.avoid) : isNH(c) && !nhFar(c) ? colors.nh : brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
+      const subCol = sg ? (sg.signal === "short" ? colors.avoid : colors.buy) : mv ? (mv.dir > 0 ? colors.hot : colors.avoid) : isNH(c) && !nhFar(c) ? (dark ? "#fff3c4" : colors.nh) : brk(c) ? col : broke(c) ? colors.ink3 : colors.ink2;
       const txt = sg ? (sg.signal === "short" ? "可做空" : "可做多") : mv ? `${mv.r15 != null ? "15分" : "5分"} ${fmtPct(mv.r15 ?? mv.r5)}` : isNH(c) && !nhFar(c) ? (nhFresh(c) ? `剛創高 ${freshAgo(c)}分` : `新高 ${fmtPct(nhAbove(c), 1)}`) : brk(c) ? "突破中" : broke(c) ? "已失效" : label(n);
-      ctx.fillText(txt, n.x, n.y + fs * 0.5 + s2 * 0.35);
+      label2(txt, n.x, n.y + fs * 0.5 + s2 * 0.35, subCol, s2);
     }
     // 左上角只放一個標記：！查到原因 > ↑↓ 剛換道 > $ 營收轉強
     const nw = DATA.news?.[c.bn];
@@ -985,6 +1000,7 @@ footer { color: var(--ink3); font-size: 12px; }
   }
   // 全 Hyperliquid TWAP 雷達：同一個幣的進行中大單
   const twapsOn = (sym) => (DATA.twaps?.active || []).filter((g) => whaleCoin(g.base || g.coin) === sym && g.market !== "美股／HIP-3");
+  const impTxt = (x) => x == null ? "-" : x >= 10 ? ">999%" : Math.round(x * 100) + "%";
   const sigName = (g) => g.signal === "short" ? (g.strong ? "可做空（大戶出貨）" : "可做空") : g.signal === "long" ? "可做多" : "";
   const leftOf = (g) => Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000));
   const sigExit = (g) => `TWAP 結束 ${tpeFull(new Date(g.end).toISOString())} 平倉（剩 ${leftOf(g)} 分）`;
@@ -992,7 +1008,7 @@ footer { color: var(--ink3); font-size: 12px; }
   const twapLine = (g) => {
     const sell = !g.buy;
     const pos = g.pos ? `｜他${g.pos.side}單 ${fmtUsd2(g.pos.value)}，未實現 <span class="${cls(g.pos.upnl)}">${fmtUsd2(g.pos.upnl)}</span>` : "";
-    return `<b class="${sell ? "dn" : "up"}">${esc(g.side)}</b> ${fmtUsd2(g.usd)}，每小時 ${fmtUsd2(g.perHour)}${g.impact ? `（佔成交 ${Math.round(g.impact * 100)}%）` : ""}，剩 ${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分${pos}`;
+    return `<b class="${sell ? "dn" : "up"}">${esc(g.side)}</b> ${fmtUsd2(g.usd)}，每小時 ${fmtUsd2(g.perHour)}${g.impact ? `（佔成交 ${impTxt(g.impact)}）` : ""}，剩 ${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分${pos}`;
   };
   function twapBlock(c) {
     const L = twapsOn(c.sym);
@@ -1009,7 +1025,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const nSig = list.filter((g) => g.signal).length;
     const row = (g) => {
       const sym = whaleCoin(g.base || g.coin), on = DATA.coins.some((c) => c.sym === sym) && g.market !== "美股／HIP-3";
-      const body = `<b class="${g.buy ? "up" : "dn"}">${esc(g.coin.replace(/^xyz:/, ""))}</b><span>${g.signal ? `<strong>${sigName(g)}</strong>` : esc(g.side)} ${fmtUsd2(g.usd)}${g.market !== "合約" ? `｜${esc(g.market)}` : ""}</span><em class="${g.buy ? "up" : "dn"}">${g.impact ? Math.round(g.impact * 100) + "%" : ""}</em>
+      const body = `<b class="${g.buy ? "up" : "dn"}">${esc(g.coin.replace(/^xyz:/, ""))}</b><span>${g.signal ? `<strong>${sigName(g)}</strong>` : g.fight ? `<strong style="color:var(--wait)">多空對打</strong> ${esc(g.side)}` : esc(g.side)} ${fmtUsd2(g.usd)}${g.market !== "合約" ? `｜${esc(g.market)}` : ""}</span><em class="${g.buy ? "up" : "dn"}">${g.impact ? impTxt(g.impact) : ""}</em>
         <small>${g.signal ? sigExit(g) : `每小時 ${fmtUsd2(g.perHour)}｜剩 ${leftOf(g)} 分`}${g.pos ? `｜他${g.pos.side}單未實現 ${fmtUsd2(g.pos.upnl)}` : ""}</small>`;
       const c2 = `it${g.signal ? ` sig ${g.signal}` : " dim"}`;
       return `<li>${on ? `<button type="button" class="${c2}" data-sym="${esc(sym)}">${body}</button>` : `<a class="${c2}" href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
@@ -1038,7 +1054,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const evs = (W?.events || []).slice().reverse();
     const twTable = T ? `<article class="wh"><div class="wh-h"><b>全 Hyperliquid TWAP 大單</b><span>進行中 ${T.activeCount} 筆，下面是名目 ≥50 萬美元且佔成交 ≥3%（或 ≥500 萬美元）｜${tpeFull(T.at)} 更新</span></div>
       <div class="tbl"><table><tr><th>幣</th><th>訊號</th><th>市場</th><th>動作</th><th>金額</th><th>每小時</th><th>佔成交</th><th>剩</th><th>他的部位</th><th>地址</th></tr>
-      ${(T.active || []).map((g) => `<tr><td class="${g.buy ? "up" : "dn"}">${esc(g.coin)}</td><td>${g.signal ? `<b class="${g.buy ? "up" : "dn"}">${sigName(g)}</b>` : ""}</td><td>${esc(g.market)}</td><td>${esc(g.side)}</td><td>${fmtUsd2(g.usd)}</td><td>${fmtUsd2(g.perHour)}</td><td>${g.impact ? Math.round(g.impact * 100) + "%" : "-"}</td><td>${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分</td>
+      ${(T.active || []).map((g) => `<tr><td class="${g.buy ? "up" : "dn"}">${esc(g.coin)}</td><td>${g.signal ? `<b class="${g.buy ? "up" : "dn"}">${sigName(g)}</b>` : ""}</td><td>${esc(g.market)}</td><td>${esc(g.side)}</td><td>${fmtUsd2(g.usd)}</td><td>${fmtUsd2(g.perHour)}</td><td>${g.impact ? impTxt(g.impact) : "-"}</td><td>${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分</td>
         <td>${g.pos ? `${g.pos.side} ${fmtUsd2(g.pos.value)}（<span class="${cls(g.pos.upnl)}">${fmtUsd2(g.pos.upnl)}</span>）` : "-"}</td><td><a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></td></tr>`).join("") || `<tr><td colspan="10">現在沒有夠大的 TWAP。</td></tr>`}</table></div></article>` : "";
     const card = (w) => {
       const e = evs.filter((x) => x.address === w.address).slice(0, 6);
@@ -1079,7 +1095,7 @@ footer { color: var(--ink3); font-size: 12px; }
     // 大戶 TWAP 開新多單（D119 可做多）
     const twl = (DATA.twaps?.active || []).filter((g) => g.signal === "long" && leftOf(g) > 0).map((g) => {
       const sym = whaleCoin(g.base || g.coin), on = DATA.coins.some((c) => c.sym === sym);
-      const body = `<b class="up">${esc(g.coin)}</b><span><i class="src">TWAP</i>大戶分批買 ${fmtUsd2(g.usd)}（佔成交 ${Math.round((g.impact || 0) * 100)}%）</span><em></em><small>${sigExit(g)}</small>`;
+      const body = `<b class="up">${esc(g.coin)}</b><span><i class="src">TWAP</i>大戶分批買 ${fmtUsd2(g.usd)}（佔成交 ${impTxt(g.impact || 0)}）</span><em></em><small>${sigExit(g)}</small>`;
       return `<li>${on ? `<button type="button" class="it sig long" data-sym="${esc(sym)}">${body}</button>` : `<a class="it sig long" href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
     }).join("");
     // 追蹤中的巨鯨，24 小時內開新多單或加碼多單
