@@ -604,8 +604,8 @@ footer { color: var(--ink3); font-size: 12px; }
   function metric(n) {
     const c = n.c;
     const v = mode === "liq" ? 0.3 + Math.abs(c.liq ?? 0) : mode === "r24" ? 0.25 + Math.abs(r24Of(c) ?? 0) : Math.sqrt(c.vol24 || 1e6) / 1e3;
-    if (c.tier !== "wait") return nhFresh(c) ? v * 1.2 : v;
-    if (nhFresh(c)) return v * 1.15;                                  // 大太陽：剛創新高，放大
+    if (c.tier !== "wait") return nhFresh(c) ? v * 1.15 : v;
+    if (nhFresh(c)) return v * 1.05;                                  // 大太陽：剛創新高，放大
     if (sigOn(c.sym) || (isNH(c) && !nhFar(c))) return v * 0.85;   // TWAP 訊號、可追的新高不縮小
     return v * 0.3;                                         // 觀望刻意縮小
   }
@@ -777,7 +777,7 @@ footer { color: var(--ink3); font-size: 12px; }
       const spin = reduce ? 0 : t / (big ? 1400 : 4200);
       const pulse = reduce ? 0.6 : 0.5 + 0.5 * Math.sin(t / (big ? 260 : 700) + n.ph);
       ctx.save();
-      const hr = big ? r + 44 + 14 * pulse : r + 12 + 3 * pulse;
+      const hr = big ? r + 26 + 8 * pulse : r + 10 + 3 * pulse;
       const halo = ctx.createRadialGradient(n.x, n.y, r, n.x, n.y, hr);
       halo.addColorStop(0, rgba(gc, (big ? (dark ? 0.75 : 0.5) : (dark ? 0.28 : 0.18)) * a0)); halo.addColorStop(1, rgba(gc, 0));
       ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(n.x, n.y, hr + 6, 0, 6.2832); ctx.fill();
@@ -786,7 +786,7 @@ footer { color: var(--ink3); font-size: 12px; }
       if (dark && big) { ctx.shadowColor = gc; ctx.shadowBlur = 22; }
       for (let i = 0; i < nr; i++) {
         const a = spin + i * (6.2832 / nr);
-        const len = big ? (i % 2 ? 16 : 30) + 12 * pulse : (i % 2 ? 5 : 8) + 2 * pulse, w = big ? (i % 2 ? 0.06 : 0.09) : 0.08;
+        const len = big ? (i % 2 ? 12 : 22) + 8 * pulse : (i % 2 ? 5 : 8) + 2 * pulse, w = big ? (i % 2 ? 0.06 : 0.09) : 0.08;
         ctx.beginPath();
         ctx.moveTo(n.x + Math.cos(a - w) * (r + 3), n.y + Math.sin(a - w) * (r + 3));
         ctx.lineTo(n.x + Math.cos(a) * (r + 3 + len), n.y + Math.sin(a) * (r + 3 + len));
@@ -798,7 +798,7 @@ footer { color: var(--ink3); font-size: 12px; }
       if (big && !reduce) {                     // 大太陽：外圈再一道擴散波
         const k = (t % 1500) / 1500;
         ctx.globalAlpha = a0 * (1 - k) * 0.8; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(n.x, n.y, r + 6 + k * 40, 0, 6.2832); ctx.stroke();
+        ctx.beginPath(); ctx.arc(n.x, n.y, r + 6 + k * 26, 0, 6.2832); ctx.stroke();
       }
       ctx.restore();
     }
