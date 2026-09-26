@@ -131,6 +131,11 @@ button { font: inherit; color: inherit; }
 .rc .none { padding: 2px 0 4px; }
 .rc.weak ol, .rc.weak h3 { opacity: .55; }
 .rc .it.dim { opacity: .6; }
+.q { font-style: normal; font: 600 10.5px/1 var(--body); border-radius: 999px; padding: 2px 6px; margin-right: 4px; border: 1px solid var(--line); color: var(--ink2); white-space: nowrap; }
+.q.good { color: var(--buy); border-color: color-mix(in srgb, var(--buy) 55%, var(--line)); }
+.q.bad { color: var(--hot); border-color: color-mix(in srgb, var(--hot) 55%, var(--line)); }
+.qline { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.rc .it small .q { font-size: 10px; }
 .rc .it .src { font-style: normal; font: 700 10.5px/1 var(--body); color: var(--ink2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 6px; margin-right: 6px; }
 .rc .it.fresh { --sc: var(--nh); position: relative; overflow: hidden; margin: 3px 0; padding: 7px 8px; border: 1px solid var(--nh);
   background: color-mix(in srgb, var(--nh) 14%, transparent); animation: sigglow 1.4s ease-in-out infinite; }
@@ -410,7 +415,7 @@ footer { color: var(--ink3); font-size: 12px; }
         <div class="pop">
           <span><b>位置</b>：由左到右是可以埋伏、觀望、追高風險高、別碰。越左邊，過去一年的勝率越高。</span>
           <span><b>顏色</b>：綠＝可以埋伏，橘紅＝追高風險高，紅＝別碰。觀望道的底色只是 24h 漲跌。</span>
-          <span><b>金色太陽</b>：24 小時內突破 20 天新高、離前高 8% 以內，可以追強（強牛才適用）。<b>大太陽</b>＝30 分鐘內剛刷新新高（放大、光芒更強），30 分鐘沒再創高就變回<b>小太陽</b>。</span>
+          <span><b>金色太陽</b>：24 小時內突破 20 天新高、離前高 8% 以內，可以追強（強牛才適用）。<b>大太陽</b>＝30 分鐘內剛刷新新高（放大、光芒更強），30 分鐘沒再創高就變回<b>小太陽</b>。離 30 日線超過 25% 的太陽會變淡（研究顯示追這種最差）。清單上的「真買盤」＝突破那根主動買 ≥55%。</span>
           <span><b>紅／綠閃亮外圈＋星光</b>：Hyperliquid 大戶正在用 TWAP 大量賣出（紅，可做空）或買入（綠，可做多），每小時量 ≥ 成交量 10%。TWAP 結束就平倉。</span>
           <span><b>閃動外圈</b>：即時異動，15 分鐘漲跌 3% 或 5 分鐘 2% 以上。是提醒，不是買點。</span>
           <span><b>左上角小標</b>：<b>T</b>有大戶正在 Hyperliquid 用 TWAP 分批賣（紅）或買（綠），<b>！</b>查到暴漲原因，<b>↑↓</b>這輪剛換道，<b>$</b>營收轉強。一顆泡泡只顯示最重要的一個。</span>
@@ -570,7 +575,15 @@ footer { color: var(--ink3); font-size: 12px; }
     if (lp && lp > p.px) { p.px = lp; p.t = Date.now(); }
     return p;
   }
-  const nhFresh = (x) => isNH(x) && !nhFar(x) && Date.now() - peakOf(x).t < FRESH_MS;
+  const far30 = (x) => (x.ext30 ?? 0) > 25;                 // 離 30 日線 >25%：研究 D128 最差，太陽變淡
+  const nhFresh = (x) => isNH(x) && !nhFar(x) && !far30(x) && Date.now() - peakOf(x).t < FRESH_MS;
+  // 突破那根主動買、離 30 日線（D128）
+  const qualTags = (x) => {
+    const t = [];
+    if (x.brkTk != null) t.push(x.brkTk >= 0.55 ? `<i class="q good">真買盤 ${Math.round(x.brkTk * 100)}%</i>` : x.brkTk < 0.5 ? `<i class="q bad">賣多 ${Math.round(x.brkTk * 100)}%</i>` : `<i class="q">主動買 ${Math.round(x.brkTk * 100)}%</i>`);
+    if (x.ext30 != null) t.push(x.ext30 > 25 ? `<i class="q bad">離均線太遠 +${Math.round(x.ext30)}%</i>` : x.ext30 <= 10 ? `<i class="q good">貼近均線 ${fmtPct(x.ext30, 0)}</i>` : `<i class="q">離30日線 ${fmtPct(x.ext30, 0)}</i>`);
+    return t.join("");
+  };
   const freshAgo = (x) => Math.max(0, Math.round((Date.now() - peakOf(x).t) / 60000));
   const r24Of = (c) => live[c.bn]?.r24 ?? c.r24;
   const brk = (c) => c.tier === "buy" && c.trigger && priceOf(c) >= c.trigger;
@@ -607,7 +620,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const v = mode === "liq" ? 0.3 + Math.abs(c.liq ?? 0) : mode === "r24" ? 0.25 + Math.abs(r24Of(c) ?? 0) : Math.sqrt(c.vol24 || 1e6) / 1e3;
     if (c.tier !== "wait") return nhFresh(c) ? v * 1.15 : v;
     if (nhFresh(c)) return v * 1.05;                                  // 大太陽：剛創新高，放大
-    if (sigOn(c.sym) || (isNH(c) && !nhFar(c))) return v * 0.85;   // TWAP 訊號、可追的新高不縮小
+    if (sigOn(c.sym) || (isNH(c) && !nhFar(c) && !far30(c))) return v * 0.85;   // TWAP 訊號、可追的新高不縮小
     return v * 0.3;                                         // 觀望刻意縮小
   }
 
@@ -774,7 +787,7 @@ footer { color: var(--ink3); font-size: 12px; }
 
     if (isNH(c) && !nhFar(c)) {
       // 金色光芒：大太陽＝30 分鐘內刷新 20 天新高；小太陽＝之前突破、還站在前高上
-      const big = nhFresh(c), gc = colors.nh, a0 = dim ? 0.2 : 1;
+      const big = nhFresh(c), gc = colors.nh, a0 = (dim ? 0.2 : 1) * (far30(c) ? 0.5 : 1);
       const spin = reduce ? 0 : t / (big ? 1400 : 4200);
       const pulse = reduce ? 0.6 : 0.5 + 0.5 * Math.sin(t / (big ? 260 : 700) + n.ph);
       ctx.save();
@@ -966,7 +979,7 @@ footer { color: var(--ink3); font-size: 12px; }
 
   // ---------- HTML 區塊 ----------
   function chaseList() {
-    return (DATA.newHighs || []).filter((x) => isNH(x) && !nhFar(x)).sort((a, b) => nhFresh(b) - nhFresh(a) || nhAbove(a) - nhAbove(b));
+    return (DATA.newHighs || []).filter((x) => isNH(x) && !nhFar(x)).sort((a, b) => far30(a) - far30(b) || nhFresh(b) - nhFresh(a) || (b.brkTk >= 0.55) - (a.brkTk >= 0.55) || nhAbove(a) - nhAbove(b));
   }
   function renderHeader() {
     const cnt = (t) => DATA.coins.filter((c) => c.tier === t).length;
@@ -1141,13 +1154,18 @@ footer { color: var(--ink3); font-size: 12px; }
     }
     for (const x of (DATA.hotNews?.items || []).slice(0, 6)) if (x.verify?.level === "高" && x.time && now - new Date(x.time) < 12 * 3600000)
       ev.push({ t: x.time, html: `<a class="it" href="${esc(x.url || "#")}" target="_blank" rel="noopener noreferrer"><b class="${x.impact === "利多" ? "t-buy" : x.impact === "利空" ? "t-avoid" : "t-wait"}">${esc(x.impact || "新聞")}</b><span>${esc(x.title)}</span><em></em><small>${x.verify.n} 站核實｜${tpeFull(x.time)}</small></a>` });
+    for (const h of DATA.liqVol || []) {
+      const on = DATA.coins.some((c) => c.sym === h.sym);
+      const body = `<b class="up">${esc(h.sym)}</b><span>LIQ≥2＋放量：LIQ ${sgn(h.liq)}、量 ${h.vr} 倍</span><em class="${cls(h.r24)}">${h.r24 != null ? fmtPct(h.r24) : ""}</em><small>一週樣本 72h 跑贏 55%｜${tpeFull(h.t)}</small>`;
+      ev.push({ t: h.t, html: on ? `<button type="button" class="it" data-sym="${esc(h.sym)}">${body}</button>` : `<div class="it">${body}</div>` });
+    }
     for (const x of DATA.whales?.events || []) if (now - new Date(x.t) < 24 * 3600000) {
       const sym = whaleCoin(x.coin), on = DATA.coins.some((c) => c.sym === sym);
       const body = `<b class="${/平倉|減碼/.test(x.text) ? "t-hot" : "t-buy"}">${esc(x.coin)}</b><span>${esc(x.text)}</span><em></em><small>巨鯨 ${esc(x.label || x.address.slice(0, 8))}｜${tpeFull(x.t)}</small>`;
       ev.push({ t: x.t, html: on ? `<button type="button" class="it" data-sym="${esc(sym)}">${body}</button>` : `<a class="it" href="https://hypurrscan.io/address/${esc(x.address)}" target="_blank" rel="noopener noreferrer">${body}</a>` });
     }
     ev.sort((a, b) => String(b.t).localeCompare(String(a.t)));
-    $("rcEvents").innerHTML = `<h3>重大事件<small>上幣、巨鯨、暴漲原因、新聞</small></h3>
+    $("rcEvents").innerHTML = `<h3>重大事件<small>上幣、巨鯨、LIQ＋放量、暴漲原因、新聞</small></h3>
       ${ev.length ? `<ol>${ev.slice(0, 6).map((x) => `<li>${x.html}</li>`).join("")}</ol>` : `<p class="none">過去 48 小時沒有重大事件。</p>`}`;
     $("rcAmbush").querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
     $("rcEvents").querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
@@ -1167,8 +1185,8 @@ footer { color: var(--ink3); font-size: 12px; }
     const row = (x) => {
       const a = nhAbove(x), w = nhWave(x);
       const fr = nhFresh(x);
-      const body = `<b style="color:var(--nh)">${esc(x.sym)}</b><span>${fr ? `<strong>剛創新高 ${freshAgo(x)} 分鐘前</strong>｜` : ""}${w != null ? `這波 +${Math.round(w)}%` : ""}${x.onPage ? "" : "｜不在泡泡圖"}</span><em>▲${a.toFixed(1)}%</em>`;
-      const c3 = `it${fr ? " fresh" : ""}`;
+      const body = `<b style="color:var(--nh)">${esc(x.sym)}</b><span>${fr ? `<strong>剛創新高 ${freshAgo(x)} 分鐘前</strong>｜` : ""}${w != null ? `這波 +${Math.round(w)}%` : ""}${x.onPage ? "" : "｜不在泡泡圖"}</span><em>▲${a.toFixed(1)}%</em><small>${qualTags(x)}</small>`;
+      const c3 = `it${fr ? " fresh" : ""}${far30(x) ? " dim" : ""}`;
       return `<li>${x.onPage ? `<button type="button" class="${c3}" data-sym="${esc(x.sym)}">${body}</button>` : `<a class="${c3}" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
     };
     const nf = list.filter(nhFresh).length;
@@ -1400,6 +1418,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const tag = a <= NH_FRESH ? "剛突破，離前高很近" : a > NH_FAR ? "已經衝太遠，追高風險也高" : "突破中";
     return `<div class="news nhcard"><small>24 小時內突破 20 天新高｜${tag}</small>
       <p>現價比 20 天前高 ${fmtPx(c.hi20)} 多 ${fmtPct(a, 1)}${w != null ? `；從 20 天低點算已漲 ${Math.round(w)}%` : ""}。</p>
+      ${qualTags(c) ? `<p class="qline">${qualTags(c)}</p><p class="lead">研究（D128）：突破那根主動買 ≥55% 的，7 天跑贏 55%（<50% 只有 42%）；強牛追強時離 30 日線 >25% 的最差、≤10% 最好。</p>` : ""}
       <p class="lead">${strongBull() ? CHASE_PLAY : CHASE_WARN}</p></div>`;
   }
 
@@ -1461,6 +1480,7 @@ footer { color: var(--ink3); font-size: 12px; }
       <p class="why">${esc(c.why)}</p>
       ${(DATA.listings || []).filter((e) => e.base === c.sym).slice(0, 2).map((e) => `<div class="news"><small>${esc(e.kind)}（${tpeFull(e.t)}）</small><p>${esc(e.advice || e.title || "")}${e.since != null ? `　事件後到現在 <b class="${cls(e.since)}">${fmtPct(e.since)}</b>` : ""}</p></div>`).join("")}
       ${nhBlock(c)}
+      ${(DATA.liqVol || []).filter((h) => h.sym === c.sym).slice(-1).map((h) => `<div class="news"><small>LIQ≥2＋放量（${tpeFull(h.t)}）</small><p>LIQ ${sgn(h.liq)}、24h 成交額是 7 天日均的 ${h.vr} 倍。一週樣本：72h 跑贏其他幣 55%、平均 +2%；24h 只有 31%，短線常先震，看 3 天。樣本很小，還在驗證。</p></div>`).join("")}
       ${twapBlock(c)}
       ${whaleBlock(c)}
       ${ambushBlock(c)}
@@ -1508,8 +1528,8 @@ footer { color: var(--ink3); font-size: 12px; }
     const ok = hits.filter((x) => !nhFar(x)).length;
     const chip = (x) => {
       const a = nhAbove(x), far = a > NH_FAR, fresh = a <= NH_FRESH, w = nhWave(x);
-      const c2 = `nh${fresh ? " strong" : ""}${far ? " far" : ""}${x.onPage ? "" : " off"}${!far && nhFresh(x) ? " sun" : ""}`;
-      const inner = `<b>${esc(x.sym)}</b><span>${far ? "追太遠 " : "▲"}${a.toFixed(1)}%</span>${w != null ? `<small>這波 ${Math.round(w)}%</small>` : ""}`;
+      const c2 = `nh${fresh && !far30(x) ? " strong" : ""}${far || far30(x) ? " far" : ""}${x.onPage ? "" : " off"}${!far && nhFresh(x) ? " sun" : ""}`;
+      const inner = `<b>${esc(x.sym)}</b><span>${far ? "追太遠 " : "▲"}${a.toFixed(1)}%</span>${w != null ? `<small>這波 ${Math.round(w)}%</small>` : ""}${x.brkTk != null ? `<small class="${x.brkTk >= 0.55 ? "up" : x.brkTk < 0.5 ? "dn" : ""}">買${Math.round(x.brkTk * 100)}%</small>` : ""}${x.ext30 != null ? `<small class="${x.ext30 > 25 ? "dn" : ""}">均線${fmtPct(x.ext30, 0)}</small>` : ""}`;
       const tip = `20 天前高 ${fmtPx(x.hi20)}｜離前高 ${a.toFixed(1)}%${w != null ? `｜20 天低點起 ${Math.round(w)}%` : ""}`;
       return x.onPage ? `<button type="button" class="${c2}" data-sym="${esc(x.sym)}" title="${esc(tip)}">${inner}</button>`
         : `<a class="${c2}" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer" title="${esc(tip + "｜不在泡泡圖上，點開幣安")}">${inner}</a>`;
