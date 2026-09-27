@@ -60,22 +60,23 @@
 [hidden] { display: none !important; }
 html, body { background: var(--bg); color: var(--ink); }
 body { margin: 0; font: 14px/1.55 var(--body); -webkit-font-smoothing: antialiased; }
-.app { max-width: 1600px; margin: 0 auto; padding-inline: 20px; padding-block: 12px 40px; display: grid; gap: 12px; }
+.app { max-width: 1600px; margin: 0 auto; padding-inline: 20px; padding-block: 12px 40px; display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .t-buy { color: var(--buy); } .t-wait { color: var(--wait); } .t-hot { color: var(--hot); } .t-avoid { color: var(--avoid); } .t-nh { color: var(--nh); }
 
 /* 第一階段（2026-09-27）：規則說、剛剛變了什麼、卡片判斷 */
-.rulebar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 9px 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); font-size: 13.5px; line-height: 1.55; color: var(--ink); }
+.rulebar { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 9px 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); font-size: 13.5px; line-height: 1.55; color: var(--ink); }
 .rulebar > b { font: 800 13px/1.55 var(--display); letter-spacing: .02em; white-space: nowrap; }
 .rulebar > span { flex: 1 1 320px; min-width: 0; }
 .rulebar small { color: var(--ink3); font-size: 11.5px; white-space: nowrap; }
 .rulebar.lv-ok { border-color: color-mix(in srgb, var(--buy) 35%, var(--line)); } .rulebar.lv-ok > b { color: var(--buy); }
 .rulebar.lv-warn { border-color: color-mix(in srgb, var(--hot) 45%, var(--line)); background: color-mix(in srgb, var(--hot) 6%, var(--panel)); } .rulebar.lv-warn > b { color: var(--hot); }
 .rulebar.lv-mid > b { color: var(--ink2); }
+.rulebar .crowd { font: 700 11.5px/1 var(--body); font-style: normal; color: var(--hot); border: 1px solid var(--hot); border-radius: 999px; padding: 3px 7px; align-self: center; white-space: nowrap; }
 .rulebar.lv-alert { border-color: var(--avoid); background: color-mix(in srgb, var(--avoid) 12%, var(--panel)); } .rulebar.lv-alert > b { color: var(--avoid); }
-.feed { display: flex; gap: 6px; align-items: stretch; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+.feed { min-width: 0; display: flex; gap: 6px; align-items: stretch; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
 .feed::-webkit-scrollbar { display: none; }
 .feed-h { flex: none; display: grid; align-content: center; font: 800 13px/1.25 var(--display); padding-right: 4px; }
 .feed-h small { font: 500 11px var(--body); color: var(--ink3); }
@@ -311,6 +312,31 @@ body.simple .adv { display: none !important; }
 .field { position: relative; background: var(--field); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; height: var(--fh); touch-action: pan-y; }
 .field canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
 .field canvas.pointing { cursor: pointer; }
+.usd { margin-top: 4px; font-size: 12.5px; color: var(--ink2); }
+.usd > summary { cursor: pointer; padding: 6px 2px; color: var(--ink3); }
+.usd[open] > summary { color: var(--ink2); }
+.wh.hide-us tr.us { display: none; }
+.us-toggle { margin-left: auto; font-size: 12px; color: var(--ink2); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+/* 第二階段②清單模式：四道變四欄，手機左右滑 */
+.layout-seg { justify-self: end; margin-bottom: -4px; }
+.field.listmode { height: auto !important; overflow: visible; background: none; border: 0; }
+.field.listmode #cv, .field.listmode #lanes { display: none; }
+.lanelist { min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.ll-col { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 10px 6px; display: grid; gap: 2px; min-width: 0; }
+.ll-h { display: flex; align-items: baseline; gap: 8px; padding: 0 4px 6px; border-bottom: 1px solid var(--line); }
+.ll-h b { font: 800 15px/1.2 var(--display); }
+.ll-h span { font: 700 13px var(--mono); color: var(--ink2); }
+.ll-h em { margin-left: auto; font: 500 11px var(--mono); font-style: normal; color: var(--ink3); }
+.ll-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 8px; align-items: baseline; width: 100%; text-align: left; background: none; border: 0; border-radius: 10px; padding: 8px 6px; cursor: pointer; color: inherit; }
+.ll-row + .ll-row { border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent); border-radius: 0; }
+.ll-row:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.ll-row b { font: 800 15px/1.25 var(--display); }
+.ll-row em { font: 700 12.5px var(--mono); font-style: normal; }
+.ll-row small { grid-column: 1 / -1; font-size: 11.5px; line-height: 1.4; color: var(--ink3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ll-row small i { font-style: normal; font-weight: 700; }
+.ll-empty { padding: 10px 6px; font-size: 12px; color: var(--ink3); display: grid; gap: 6px; }
+.ll-empty button { justify-self: start; }
+.field.listmode .card { position: fixed; left: auto !important; right: 24px; top: 80px !important; max-height: calc(100dvh - 104px); }
 .field canvas.dragging { cursor: grabbing; }
 .lane-h { position: absolute; top: 12px; pointer-events: none; display: flex; align-items: baseline; gap: 7px; padding-left: 14px; white-space: nowrap; overflow: hidden; }
 .lane-h b { font: 800 clamp(16px, 1.5vw, 21px)/1 var(--display); }
@@ -446,7 +472,7 @@ footer { color: var(--ink3); font-size: 12px; }
 .banner { background: color-mix(in srgb, var(--avoid) 14%, transparent); color: var(--ink); border: 1px solid color-mix(in srgb, var(--avoid) 40%, transparent); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
 
 @media (max-width: 1100px) {
-  .stage { grid-template-columns: 1fr; }
+  .stage { grid-template-columns: minmax(0, 1fr); }
   .rail { max-height: none; overflow: visible; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   .rail .say { grid-column: 1 / -1; }
   .track { grid-template-columns: 1fr; }
@@ -462,15 +488,38 @@ footer { color: var(--ink3); font-size: 12px; }
   .ilid .il-n { font-size: 18px; }
   .ilid > summary .il-k br { display: none; }
   .tally { min-width: 0; gap: 6px; }
-  .tile { flex-direction: column; gap: 2px; padding: 6px 8px; }
-  .tile b { font-size: 22px; }
-  .tile span { font-size: 11.5px; }
+  /* 第二階段①手機頂部瘦身：大盤和 ILI 並排、數字方塊變扁、規則說預設一行 */
+  .bar { gap: 6px 10px; min-height: 0; }
+  .controls { order: 1; gap: 6px; }
+  .live, .menu > summary { padding: 5px 10px; font-size: 12px; }
+  .meta { order: 2; flex: 1 1 100%; font-size: 11.5px; gap: 1px 10px; }
+  .dbar { gap: 6px; padding: 6px 16px; }
+  .rgd { flex: 1 1 0; min-width: 0; }
+  .rgd > summary { padding: 6px 10px; gap: 8px; }
+  #regime > summary .rg-sub, #regime > summary svg, #ili > summary svg, .ilid .lng { display: none; }
+  .rgd .rg-hot { padding: 3px 7px; font-size: 11.5px; }
+  .ilid .il-pill { padding: 3px 7px; font-size: 11.5px; }
+  .ilid .pop { left: auto; right: 0; }
+  .tally { flex: 1 1 100%; }
+  .tile { flex-direction: row; align-items: baseline; gap: 4px; padding: 5px 8px; }
+  .tile b { font-size: 18px; }
+  .tile span { font-size: 11px; }
+  .tile .lng { display: none; }
+  .rulebar { padding: 7px 12px; font-size: 12.5px; cursor: pointer; }
+  .rulebar:not(.open) { flex-wrap: nowrap; }
+  .rulebar:not(.open) > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1 1 0; }
+  .rulebar:not(.open) small { display: none; }
+  .rulebar::after { content: "▾"; color: var(--ink3); font-size: 11px; }
+  .rulebar.open::after { content: "▴"; }
   .field { height: auto; }
   .lane-h { top: auto; }
   .evt-body { grid-template-columns: 1fr; }
   .track-grid { grid-template-columns: 1fr 1fr; }
   .panels > .panel { padding: 12px; }
-  .card { position: fixed; left: 12px !important; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); top: auto !important; width: auto; max-width: none; max-height: 72dvh; overflow: auto; z-index: 8; }
+  .card, .field.listmode .card { position: fixed; left: 12px !important; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); top: auto !important; width: auto; max-width: none; max-height: 72dvh; overflow: auto; z-index: 8; }
+  .lanelist { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 16px; gap: 10px; margin-inline: -16px; padding-inline: 16px; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .lanelist::-webkit-scrollbar { display: none; }
+  .ll-col { flex: 0 0 86%; scroll-snap-align: start; }
 }
 @media (prefers-reduced-motion: reduce) { .live[data-s="on"] i { animation: none; } .tile { transition: none; } }
 </style>
@@ -533,10 +582,15 @@ footer { color: var(--ink3); font-size: 12px; }
   <div class="movers adv" id="movers" hidden></div>
   <nav class="heat adv" id="heat" aria-label="族群 24 小時強弱"></nav>
 
+  <div class="layout-seg seg" id="layoutSeg" role="group" aria-label="顯示方式">
+    <button type="button" data-l="bubble" aria-pressed="true">泡泡</button>
+    <button type="button" data-l="list" aria-pressed="false">清單</button>
+  </div>
   <div class="stage">
     <section class="field" id="field" aria-label="泡泡圖：依可以埋伏、觀望、追高風險高、別碰分四區">
       <canvas id="cv"></canvas>
       <div id="lanes"></div>
+      <div class="lanelist" id="lanelist" hidden></div>
       <div class="card" id="card" hidden role="dialog" aria-live="polite"></div>
     </section>
     <aside class="rail" aria-label="現在可以做什麼">
@@ -594,6 +648,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const reg = B ? `；強牛時 ${pc(B.strong.beat)}（${B.strong.n.toLocaleString()} 筆），其他時候 ${pc(B.other.beat)}（${B.other.n.toLocaleString()} 筆）` : "";
     return `過去一年（${per}）進這道後 24 小時跑贏大盤 ${laneWin(t) || "-"}${n ? `，${Number(n).toLocaleString()} ${t === "buy" ? "次事件" : "筆"}` : ""}${reg}。未扣手續費和滑價。`;
   };
+  const ago = (ms) => { const m = Math.max(0, Math.round((Date.now() - ms) / 60000)); return m < 1 ? "剛剛" : m < 60 ? `${m} 分前` : `${Math.floor(m / 60)} 小時前`; };
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = (id) => document.getElementById(id);
   const field = $("field"), cv = $("cv"), ctx = cv.getContext("2d"), card = $("card");
@@ -720,7 +775,7 @@ footer { color: var(--ink3); font-size: 12px; }
       return n;
     });
     if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
-    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderRailTwap(); renderRail(); nhSig = ""; renderNH(); renderTabs(); layout(first);
+    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderRailTwap(); renderRail(); nhSig = ""; renderNH(); renderTabs(); layout(first); renderList();
     if (selected) renderCard(); else card.hidden = true;
   }
 
@@ -788,6 +843,48 @@ footer { color: var(--ink3); font-size: 12px; }
     if (vertical) return { x: W / 2 + n.row * W * 0.5, y: R.y0 + (R.y1 - R.y0) * (0.12 + 0.76 * n.f) };
     return { x: R.x0 + (R.x1 - R.x0) * (0.15 + 0.7 * n.f), y: R.y0 + (R.y1 - R.y0) * (0.5 + n.row * 0.62) };
   }
+
+  // ---------- 清單模式（第二階段②）：四道變四欄，手機左右滑；點一列開卡片 ----------
+  let listMode = false;
+  try { listMode = localStorage.getItem("kb-layout") === "list"; } catch (_) {}
+  function rowTags(c) {
+    const T = [];
+    const sg = sigOn(c.sym);
+    if (sg) T.push(`<i class="t-${sg.signal === "short" ? "avoid" : "buy"}">TWAP${sg.buy ? "買" : "賣"}</i>`);
+    if (isNH(c) && !nhFar(c)) T.push(`<i class="t-nh">${nhFresh(c) ? `剛創高 ${freshAgo(c)}分` : "新高"}</i>`);
+    if (c.moved) T.push(`<i class="t-${c.moved === "up" ? "buy" : "avoid"}">${c.moved === "up" ? "↑" : "↓"}剛換道</i>`);
+    if (DATA.news?.[c.bn]?.status === "done") T.push(`<i class="t-hot">！有原因</i>`);
+    const w = whalesOn(c.sym).filter((x) => x.p).length;
+    if (w) T.push(`鯨 ${w}`);
+    if (DATA.buyback?.[c.bn]?.hit) T.push("回購");
+    if (c.tier === "buy" || c.tier === "hot" || c.tier === "avoid") T.push(esc((c.why || "").split(/[，。：]/)[0]));
+    else T.push(`RSI ${c.rsi ?? "-"}・比大盤 ${fmtPct(c.ex24, 1)}`);
+    return T.join("・");
+  }
+  function renderList() {
+    const box = $("lanelist");
+    field.classList.toggle("listmode", listMode);
+    box.hidden = !listMode;
+    document.querySelectorAll("#layoutSeg button").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.l === "list") === listMode)));
+    if (!listMode || !DATA) return;
+    const lq = (c) => c.liq ?? -Infinity;
+    const sx = box.scrollLeft;
+    box.innerHTML = TIERS.map((t) => {
+      const L = DATA.coins.filter((c) => c.tier === t).sort((a, b) => lq(b) - lq(a) || b.karma - a.karma);
+      const w = laneWin(t);
+      const rows = L.map((c) => `<button type="button" class="ll-row" data-sym="${esc(c.sym)}"><b class="t-${c.tier === "wait" ? "wait" : c.tier}">${esc(c.sym)}</b><em data-r24="${esc(c.sym)}" class="${cls(r24Of(c))}">${fmtPct(r24Of(c))}</em><small>${rowTags(c)}</small></button>`).join("");
+      const empty = L.length ? "" : `<div class="ll-empty">${emptyLane(t).replace(/^<div class="lane-empty"[^>]*>/, "").replace(/<\/div>$/, "")}</div>`;
+      return `<section class="ll-col" aria-label="${NAME[t]}"><div class="ll-h" title="${esc(laneOdds(t))}"><b class="t-${t}">${NAME[t]}</b><span>${L.length}</span>${w ? `<em>勝率 ${w}</em>` : ""}</div>${rows}${empty}</section>`;
+    }).join("");
+    box.scrollLeft = sx;
+    box.querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+  }
+  document.querySelectorAll("#layoutSeg button").forEach((b) => b.addEventListener("click", () => {
+    listMode = b.dataset.l === "list";
+    try { localStorage.setItem("kb-layout", listMode ? "list" : "bubble"); } catch (_) {}
+    renderList();
+    if (!listMode && DATA) layout(false);
+  }));
 
   // 空道不要只寫「這輪沒有」：列出差一點就進這道的（第一階段）
   const nearOf = (t) => t === "buy" ? (DATA.rotation?.near || []) : (DATA.nearMiss?.[t] || []);
@@ -960,6 +1057,10 @@ footer { color: var(--ink3); font-size: 12px; }
       ctx.lineWidth = 3; ctx.strokeStyle = sc;
       ctx.setLineDash([r * 0.45, r * 0.3]); ctx.lineDashOffset = -spin * r * 2;
       ctx.beginPath(); ctx.arc(n.x, n.y, r + 6, 0, 6.2832); ctx.stroke(); ctx.setLineDash([]);
+      // 訊號新鮮度：外圈實線弧＝TWAP 還剩多少時間（從 12 點鐘方向順時針）
+      const tot = Math.max(1, (sg.end - sg.t) / 60000), frac = Math.max(0, Math.min(1, leftOf(sg) / tot));
+      ctx.shadowBlur = 0; ctx.lineWidth = 2.5; ctx.globalAlpha = a0 * 0.9;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 12, -1.5708, -1.5708 + 6.2832 * frac); ctx.stroke();
       for (let i = 0; i < 5; i++) {
         const a = spin * 1.4 + i * 1.2566, tw = reduce ? 0.8 : 0.35 + 0.65 * Math.abs(Math.sin(t / 260 + i * 1.3));
         const sx = n.x + Math.cos(a) * (r + 6), sy = n.y + Math.sin(a) * (r + 6), sz = 3 + 4 * tw;
@@ -1046,8 +1147,10 @@ footer { color: var(--ink3); font-size: 12px; }
   let last = 0, scanTick = 0;
   function frame(t) {
     if (DATA) {
-      step(t); draw(t); placeLaneHeads();
-      if (selected && !card.hidden) placeCard();
+      if (!listMode) {                      // 清單模式時泡泡不畫，省電
+        step(t); draw(t); placeLaneHeads();
+        if (selected && !card.hidden) placeCard();
+      }
       if (t - last > 1000) { last = t; tickLive(); if (++scanTick % 5 === 0) scanMovers(); }
     }
     requestAnimationFrame(frame);
@@ -1114,6 +1217,16 @@ footer { color: var(--ink3); font-size: 12px; }
     return (DATA.newHighs || []).filter((x) => isNH(x) && !nhFar(x)).sort((a, b) => far30(a) - far30(b) || nhFresh(b) - nhFresh(a) || (b.brkTk >= 0.55) - (a.brkTk >= 0.55) || nhAbove(a) - nhAbove(b));
   }
   // 規則說（第一階段）：大盤狀態＋ILI 合成一句，不讓使用者自己判斷現在是不是強牛
+  // 第二階段④：同一族群同時有 3 顆以上在追高風險高／剛創新高／24h 比大盤多漲 8%＝擁擠
+  function crowded() {
+    const by = {};
+    for (const c of DATA.coins) {
+      if (!c.group) continue;
+      if (c.tier === "hot" || (isNH(c) && !nhFar(c)) || (c.ex24 ?? 0) >= 8) (by[c.group] ||= []).push(c.sym);
+    }
+    return Object.entries(by).filter(([, v]) => v.length >= 3).map(([group, syms]) => ({ group, n: syms.length, syms })).sort((a, b) => b.n - a.n);
+  }
+  let ruleOpen = false;    // 手機：規則說預設一行，點一下展開
   function renderRule() {
     const R = DATA.regime, I = DATA.ili, el = $("rulebar");
     el.hidden = !R?.state;
@@ -1127,18 +1240,21 @@ footer { color: var(--ink3); font-size: 12px; }
     else if (R.state === "偏多") [lv, txt] = ["mid", "偏多：追強的優勢變小，以埋伏為主、部位縮小；金色太陽只當參考。"];
     else [lv, txt] = ["mid", "偏空：追強勝率偏低，以短打和減碼為主；金色太陽只當參考。"];
     if (I?.state === "黃" && lv !== "alert") txt += " ILI 黃燈：多頭後勁變弱，槓桿不要再加。";
-    el.className = `rulebar lv-${lv}`;
-    el.innerHTML = `<b>規則說</b><span>${esc(txt)}${nBuy ? ` 可以埋伏 ${nBuy} 檔。` : ""}</span><small>分道只針對做多・不是投資建議</small>`;
+    const crowd = crowded();
+    if (crowd.length) txt += " 擁擠：" + crowd.map((g) => `${g.group} ${g.n} 顆同時噴（${g.syms.slice(0, 4).join("、")}）`).join("；") + "，追高風險也高。";
+    el.className = `rulebar lv-${lv}${ruleOpen ? " open" : ""}`;
+    el.onclick = () => { ruleOpen = !ruleOpen; el.classList.toggle("open", ruleOpen); };
+    el.innerHTML = `<b>規則說</b>${crowd.length ? `<i class="crowd">擁擠</i>` : ""}<span>${esc(txt)}${nBuy ? ` 可以埋伏 ${nBuy} 檔。` : ""}</span><small>分道只針對做多・不是投資建議</small>`;
   }
   // 剛剛變了什麼（第一階段）：近 4 小時的換道、大戶 TWAP 訊號、剛刷新新高、LIQ 放量
   function renderFeed() {
-    const el = $("feed"), now = Date.now(), H4 = 4 * 3600e3, items = [];
+    const el = $("feed"), now = Date.now(), H4 = 4 * 3600e3, items = [], sx = el.scrollLeft;
     for (const x of DATA.laneChanges || []) {
       const t = Date.parse(x.t);
       if (now - t < H4) items.push({ t, sym: x.sym, k: x.to, txt: `${x.from ? NAME[x.from] : "新進榜"} → ${NAME[x.to]}` });
     }
     for (const g of DATA.twaps?.active || []) {
-      if (g.signal && g.market !== "美股／HIP-3" && now - g.t < H4) items.push({ t: g.t, sym: whaleCoin(g.base || g.coin), k: g.signal === "short" ? "avoid" : "buy", txt: `大戶 TWAP ${g.buy ? "買入" : "賣出"}：${g.signal === "short" ? "可做空" : "可做多"}` });
+      if (g.signal && g.market !== "美股／HIP-3" && now - g.t < H4 && leftOf(g) > 0) items.push({ t: g.t, sym: whaleCoin(g.base || g.coin), k: g.signal === "short" ? "avoid" : "buy", txt: `大戶 TWAP ${g.buy ? "買入" : "賣出"}：${g.signal === "short" ? "可做空" : "可做多"}`, left: leftOf(g) });
     }
     for (const c of DATA.coins) if (nhFresh(c)) items.push({ t: peakOf(c).t, sym: c.sym, k: "nh", txt: "剛刷新 20 天新高" });
     for (const h of DATA.liqVol || []) {
@@ -1148,13 +1264,19 @@ footer { color: var(--ink3); font-size: 12px; }
     items.sort((a, b) => b.t - a.t);
     el.hidden = false;
     el.innerHTML = `<span class="feed-h">剛剛變了什麼<small>近 4 小時</small></span>` + (items.length
-      ? items.slice(0, 10).map((x) => `<button type="button" class="fd" data-sym="${esc(x.sym)}"><time>${tpe(new Date(x.t).toISOString())}</time><b class="t-${x.k}">${esc(x.sym)}</b><span>${esc(x.txt)}</span></button>`).join("")
+      ? items.slice(0, 10).map((x) => {
+          const age = now - x.t, op = x.left ? 1 : age < 30 * 60e3 ? 1 : age < 2 * 3600e3 ? 0.8 : 0.6;   // 訊號新鮮度：越舊越淡
+          const when = x.left ? `剩 ${x.left} 分` : ago(x.t);
+          return `<button type="button" class="fd" data-sym="${esc(x.sym)}" style="opacity:${op}"><time>${when}</time><b class="t-${x.k}">${esc(x.sym)}</b><span>${esc(x.txt)}</span></button>`;
+        }).join("")
       : `<span class="fd none">這 4 小時沒有換道或新訊號</span>`);
     el.querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    el.scrollLeft = sx;
   }
+  setInterval(() => { if (DATA && !document.hidden) renderFeed(); }, 60000);   // 「幾分鐘前」每分鐘更新
   function renderHeader() {
     const cnt = (t) => DATA.coins.filter((c) => c.tier === t).length;
-    const tiles = [["buy", cnt("buy"), NAME.buy], ["nh", chaseList().length, "追強"], ["hot", cnt("hot"), "追高風險高"], ["avoid", cnt("avoid"), NAME.avoid]];
+    const tiles = [["buy", cnt("buy"), NAME.buy], ["nh", chaseList().length, "追強"], ["hot", cnt("hot"), `追高<span class="lng">風險高</span>`], ["avoid", cnt("avoid"), NAME.avoid]];
     $("tally").innerHTML = tiles.map(([t, n, name]) => {
       const w = t === "nh" ? "強牛時勝率約四成、每筆 +5.5%（D115）" : laneWin(t) ? `過去一年 24h 勝率 ${laneWin(t)}` : "";
       return `<button type="button" class="tile t-${t}${n ? "" : " zero"}" data-t="${t}" aria-pressed="${focus?.tier === t}" title="${esc(w)}"><b>${n}</b><span>${name}</span></button>`;
@@ -1228,7 +1350,7 @@ footer { color: var(--ink3); font-size: 12px; }
       : "BTC 在 200 日線下，還沒進入新一輪多頭";
     const flags = (I.events || []).filter((e) => e.kind === "黃" || e.kind === "紅").slice(-5).reverse();
     const open = el.open;
-    el.innerHTML = `<summary><span class="il-k">機構資金<br>ILI</span><span class="il-n">${I.ili.toFixed(0)}</span><span class="il-pill il-${I.state}">${pill}</span>${mini}</summary>
+    el.innerHTML = `<summary><span class="il-k"><span class="lng">機構資金<br></span>ILI</span><span class="il-n">${I.ili.toFixed(0)}</span><span class="il-pill il-${I.state}">${pill}</span>${mini}</summary>
       <div class="pop">
         <span class="il-state il-${I.state}"><b class="il-${I.state}">${pill}</b>　<span>${esc(I.guide)}</span></span>
         <div class="il-bars">
@@ -1246,6 +1368,23 @@ footer { color: var(--ink3); font-size: 12px; }
   }
 
   // ---------- 巨鯨（Hyperliquid 指定錢包，每 2 分鐘更新） ----------
+  // 第二階段⑤：Hyperliquid xyz 平台（美股、商品、外匯、未上市公司）代號的中文；不確定的只顯示代號
+  const XYZ = { AAPL: "蘋果", AMD: "AMD", AMZN: "亞馬遜", ARM: "ARM", ASML: "艾司摩爾", AVGO: "博通", BABA: "阿里巴巴", BRENTOIL: "布蘭特原油", CL: "WTI 原油",
+    COIN: "Coinbase", CRCL: "Circle", CRWV: "CoreWeave", CXMT: "長鑫存儲（未上市）", EWY: "南韓 ETF", EWJ: "日本 ETF", EWT: "台灣 ETF", EWZ: "巴西 ETF",
+    GOLD: "黃金", GOOGL: "Google", HIMS: "Hims & Hers", HOOD: "Robinhood", INTC: "英特爾", KIOXIA: "鎧俠", LITE: "Lumentum", META: "Meta", MRVL: "Marvell",
+    MSFT: "微軟", MSTR: "Strategy", MU: "美光", NATGAS: "天然氣", NBIS: "Nebius", NVDA: "輝達", ORCL: "甲骨文", PALLADIUM: "鈀金", PLATINUM: "鉑金",
+    PLTR: "Palantir", QCOM: "高通", RKLB: "Rocket Lab", SILVER: "白銀", SKHX: "SK 海力士", SMSN: "三星電子", SNDK: "SanDisk", SP500: "標普 500",
+    SPCX: "SpaceX（未上市）", STRC: "Strategy 優先股", TSLA: "特斯拉", TSM: "台積電 ADR", XYZ100: "那斯達克 100 類指數", COPPER: "銅", JPY: "日圓",
+    EUR: "歐元", GBP: "英鎊", NFLX: "Netflix", COST: "Costco", LLY: "禮來", RIVN: "Rivian", GME: "GameStop", JP225: "日經 225", KR200: "韓國 KOSPI 200",
+    SOFTBANK: "軟銀", HYUNDAI: "現代汽車", DKNG: "DraftKings", XLE: "能源 ETF", BX: "黑石", ZM: "Zoom", EBAY: "eBay", DELL: "Dell", IBM: "IBM",
+    NOW: "ServiceNow", WDC: "威騰電子", NOK: "Nokia", SMH: "半導體 ETF", AMAT: "應用材料", GEV: "GE Vernova", SOXL: "三倍半導體 ETF", NET: "Cloudflare",
+    CRWD: "CrowdStrike", RDDT: "Reddit", AAOI: "Applied Optoelectronics", MRNA: "Moderna", XBI: "生技 ETF", CVX: "雪佛龍", TLT: "美國長債 ETF",
+    URNM: "鈾礦 ETF", BMNR: "BitMine", UNITREE: "宇樹科技（未上市）", SHEIN: "SHEIN（未上市）", MAGS: "美股七巨頭 ETF", BE: "Bloom Energy" };
+  const coinLabel = (coin) => {
+    const m = /^xyz:(.+)$/.exec(String(coin));
+    return m ? (XYZ[m[1]] ? `${m[1]}（${XYZ[m[1]]}）` : m[1]) : String(coin);
+  };
+  const isUS = (g) => g.market === "美股／HIP-3" || String(g.coin).startsWith("xyz:");
   const whaleCoin = (c) => String(c).replace(/^k(?=[A-Z])/, "").toUpperCase();
   const fmtUsd2 = (v) => v == null ? "-" : (v < 0 ? "-" : "") + (Math.abs(v) >= 1e6 ? "$" + (Math.abs(v) / 1e6).toFixed(2) + "M" : "$" + Math.round(Math.abs(v) / 1e3) + "K");
   const whaleName = (w) => w.label || w.address.slice(0, 8) + "…";
@@ -1279,13 +1418,14 @@ footer { color: var(--ink3); font-size: 12px; }
   }
   function renderRailTwap() {
     const T = DATA.twaps, el = $("rcTwap");
-    const list = (T?.active || []).filter((g) => leftOf(g) > 0);
+    const all = (T?.active || []).filter((g) => leftOf(g) > 0);
+    const list = all.filter((g) => !isUS(g)), us = all.filter(isUS);
     el.hidden = !T;
     if (!T) return;
     const nSig = list.filter((g) => g.signal).length;
     const row = (g) => {
       const sym = whaleCoin(g.base || g.coin), on = DATA.coins.some((c) => c.sym === sym) && g.market !== "美股／HIP-3";
-      const body = `<b class="${g.buy ? "up" : "dn"}">${esc(g.coin.replace(/^xyz:/, ""))}</b><span>${g.signal ? `<strong>${sigName(g)}</strong>` : g.fight ? `<strong style="color:var(--wait)">多空對打</strong> ${esc(g.side)}` : esc(g.side)} ${fmtUsd2(g.usd)}${g.market !== "合約" ? `｜${esc(g.market)}` : ""}</span><em class="${g.buy ? "up" : "dn"}">${g.impact ? impTxt(g.impact) : ""}</em>
+      const body = `<b class="${g.buy ? "up" : "dn"}">${esc(coinLabel(g.coin))}</b><span>${g.signal ? `<strong>${sigName(g)}</strong>` : g.fight ? `<strong style="color:var(--wait)">多空對打</strong> ${esc(g.side)}` : esc(g.side)} ${fmtUsd2(g.usd)}${g.market !== "合約" ? `｜${esc(g.market)}` : ""}</span><em class="${g.buy ? "up" : "dn"}">${g.impact ? impTxt(g.impact) : ""}</em>
         <small>${g.signal ? sigExit(g) : `每小時 ${fmtUsd2(g.perHour)}｜剩 ${leftOf(g)} 分`}${g.pos ? `｜他${g.pos.side}單未實現 ${fmtUsd2(g.pos.upnl)}` : ""}</small>`;
       const c2 = `it${g.signal ? ` sig ${g.signal}` : " dim"}`;
       return `<li>${on ? `<button type="button" class="${c2}" data-sym="${esc(sym)}">${body}</button>` : `<a class="${c2}" href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
@@ -1296,7 +1436,8 @@ footer { color: var(--ink3); font-size: 12px; }
     el.classList.toggle("hasSig", nSig > 0);
     el.innerHTML = `<h3><span>巨鯨 TWAP</span><small>${nSig ? `訊號 ${nSig}｜` : ""}全 Hyperliquid 進行中 ${T.activeCount} 筆</small></h3>
       ${cRows ? `<ol>${cRows}</ol>` : ""}
-      ${list.length ? `<ol>${list.slice(0, 6).map(row).join("")}</ol>` : `<p class="none">現在沒有夠大的 TWAP。</p>`}
+      ${list.length ? `<ol>${list.slice(0, 6).map(row).join("")}</ol>` : `<p class="none">加密貨幣現在沒有夠大的 TWAP。</p>`}
+      ${us.length ? `<details class="usd"><summary>美股／商品 TWAP（${us.length} 筆，Hyperliquid xyz 平台）</summary><ol>${us.slice(0, 8).map(row).join("")}</ol></details>` : ""}
       <p class="rule">發光＝訊號：大戶每小時下單量 ≥ 該幣成交量 10%（右邊％）。跟著做，TWAP 結束就平倉；大戶中途取消 TWAP 也要馬上平倉（取消後常反彈）。回測勝率約 58–62%，每筆 +0.25～0.5%。</p>`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
@@ -1306,22 +1447,24 @@ footer { color: var(--ink3); font-size: 12px; }
     return `<div class="news whcard"><small>巨鯨持倉（Hyperliquid，每 2 分鐘更新）</small>${L.map(({ w, p, tw }) =>
       `<p><b>${esc(whaleName(w))}</b>：${p ? `${p.side}單 ${fmtUsd2(p.value)}（${p.lev} 倍，進場 ${fmtPx(p.entry)}，未實現 <span class="${cls(p.upnl)}">${fmtUsd2(p.upnl)}</span>）` : "已經沒有部位"}${tw ? `｜<b class="t-hot">TWAP ${/Close/.test(tw.dir) ? "平倉" : "開倉"}中</b>，每小時約 ${fmtUsd2(tw.perHour)}` : ""}</p>`).join("")}</div>`;
   }
+  let showUS = false;     // 巨鯨頁：美股／商品 TWAP 預設收起（第二階段⑤）
   function renderWhales() {
     const W = DATA.whales, el = $("whaleBox");
     const T = DATA.twaps;
     el.hidden = !W?.wallets?.length && !T;
     if (el.hidden) return;
     const evs = (W?.events || []).slice().reverse();
-    const twTable = T ? `<article class="wh"><div class="wh-h"><b>全 Hyperliquid TWAP 大單</b><span>進行中 ${T.activeCount} 筆，下面是名目 ≥50 萬美元且佔成交 ≥3%（或 ≥500 萬美元）｜${tpeFull(T.at)} 更新</span></div>
+    const nUS = (T?.active || []).filter(isUS).length;
+    const twTable = T ? `<article class="wh${showUS ? "" : " hide-us"}"><div class="wh-h"><b>全 Hyperliquid TWAP 大單</b><span>進行中 ${T.activeCount} 筆，下面是名目 ≥50 萬美元且佔成交 ≥3%（或 ≥500 萬美元）｜${tpeFull(T.at)} 更新</span>${nUS ? `<button type="button" class="us-toggle">${showUS ? "收起" : "顯示"}美股／商品（${nUS}）</button>` : ""}</div>
       <div class="tbl"><table><tr><th>幣</th><th>訊號</th><th>市場</th><th>動作</th><th>金額</th><th>每小時</th><th>佔成交</th><th>剩</th><th>他的部位</th><th>地址</th></tr>
-      ${(T.active || []).map((g) => `<tr><td class="${g.buy ? "up" : "dn"}">${esc(g.coin)}</td><td>${g.signal ? `<b class="${g.buy ? "up" : "dn"}">${sigName(g)}</b>` : ""}</td><td>${esc(g.market)}</td><td>${esc(g.side)}</td><td>${fmtUsd2(g.usd)}</td><td>${fmtUsd2(g.perHour)}</td><td>${g.impact ? impTxt(g.impact) : "-"}</td><td>${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分</td>
+      ${[...(T.active || []).filter((g) => !isUS(g)), ...(T.active || []).filter(isUS)].map((g) => `<tr class="${isUS(g) ? "us" : ""}"><td class="${g.buy ? "up" : "dn"}">${esc(coinLabel(g.coin))}</td><td>${g.signal ? `<b class="${g.buy ? "up" : "dn"}">${sigName(g)}</b>` : ""}</td><td>${esc(g.market)}</td><td>${esc(g.side)}</td><td>${fmtUsd2(g.usd)}</td><td>${fmtUsd2(g.perHour)}</td><td>${g.impact ? impTxt(g.impact) : "-"}</td><td>${Math.max(0, Math.round((new Date(g.end) - Date.now()) / 60000))} 分</td>
         <td>${g.pos ? `${g.pos.side} ${fmtUsd2(g.pos.value)}（<span class="${cls(g.pos.upnl)}">${fmtUsd2(g.pos.upnl)}</span>）` : "-"}</td><td><a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></td></tr>`).join("") || `<tr><td colspan="10">現在沒有夠大的 TWAP。</td></tr>`}</table></div></article>` : "";
     const card = (w) => {
       const e = evs.filter((x) => x.address === w.address).slice(0, 6);
       const rows = w.positions.map((p) => {
         const tw = (w.twaps || []).find((x) => x.coin === p.coin);
         const onPage = DATA.coins.some((c) => c.sym === whaleCoin(p.coin));
-        const name = onPage ? `<button type="button" data-sym="${esc(whaleCoin(p.coin))}">${esc(p.coin)}</button>` : esc(p.coin);
+        const name = onPage ? `<button type="button" data-sym="${esc(whaleCoin(p.coin))}">${esc(p.coin)}</button>` : esc(coinLabel(p.coin));
         return `<tr><td class="${p.side === "多" ? "up" : "dn"}">${name}</td><td>${p.side}</td><td>${fmtUsd2(p.value)}</td><td>${p.lev}x</td><td>${fmtPx(p.entry)}</td><td class="${cls(p.upnl)}">${fmtUsd2(p.upnl)}</td><td>${tw ? `<b class="t-hot">TWAP ${/Close/.test(tw.dir) ? "平倉" : "開倉"} ${fmtUsd2(tw.perHour)}/時</b>` : ""}</td></tr>`;
       }).join("");
       return `<article class="wh"><div class="wh-h"><b>${esc(whaleName(w))}</b><span>合約帳戶 ${fmtUsd2(w.value)}${w.usdc ? `＋現貨 USDC ${fmtUsd2(w.usdc)}` : ""}｜總部位 ${fmtUsd2(w.positions.reduce((a, p) => a + p.value, 0))}｜${tpeFull(w.at)} 更新</span>
@@ -1332,6 +1475,7 @@ footer { color: var(--ink3); font-size: 12px; }
     el.innerHTML = `<div class="sec-h"><h2>巨鯨</h2><p>每 2 分鐘掃一次全 Hyperliquid 的 TWAP 分批下單，並追蹤指定錢包的持倉。大戶 TWAP 出貨時，該幣常比大盤跌更多（9/26 NEAR、INJ 開始後 23 分鐘 −3%，BTC 同時 +0.2%）。</p></div>
       <div class="wh-list">${twTable}${(W?.wallets || []).map(card).join("")}</div>`;
     el.querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    el.querySelector(".us-toggle")?.addEventListener("click", () => { showUS = !showUS; renderWhales(); });
   }
 
   // ---------- 行動欄：現在可以做什麼 ----------
@@ -1825,7 +1969,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const ul = kBox.querySelector(".kev");
     list.sort((a, b) => b.ms - a.ms);
     ul.hidden = !list.length;
-    ul.innerHTML = list.slice(0, 6).map((e) => `<li><time>${mdhm(e.ms)}</time><span><b style="color:${e.color}">${esc(e.short)}</b> ${esc(e.long)}</span></li>`).join("");
+    ul.innerHTML = list.slice(0, 6).map((e) => `<li><time>${Date.now() - e.ms < 86400e3 ? ago(e.ms) : mdhm(e.ms)}</time><span><b style="color:${e.color}">${esc(e.short)}</b> ${esc(e.long)}</span></li>`).join("");
   }
   // 先用同網站的檔案（Cloudflare 部署時一起上傳，最快），失敗才用 CDN
   const loadLwc = () => kLib || (kLib = (async () => {
@@ -2000,6 +2144,10 @@ footer { color: var(--ink3); font-size: 12px; }
   let freshSig = "";
   function tickLive() {
     if (!DATA) return;
+    if (listMode) document.querySelectorAll("#lanelist [data-r24]").forEach((el) => {
+      const c = DATA.coins.find((x) => x.sym === el.dataset.r24), v = c && r24Of(c);
+      el.textContent = fmtPct(v); el.className = cls(v);
+    });
     renderNH(); renderRailChase();
     const fs = DATA.coins.filter(nhFresh).map((c) => c.sym).join();   // 大小太陽切換時重新排版（泡泡放大縮小）
     if (fs !== freshSig) { freshSig = fs; layout(false); }
