@@ -339,6 +339,11 @@ body.simple .adv { display: none !important; }
 .kmsg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 12px; color: var(--ink3); z-index: 1; pointer-events: none; }
 .kmsg[hidden] { display: none; }
 @media (max-width: 760px) { .kchart { height: 190px; } }
+.kev { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; font-size: 12px; line-height: 1.45; color: var(--ink2); }
+.kev li { display: grid; grid-template-columns: 74px 1fr; gap: 6px; }
+.kev time { font: 600 11px/1.6 var(--mono); color: var(--ink3); }
+.kev b { font-weight: 800; }
+.kev[hidden] { display: none; }
 .card-h b { font: 800 26px/1 var(--display); }
 .pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid currentColor; }
 .x { margin-left: auto; border: 0; background: none; font-size: 20px; line-height: 1; cursor: pointer; color: var(--ink3); padding: 4px 6px; border-radius: 8px; }
@@ -1771,7 +1776,57 @@ footer { color: var(--ink3); font-size: 12px; }
   const TZ = 8 * 3600;                             // 圖上時間顯示台北時間
   let kInt = "15m";
   try { kInt = localStorage.getItem("kb-kint") || "15m"; } catch (_) {}
-  let kLib = null, kChart = null, kSeries = null, kVol = null, kLine = null, kKey = "", kWs = null, kBox = null, kSeq = 0;
+  let kLib = null, kChart = null, kSeries = null, kVol = null, kLine = null, kKey = "", kWs = null, kBox = null, kSeq = 0, kBars = [];
+  const KIV = { "15m": 900, "1h": 3600, "4h": 14400 };
+  const mdhm = (ms) => new Date(ms).toLocaleString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false });
+  // 事件標在 K 線上（使用者 2026-09-27）：換道、TWAP、巨鯨、暴漲原因、上幣、LIQ 放量、族群輪動、突破 20 天高
+  function kEvents(c) {
+    const E = [], sym = c.sym, add = (ms, pos, shape, color, short, long) => { if (Number.isFinite(ms)) E.push({ ms, pos, shape, color, short, long }); };
+    for (const x of DATA.laneChanges || []) if (x.sym === sym) add(Date.parse(x.t), "aboveBar", "circle", colors[x.to], "→" + NAME[x.to].slice(0, 2), `${x.from ? NAME[x.from] : "新進榜"} → ${NAME[x.to]}`);
+    const tw = [...(DATA.twaps?.active || []), ...(DATA.twaps?.ended || [])].filter((g) => g.market !== "美股／HIP-3" && whaleCoin(g.base || g.coin) === sym);
+    for (const g of tw) {
+      add(g.t, g.buy ? "belowBar" : "aboveBar", g.buy ? "arrowUp" : "arrowDown", g.buy ? colors.buy : colors.avoid, `TWAP${g.buy ? "買" : "賣"}`,
+        `大戶 TWAP ${g.buy ? "買入" : "賣出"}開始 ${fmtUsd2(g.usd)}${g.signal ? `（${g.signal === "short" ? "可做空" : "可做多"}訊號）` : ""}`);
+      if (g.why) add(g.end, "aboveBar", "square", colors.ink3, g.why === "取消" ? "TWAP取消" : "TWAP完", `大戶 TWAP ${g.buy ? "買入" : "賣出"}${g.why}`);
+    }
+    for (const e of DATA.whales?.events || []) if (whaleCoin(e.coin) === sym) add(Date.parse(e.t), "aboveBar", "circle", colors.liq, `鯨${e.kind}`, `${e.label || "巨鯨"}：${e.text}`);
+    const nw = DATA.news?.[c.bn];
+    if (nw?.status === "done") {
+      if (nw.first_seen) add(Date.parse(nw.first_seen), "aboveBar", "square", colors.hot, "消息", `消息最早出現：${nw.reason || ""}`);
+      if (nw.start) add(Date.parse(nw.start), "belowBar", "arrowUp", colors.hot, "開漲", `開始漲（查到的原因：${nw.reason || "-"}）`);
+    }
+    for (const e of DATA.listings || []) if (e.base === sym) add(Date.parse(e.t), "belowBar", "arrowUp", colors.buy, "上幣", `${e.kind}：${e.title || ""}`);
+    for (const h of DATA.liqVol || []) if (h.sym === sym) add(Date.parse(h.t), "belowBar", "circle", colors.buy, "LIQ放量", `LIQ ${sgn(h.liq)}、24h 成交額是 7 天日均的 ${h.vr} 倍`);
+    for (const e of DATA.rotation?.events || []) {
+      if (e.lead === c.bn) add(Date.parse(e.t) - 3600e3, "belowBar", "arrowUp", colors.hot, "龍頭噴", `${e.group}龍頭噴出（24h 比大盤 +${Math.round(e.leadEx24)}%）`);
+      else if (e.cands?.some((x) => x.sym === c.bn)) add(Date.parse(e.t) - 3600e3, "belowBar", "circle", colors.buy, "可埋伏", `${e.group}龍頭 ${e.leadBase} 噴出，它還沒跟上`);
+    }
+    if (c.hi20 > 0 && kBars.length) {                 // 最近 24 小時第一根收盤站上 20 天高的 K 棒
+      const since = kBars.at(-1).time - 86400;
+      const b = kBars.find((x) => x.time >= since && x.close > c.hi20);
+      if (b) add((b.time - TZ) * 1000, "belowBar", "arrowUp", colors.nh, "突破", `收盤站上 20 天高 ${fmtPx(c.hi20)}`);
+    }
+    return E;
+  }
+  function kMarkers(c) {
+    if (!kSeries || !kBars.length) return;
+    const iv = KIV[kInt], t0 = kBars[0].time, t1 = kBars.at(-1).time, by = new Map(), list = [];
+    for (const e of kEvents(c)) {
+      const t = Math.floor(e.ms / 1000 / iv) * iv + TZ;
+      if (t < t0 || t > t1) continue;
+      list.push(e);
+      const k = t + e.pos, m = by.get(k);
+      if (m) { if (!m.text.includes(e.short)) m.text += "・" + e.short; }
+      else by.set(k, { time: t, position: e.pos, shape: e.shape, color: e.color, text: e.short });
+    }
+    const mk = [...by.values()].sort((a, b) => a.time - b.time);
+    mk.forEach((m, i) => { if (i < mk.length - 4) m.text = ""; });   // 只有最近 4 個標記寫字，避免疊在一起；細節看下方清單
+    kSeries.setMarkers(mk);
+    const ul = kBox.querySelector(".kev");
+    list.sort((a, b) => b.ms - a.ms);
+    ul.hidden = !list.length;
+    ul.innerHTML = list.slice(0, 6).map((e) => `<li><time>${mdhm(e.ms)}</time><span><b style="color:${e.color}">${esc(e.short)}</b> ${esc(e.long)}</span></li>`).join("");
+  }
   // 先用同網站的檔案（Cloudflare 部署時一起上傳，最快），失敗才用 CDN
   const loadLwc = () => kLib || (kLib = (async () => {
     for (const src of ["lightweight-charts.js", LWC]) {
@@ -1795,7 +1850,8 @@ footer { color: var(--ink3); font-size: 12px; }
     kBox = document.createElement("div");
     kBox.className = "kbox";
     kBox.innerHTML = `<div class="kseg">${KINTS.map(([v, t]) => `<button type="button" data-k="${v}" aria-pressed="${v === kInt}">${t}</button>`).join("")}<a class="kmore" target="_blank" rel="noopener noreferrer">TradingView ↗</a></div>
-      <div class="kchart" aria-label="K 線圖"><p class="kmsg">載入 K 線…</p></div>`;
+      <div class="kchart" aria-label="K 線圖"><p class="kmsg">載入 K 線…</p></div>
+      <ul class="kev" hidden></ul>`;
     kBox.querySelectorAll("[data-k]").forEach((b) => b.addEventListener("click", () => {
       kInt = b.dataset.k;
       try { localStorage.setItem("kb-kint", kInt); } catch (_) {}
@@ -1809,7 +1865,7 @@ footer { color: var(--ink3); font-size: 12px; }
     if (!c?.bn || !kBox) return;
     kBox.querySelector(".kmore").href = `https://www.tradingview.com/chart/?symbol=BINANCE:${c.bn}.P&interval=${TV_INT[kInt]}`;
     const key = c.bn + "|" + kInt;
-    if (key === kKey && kChart) return;
+    if (key === kKey && kChart) { kMarkers(c); return; }            // 資料更新：K 線不重抓，只更新事件標記
     kKey = key;
     const seq = ++kSeq, msg = kBox.querySelector(".kmsg"), host = kBox.querySelector(".kchart");
     msg.hidden = false; msg.textContent = "載入 K 線…";
@@ -1829,6 +1885,8 @@ footer { color: var(--ink3); font-size: 12px; }
       kSeries.applyOptions({ priceFormat: pxFmt(bars.at(-1)?.close || 1) });
       kSeries.setData(bars);
       kVol.setData(vols);
+      kBars = bars;
+      kMarkers(c);
       if (kLine) { kSeries.removePriceLine(kLine); kLine = null; }
       if (c.hi20 > 0) kLine = kSeries.createPriceLine({ price: c.hi20, color: colors.nh, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "20天高" });
       kChart.timeScale().setVisibleLogicalRange({ from: Math.max(0, bars.length - (vertical ? 56 : 72)), to: bars.length + 2 });
@@ -1846,7 +1904,9 @@ footer { color: var(--ink3); font-size: 12px; }
       const d = JSON.parse(e.data).data?.k;
       if (!d || !kSeries || want !== kInt) return;
       const t = d.t / 1000 + TZ;
-      kSeries.update({ time: t, open: d.o / m, high: d.h / m, low: d.l / m, close: d.c / m });
+      const bar = { time: t, open: d.o / m, high: d.h / m, low: d.l / m, close: d.c / m };
+      kSeries.update(bar);
+      if (kBars.length && kBars.at(-1).time === t) kBars[kBars.length - 1] = bar; else if (!kBars.length || t > kBars.at(-1).time) kBars.push(bar);
       kVol.update({ time: t, value: +d.q, color: volCol(d.o, d.c) });
     };
   }
