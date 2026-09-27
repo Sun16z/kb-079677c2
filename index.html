@@ -381,6 +381,10 @@ body.simple .adv { display: none !important; }
 .waitline button { border: 1px solid var(--line); background: var(--panel2); border-radius: 999px; padding: 4px 10px; cursor: pointer; font: 500 12px var(--mono); color: var(--ink2); }
 .waitline button:hover { color: var(--ink); border-color: var(--ink3); }
 footer { color: var(--ink3); font-size: 12px; }
+.fresh { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 9; font: 700 13px/1 var(--body); color: var(--bg); background: var(--ink); border: 0; border-radius: 999px; padding: 10px 16px; box-shadow: 0 8px 24px rgb(0 0 0 / .3); cursor: pointer; }
+.fresh:active { transform: translateX(-50%) translateY(1px); }
+.fresh[hidden] { display: none; }
+@media (max-width: 760px) { .card:not([hidden]) ~ .fresh, body:has(.card:not([hidden])) .fresh { bottom: auto; top: calc(10px + env(safe-area-inset-top, 0px)); } }
 .banner { background: color-mix(in srgb, var(--avoid) 14%, transparent); color: var(--ink); border: 1px solid color-mix(in srgb, var(--avoid) 40%, transparent); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
 
 @media (max-width: 1100px) {
@@ -465,6 +469,7 @@ footer { color: var(--ink3); font-size: 12px; }
   </section>
 
   <div id="banner" class="banner" hidden></div>
+  <button type="button" id="fresh" class="fresh" hidden>有新資料・點一下更新</button>
   <div class="movers adv" id="movers" hidden></div>
   <nav class="heat adv" id="heat" aria-label="族群 24 小時強弱"></nav>
 
@@ -1703,6 +1708,27 @@ footer { color: var(--ink3); font-size: 12px; }
   const GIST = GIST_IN_URL || GIST_SAVED;
   if (!GIST_IN_URL && GIST && location.protocol !== "file:") history.replaceState(null, "", "#" + GIST);   // 加入主畫面時帶著通行碼
   const GIST_OWNER = "Sun16z";
+  // 閱讀保護（2026-09-27，手機看卡片看到一半被更新關掉）：卡片或頂部說明開著、或 20 秒內有碰螢幕，新資料先暫存，
+  // 底部出現「有新資料」按鈕；看完（都關掉且 20 秒沒碰）自動套用，或自己點按鈕。
+  let pending = null, lastTouch = 0;
+  ["pointerdown", "touchstart", "wheel", "keydown"].forEach((ev) => addEventListener(ev, () => { lastTouch = Date.now(); }, { passive: true, capture: true }));
+  addEventListener("scroll", () => { lastTouch = Date.now(); }, { passive: true, capture: true });
+  const reading = () => (selected && !card.hidden) || !!document.querySelector("details.rgd[open], details.menu[open]") || Date.now() - lastTouch < 20000;
+  function commit(d) {
+    pending = null; $("fresh").hidden = true;
+    const prevSyms = DATA ? DATA.coins.map((c) => c.bn).join() : "";
+    const keepScroll = !card.hidden ? card.scrollTop : null;
+    const keepSel = selected;
+    apply(d);
+    if (keepSel && !selected) {                    // 看的那顆不在新名單：留著舊卡片，不強制關掉
+      selected = keepSel; card.hidden = false;
+    }
+    if (keepScroll != null && !card.hidden) card.scrollTop = keepScroll;
+    if (d.coins.map((c) => c.bn).join() !== prevSyms) { connect(); seedHist(); }
+  }
+  setInterval(() => { if (pending && !reading()) commit(pending); }, 3000);
+  $("fresh").addEventListener("click", () => { if (pending) commit(pending); });
+
   async function poll() {
     try {
       const url = GIST ? `https://gist.githubusercontent.com/${GIST_OWNER}/${GIST}/raw/karma_bubbles.json?m=${Math.floor(Date.now() / 60000)}`
@@ -1711,9 +1737,8 @@ footer { color: var(--ink3); font-size: 12px; }
       if (!r.ok) throw r.status;
       const d = await r.json();
       if (d.runAt !== DATA?.runAt || (d.updatedAt && d.updatedAt !== DATA?.updatedAt)) {   // watch 每 2 分鐘的更新也要重畫
-        const prevSyms = DATA ? DATA.coins.map((c) => c.bn).join() : "";
-        apply(d);
-        if (d.coins.map((c) => c.bn).join() !== prevSyms) { connect(); seedHist(); }
+        if (DATA && reading()) { pending = d; $("fresh").hidden = false; }            // 正在看卡片／說明：先暫存，不打斷
+        else commit(d);
       }
     } catch (e) {
       if (GIST && !DATA) $("head").textContent = e === 404 ? "連結失效：資料不存在，請跟分享的人要新的連結" : "資料載入失敗，稍後自動重試";
