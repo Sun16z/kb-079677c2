@@ -64,7 +64,42 @@ body { margin: 0; font: 14px/1.55 var(--body); -webkit-font-smoothing: antialias
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.t-buy { color: var(--buy); } .t-wait { color: var(--wait); } .t-hot { color: var(--hot); } .t-avoid { color: var(--avoid); }
+.t-buy { color: var(--buy); } .t-wait { color: var(--wait); } .t-hot { color: var(--hot); } .t-avoid { color: var(--avoid); } .t-nh { color: var(--nh); }
+
+/* 第一階段（2026-09-27）：規則說、剛剛變了什麼、卡片判斷 */
+.rulebar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 9px 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); font-size: 13.5px; line-height: 1.55; color: var(--ink); }
+.rulebar > b { font: 800 13px/1.55 var(--display); letter-spacing: .02em; white-space: nowrap; }
+.rulebar > span { flex: 1 1 320px; min-width: 0; }
+.rulebar small { color: var(--ink3); font-size: 11.5px; white-space: nowrap; }
+.rulebar.lv-ok { border-color: color-mix(in srgb, var(--buy) 35%, var(--line)); } .rulebar.lv-ok > b { color: var(--buy); }
+.rulebar.lv-warn { border-color: color-mix(in srgb, var(--hot) 45%, var(--line)); background: color-mix(in srgb, var(--hot) 6%, var(--panel)); } .rulebar.lv-warn > b { color: var(--hot); }
+.rulebar.lv-mid > b { color: var(--ink2); }
+.rulebar.lv-alert { border-color: var(--avoid); background: color-mix(in srgb, var(--avoid) 12%, var(--panel)); } .rulebar.lv-alert > b { color: var(--avoid); }
+.feed { display: flex; gap: 6px; align-items: stretch; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+.feed::-webkit-scrollbar { display: none; }
+.feed-h { flex: none; display: grid; align-content: center; font: 800 13px/1.25 var(--display); padding-right: 4px; }
+.feed-h small { font: 500 11px var(--body); color: var(--ink3); }
+.fd { flex: none; display: grid; grid-template-columns: auto auto; column-gap: 8px; align-items: baseline; justify-content: start; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 6px 11px; color: var(--ink2); font: 500 12px/1.4 var(--body); cursor: pointer; }
+.fd:active { transform: translateY(1px); }
+.fd time { font: 600 11px var(--mono); color: var(--ink3); }
+.fd b { font: 800 14px/1.2 var(--display); }
+.fd span { grid-column: 1 / -1; white-space: nowrap; }
+.fd.none { cursor: default; align-content: center; }
+.verdict { display: grid; gap: 8px; }
+.verdict .do { margin: 0; font: 800 15px/1.45 var(--display); color: var(--ink); }
+.verdict .why { margin: 0; }
+.verdict ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; font-size: 13px; line-height: 1.45; color: var(--ink2); }
+.verdict li { display: grid; grid-template-columns: 14px 1fr; }
+.verdict li::before { font-weight: 800; }
+.verdict li.p::before { content: "+"; color: var(--buy); }
+.verdict li.n::before { content: "−"; color: var(--avoid); }
+.verdict li.i::before { content: "·"; color: var(--ink3); }
+.verdict .next { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--ink2); }
+.verdict .next b { color: var(--ink); }
+.verdict .odds { margin: 0; font-size: 11.5px; line-height: 1.5; color: var(--ink3); }
+.links { display: flex; flex-wrap: wrap; gap: 6px; }
+.links a { font: 700 12px/1 var(--body); color: var(--ink2); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; }
+.links a:hover { color: var(--ink); border-color: var(--ink3); }
 .up { color: var(--buy); } .dn { color: var(--avoid); }
 
 /* 頂列：品牌、市況、控制 */
@@ -281,7 +316,14 @@ body.simple .adv { display: none !important; }
 .lane-h b { font: 800 clamp(16px, 1.5vw, 21px)/1 var(--display); }
 .lane-h span { font: 700 13px/1 var(--mono); color: var(--ink2); }
 .lane-h em { font: 500 11.5px/1 var(--mono); font-style: normal; color: var(--ink3); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.lane-empty { position: absolute; color: var(--ink3); font-size: 12.5px; pointer-events: none; transform: translate(-50%, -50%); text-align: center; width: 100px; }
+.lane-empty { position: absolute; color: var(--ink3); font-size: 12.5px; pointer-events: none; transform: translate(-50%, -50%); text-align: center; width: 170px; display: grid; gap: 5px; justify-items: center; }
+.lane-empty b { font: 800 12.5px/1.2 var(--display); color: var(--ink2); }
+.lane-empty span { font-size: 11.5px; line-height: 1.45; color: var(--ink2); }
+.lane-empty small { font-size: 11px; }
+.lane-empty .nm { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; }
+.lane-empty button { pointer-events: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 4px 9px; font: 700 12px/1.2 var(--display); color: var(--ink); cursor: pointer; }
+.lane-empty button em { font: 500 10.5px var(--mono); font-style: normal; color: var(--ink3); }
+@media (max-width: 760px) { .lane-empty { width: calc(100% - 24px); } }
 
 /* 詳情卡 */
 .card { position: absolute; width: 340px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); z-index: 2; display: grid; gap: 12px; }
@@ -450,7 +492,7 @@ footer { color: var(--ink3); font-size: 12px; }
         <div class="pop">
           <span><b>位置</b>：由左到右是可以埋伏、觀望、追高風險高、別碰。越左邊，過去一年的勝率越高。同一道裡 LIQ 越高排越前面（沒有 LIQ 的排最後）。</span>
           <span><b>機構資金 ILI</b>：美元流動性、MSTR mNAV、BTC ETF 流入合成的 0–100 分數。BTC 創 30 日新高但 ILI 比上次創高時低＝黃燈（多頭後勁變弱），創歷史新高又背離且 ILI &lt; 50＝紅燈（收手）。</span>
-          <span><b>顏色</b>：綠＝可以埋伏，橘紅＝追高風險高，紅＝別碰。觀望道的底色只是 24h 漲跌。</span>
+          <span><b>顏色</b>：只代表動作。綠＝可以埋伏，灰＝觀望，橘紅＝追高風險高，紅＝別碰。漲跌看泡泡裡的數字。</span>
           <span><b>金色太陽</b>：24 小時內突破 20 天新高、離前高 8% 以內，可以追強（強牛才適用）。<b>大太陽</b>＝30 分鐘內剛刷新新高（放大、光芒更強），30 分鐘沒再創高就變回<b>小太陽</b>。離 30 日線超過 25% 的太陽會變淡（研究顯示追這種最差）。清單上的「真買盤」＝突破那根主動買 ≥55%。</span>
           <span><b>紅／綠閃亮外圈＋星光</b>：Hyperliquid 大戶正在用 TWAP 大量賣出（紅，可做空）或買入（綠，可做多），每小時量 ≥ 成交量 10%。TWAP 結束就平倉。</span>
           <span><b>閃動外圈</b>：即時異動，15 分鐘漲跌 3% 或 5 分鐘 2% 以上。是提醒，不是買點。</span>
@@ -467,6 +509,8 @@ footer { color: var(--ink3); font-size: 12px; }
     <details class="rgd ilid" id="ili" hidden></details>
     <div class="tally" id="tally"></div>
   </section>
+  <div class="rulebar" id="rulebar" hidden></div>
+  <nav class="feed" id="feed" aria-label="近 4 小時的換道與新訊號" hidden></nav>
 
   <div id="banner" class="banner" hidden></div>
   <button type="button" id="fresh" class="fresh" hidden>有新資料・點一下更新</button>
@@ -522,6 +566,17 @@ footer { color: var(--ink3); font-size: 12px; }
     if (t === "buy") { const a = S.rotation?.volume?.lagBeat, b = S.rotation?.narrative?.lagBeat; return a && b ? `${Math.round(a * 100)}–${Math.round(b * 100)}%` : ""; }
     const x = S.lanes?.[t]?.beat;
     return x ? Math.round(x * 100) + "%" : "";
+  };
+  // 勝率附條件（第一階段）：樣本數、期間、強牛／非強牛（research/winrate_20260925/lanes_regime.py）
+  const pc = (x) => x == null ? "-" : Math.round(x * 100) + "%";
+  const laneOdds = (t) => {
+    const S = DATA?.stats;
+    if (!S) return "";
+    const n = t === "buy" ? S.rotation?.volume?.events : S.lanes?.[t]?.n;
+    const per = `${String(S.from || "").slice(0, 7).replace("-", "/")}–${String(S.to || "").slice(0, 7).replace("-", "/")}`;
+    const B = S.byRegime?.lanes?.[t];
+    const reg = B ? `；強牛時 ${pc(B.strong.beat)}（${B.strong.n.toLocaleString()} 筆），其他時候 ${pc(B.other.beat)}（${B.other.n.toLocaleString()} 筆）` : "";
+    return `過去一年（${per}）進這道後 24 小時跑贏大盤 ${laneWin(t) || "-"}${n ? `，${Number(n).toLocaleString()} ${t === "buy" ? "次事件" : "筆"}` : ""}${reg}。未扣手續費和滑價。`;
   };
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const $ = (id) => document.getElementById(id);
@@ -688,7 +743,7 @@ footer { color: var(--ink3); font-size: 12px; }
     });
     const A = share.reduce((s, x) => s + x.a, 0) || 1;
     // 空的道只留標題寬度；有幣的道至少 16%，別讓要行動的幣擠在窄條裡
-    let sizes = share.map((x) => x.n ? Math.max(x.a / A * span, x.need, span * 0.16, vertical ? 110 : 190) : (vertical ? 56 : 178));
+    let sizes = share.map((x) => x.n ? Math.max(x.a / A * span, x.need, span * 0.16, vertical ? 110 : 190) : (vertical ? (nearOf(x.t).length ? 132 : 56) : 178));
     const k = span / sizes.reduce((a, b) => a + b, 0);
     sizes = sizes.map((s) => s * k);
     let at = 0;
@@ -718,14 +773,32 @@ footer { color: var(--ink3); font-size: 12px; }
     return { x: R.x0 + (R.x1 - R.x0) * (0.15 + 0.7 * n.f), y: R.y0 + (R.y1 - R.y0) * (0.5 + n.row * 0.62) };
   }
 
+  // 空道不要只寫「這輪沒有」：列出差一點就進這道的（第一階段）
+  const nearOf = (t) => t === "buy" ? (DATA.rotation?.near || []) : (DATA.nearMiss?.[t] || []);
+  function emptyLane(t) {
+    const L = nearOf(t), inField = new Set(nodes.map((n) => n.c.sym));
+    let body = "這輪沒有";
+    if (t === "buy") {
+      const ev = (DATA.rotation?.events || [])[0];
+      if (L.length) body = `<b>差一點觸發</b>${L.slice(0, vertical ? 2 : 3).map((x) => `<span>${esc(x.group)}：${esc(x.leadBase)} 再多漲 ${x.need.toFixed(1)}% 就會埋伏 ${x.fols.map(esc).join("、")}</span>`).join("")}`;
+      if (ev) body += `<small>上次：${esc(ev.group)}（${esc(ev.leadBase)}）${ev.ageH} 小時前</small>`;
+    } else if (L.length) {
+      body = `<b>差一點進這道</b><div class="nm">${L.map((x) => {
+        const tag = `<em>${t === "hot" ? `RSI ${Math.round(x.rsi)}・` : ""}${fmtPct(x.ex24, 1)}</em>`;
+        return inField.has(x.sym) ? `<button type="button" data-sym="${esc(x.sym)}">${esc(x.sym)} ${tag}</button>` : `<span>${esc(x.sym)} ${tag}</span>`;
+      }).join("")}</div>`;
+    }
+    return `<div class="lane-empty" data-e="${t}">${body}</div>`;
+  }
   function buildLaneHeads() {
     const box = $("lanes");
     box.innerHTML = TIERS.map((t) => {
       const n = DATA.coins.filter((c) => c.tier === t).length;
       const w = laneWin(t);
-      return `<div class="lane-h" data-t="${t}" title="${HINT[t]}"><b class="t-${t}">${NAME[t]}</b><span>${n}</span>${w ? `<em>勝率 ${w}</em>` : ""}</div>` +
-        (n ? "" : `<div class="lane-empty" data-e="${t}">這輪沒有</div>`);
+      return `<div class="lane-h" data-t="${t}" title="${esc(HINT[t] + "。" + laneOdds(t))}"><b class="t-${t}">${NAME[t]}</b><span>${n}</span>${w ? `<em>勝率 ${w}</em>` : ""}</div>` +
+        (n ? "" : emptyLane(t));
     }).join("");
+    box.querySelectorAll(".lane-empty [data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
   function placeLaneHeads() {
     for (const el of $("lanes").children) {
@@ -737,6 +810,7 @@ footer { color: var(--ink3); font-size: 12px; }
       } else {
         const R = laneRect(t);
         el.style.left = (R.x0 + R.x1) / 2 + "px"; el.style.top = (R.y0 + R.y1) / 2 + "px";
+        if (!vertical) el.style.width = Math.max(80, Math.min(170, R.x1 - R.x0 - 12)) + "px";   // 跟著道寬，字不要被切掉
       }
     }
   }
@@ -804,9 +878,9 @@ footer { color: var(--ink3); font-size: 12px; }
 
   function bubble(n, t) {
     const c = n.c, col = colors[c.tier], r = n.r;
-    // 觀望道的底色跟著 24h 漲跌（像 CryptoBubbles），外圈維持灰色，避免被看成買賣訊號
-    const fillCol = c.tier === "wait" ? ((r24Of(c) ?? 0) >= 0 ? colors.buy : colors.avoid) : col;
-    const tint = c.tier === "wait" ? Math.min(1, Math.abs(r24Of(c) ?? 0) / 8) : 1;
+    // 顏色只代表動作（2026-09-27 第一階段）：觀望一律灰色，漲跌看泡泡裡的數字
+    const fillCol = col;
+    const tint = 1;
     if (r < 2) return;
     const dim = (selected && selected !== n) || !inFocus(c);
     ctx.save();
@@ -814,7 +888,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const loud = c.tier !== "wait";
     if (dark && loud) { ctx.shadowColor = rgba(col, 0.55); ctx.shadowBlur = Math.min(34, r * 0.45); }
     const g = ctx.createRadialGradient(n.x, n.y - r * 0.15, r * 0.1, n.x, n.y, r);
-    const k = c.tier === "wait" ? 0.18 + 0.32 * tint : 1;
+    const k = c.tier === "wait" ? 0.45 : 1;
     g.addColorStop(0, rgba(fillCol, (dark ? 0.05 : 0.08) * k));
     g.addColorStop(0.7, rgba(fillCol, (dark ? 0.16 : 0.18) * k));
     g.addColorStop(1, rgba(fillCol, (dark ? 0.5 : 0.42) * k));
@@ -827,7 +901,8 @@ footer { color: var(--ink3); font-size: 12px; }
 
     if (isNH(c) && !nhFar(c)) {
       // 金色光芒：大太陽＝30 分鐘內刷新 20 天新高；小太陽＝之前突破、還站在前高上
-      const big = nhFresh(c), gc = colors.nh, a0 = (dim ? 0.2 : 1) * (far30(c) ? 0.5 : 1);
+      // 不是強牛時太陽變淡：回測顯示非強牛追突破常整年虧錢（D115）
+      const big = nhFresh(c), gc = colors.nh, a0 = (dim ? 0.2 : 1) * (far30(c) ? 0.5 : 1) * (strongBull() ? 1 : 0.4);
       const spin = reduce ? 0 : t / (big ? 1400 : 4200);
       const pulse = reduce ? 0.6 : 0.5 + 0.5 * Math.sin(t / (big ? 260 : 700) + n.ph);
       ctx.save();
@@ -1022,6 +1097,45 @@ footer { color: var(--ink3); font-size: 12px; }
   function chaseList() {
     return (DATA.newHighs || []).filter((x) => isNH(x) && !nhFar(x)).sort((a, b) => far30(a) - far30(b) || nhFresh(b) - nhFresh(a) || (b.brkTk >= 0.55) - (a.brkTk >= 0.55) || nhAbove(a) - nhAbove(b));
   }
+  // 規則說（第一階段）：大盤狀態＋ILI 合成一句，不讓使用者自己判斷現在是不是強牛
+  function renderRule() {
+    const R = DATA.regime, I = DATA.ili, el = $("rulebar");
+    el.hidden = !R?.state;
+    if (el.hidden) return;
+    const nChase = chaseList().filter((x) => !far30(x)).length, nBuy = DATA.coins.filter((c) => c.tier === "buy").length;
+    let lv, txt;
+    if (I?.state === "紅") [lv, txt] = ["alert", "ILI 紅燈：BTC 創歷史新高但機構資金沒跟上。不開新槓桿、山寨大幅減碼。"];
+    else if (R.state === "強熊") [lv, txt] = ["alert", "強熊：過去這種時候追強和埋伏都是虧的，多數時間拿現金，單日反彈不算轉強。"];
+    else if (R.state === "強牛" && R.hot) [lv, txt] = ["warn", `強牛但過熱：新倉縮小，追強只挑離 30 日線 ≤25% 的（現在 ${nChase} 檔），停損 −20%；2–4 週後回落機率偏高。`];
+    else if (R.state === "強牛") [lv, txt] = ["ok", `強牛：可以追剛創新高、離 30 日線 ≤25% 的幣（現在 ${nChase} 檔），停損 −20%、從最高收盤回落 20% 才出；埋伏照做。`];
+    else if (R.state === "偏多") [lv, txt] = ["mid", "偏多：追強的優勢變小，以埋伏為主、部位縮小；金色太陽只當參考。"];
+    else [lv, txt] = ["mid", "偏空：追強勝率偏低，以短打和減碼為主；金色太陽只當參考。"];
+    if (I?.state === "黃" && lv !== "alert") txt += " ILI 黃燈：多頭後勁變弱，槓桿不要再加。";
+    el.className = `rulebar lv-${lv}`;
+    el.innerHTML = `<b>規則說</b><span>${esc(txt)}${nBuy ? ` 可以埋伏 ${nBuy} 檔。` : ""}</span><small>分道只針對做多・不是投資建議</small>`;
+  }
+  // 剛剛變了什麼（第一階段）：近 4 小時的換道、大戶 TWAP 訊號、剛刷新新高、LIQ 放量
+  function renderFeed() {
+    const el = $("feed"), now = Date.now(), H4 = 4 * 3600e3, items = [];
+    for (const x of DATA.laneChanges || []) {
+      const t = Date.parse(x.t);
+      if (now - t < H4) items.push({ t, sym: x.sym, k: x.to, txt: `${x.from ? NAME[x.from] : "新進榜"} → ${NAME[x.to]}` });
+    }
+    for (const g of DATA.twaps?.active || []) {
+      if (g.signal && g.market !== "美股／HIP-3" && now - g.t < H4) items.push({ t: g.t, sym: whaleCoin(g.base || g.coin), k: g.signal === "short" ? "avoid" : "buy", txt: `大戶 TWAP ${g.buy ? "買入" : "賣出"}：${g.signal === "short" ? "可做空" : "可做多"}` });
+    }
+    for (const c of DATA.coins) if (nhFresh(c)) items.push({ t: peakOf(c).t, sym: c.sym, k: "nh", txt: "剛刷新 20 天新高" });
+    for (const h of DATA.liqVol || []) {
+      const t = Date.parse(h.t);
+      if (now - t < H4) items.push({ t, sym: h.sym, k: "buy", txt: `LIQ≥2＋放量 ${h.vr} 倍` });
+    }
+    items.sort((a, b) => b.t - a.t);
+    el.hidden = false;
+    el.innerHTML = `<span class="feed-h">剛剛變了什麼<small>近 4 小時</small></span>` + (items.length
+      ? items.slice(0, 10).map((x) => `<button type="button" class="fd" data-sym="${esc(x.sym)}"><time>${tpe(new Date(x.t).toISOString())}</time><b class="t-${x.k}">${esc(x.sym)}</b><span>${esc(x.txt)}</span></button>`).join("")
+      : `<span class="fd none">這 4 小時沒有換道或新訊號</span>`);
+    el.querySelectorAll("[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+  }
   function renderHeader() {
     const cnt = (t) => DATA.coins.filter((c) => c.tier === t).length;
     const tiles = [["buy", cnt("buy"), NAME.buy], ["nh", chaseList().length, "追強"], ["hot", cnt("hot"), "追高風險高"], ["avoid", cnt("avoid"), NAME.avoid]];
@@ -1035,6 +1149,8 @@ footer { color: var(--ink3); font-size: 12px; }
     }));
     renderRegime();
     renderIli();
+    renderRule();
+    renderFeed();
     if (!window.__popClose) {   // 點外面就收起頂部的彈出說明（兩個同時開會疊在一起）
       window.__popClose = true;
       document.addEventListener("click", (e) => document.querySelectorAll("details.rgd[open], details.menu[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; }));
@@ -1571,6 +1687,72 @@ footer { color: var(--ink3); font-size: 12px; }
       <p><b>${esc(sn.zh)}</b> ${Math.round(sn.score)}／100${sn.confidence != null ? `，把握 ${Math.round(sn.confidence * 100)}%` : ""}</p></div>`;
   }
 
+  // 卡片最上面（第一階段）：做什麼 → 為什麼（加分／扣分）→ 什麼情況會換道 → 這道過去的成績
+  function actionOf(c) {
+    const sg = sigOn(c.sym);
+    if (sg) return `Hyperliquid 大戶正在用 TWAP ${sg.buy ? "買入" : "賣出"}：${sigName(sg)}，${sigExit(sg)}。`;
+    const bull = ["強牛", "偏多"].includes(DATA.regime?.state);
+    if (c.tier === "buy") return bull ? "可以小倉埋伏：抱 48–72 小時到時間就賣，停損 −8～−12%。" : "可以小倉埋伏，但現在不是牛市：最多抱 24–48 小時，優勢很小。";
+    if (c.tier === "hot") return "追高風險也高：新倉等它回到觀望再說，手上有的可以分批落袋。";
+    if (c.tier === "avoid") return "還在急跌：等它回到觀望再看。";
+    if (isNH(c) && !nhFar(c)) {
+      if (far30(c)) return "剛創新高，但離 30 日線太遠（>25%），追高風險也高。";
+      return strongBull() ? "強牛可以追：停損 −20%，從最高收盤回落 20% 才出。" : "剛創新高，但現在不是強牛：過去非強牛追突破常整年虧錢，只當參考。";
+    }
+    return "沒有明顯優勢，不用動。";
+  }
+  function factorsOf(c) {
+    const P = [], N = [], I = [];
+    const sg = sigOn(c.sym);
+    if (sg) (sg.signal === "long" ? P : N).push(`大戶 TWAP ${sg.buy ? "買入" : "賣出"}中，每小時占成交 ${impTxt(sg.impact)}（過去跟單小勝）`);
+    if (isNH(c) && !nhFar(c)) P.push(`24 小時內突破 20 天新高，離前高 ${fmtPct(nhAbove(c), 1)}`);
+    if (c.brkTk != null) {
+      if (c.brkTk >= 0.55) P.push(`突破那根主動買 ${Math.round(c.brkTk * 100)}%（真買盤）`);
+      else if (c.brkTk < 0.5) N.push(`突破那根主動買只有 ${Math.round(c.brkTk * 100)}%（賣方較多）`);
+    }
+    if (c.ext30 != null && (isNH(c) || c.tier === "hot")) {
+      if (c.ext30 > 25) N.push(`離 30 日線 +${Math.round(c.ext30)}%，太遠（研究裡最差的一組）`);
+      else if (c.ext30 <= 10) P.push(`離 30 日線 ${fmtPct(c.ext30, 0)}，還不遠`);
+    }
+    if ((c.rsi ?? 0) > 70) N.push(`RSI ${Math.round(c.rsi)}，過熱`);
+    if (c.ex24 != null && c.ex24 < -8) N.push(`24h 比大盤多跌 ${Math.abs(c.ex24).toFixed(0)}%`);
+    if (DATA.revenue?.[c.bn]?.cand) P.push("項目營收轉強、幣價還沒反映（證據偏弱）");
+    const bb = DATA.buyback?.[c.bn];
+    if (bb?.hit) P.push(`回購殖利率 ${bb.by.toFixed(1)}%／年、新增供給少（觀察中）`);
+    else if (bb && bb.dil > 20) N.push(`流通量一年增加約 ${Math.round(bb.dil)}%（解鎖稀釋）`);
+    if (DATA.regime?.hot && (c.tier === "buy" || isNH(c))) N.push("市場過熱：2–4 週後回落機率偏高");
+    if (DATA.ili?.state === "紅") N.push("ILI 紅燈：機構資金沒跟上");
+    const w = whalesOn(c.sym).filter((x) => x.p);
+    if (w.length) I.push(`監控的巨鯨：${w.slice(0, 3).map(({ w: ww, p }) => `${whaleName(ww)} ${p.side}單`).join("、")}${w.length > 3 ? ` 等 ${w.length} 個` : ""}`);
+    return { P, N, I };
+  }
+  function nextOf(c) {
+    const rsi = c.rsi == null ? "-" : Math.round(c.rsi), ex = c.ex24 == null ? "-" : fmtPct(c.ex24, 1);
+    if (c.tier === "wait") {
+      const L = [`RSI 超過 70（現在 ${rsi}）而且 24h 比大盤多漲 8%（現在 ${ex}）→ 追高風險高`, `24h 比大盤多跌 8%（現在 ${ex}）→ 別碰`];
+      if (c.group) L.push(`${c.group}的龍頭噴出、它還沒跟上 → 可以埋伏`);
+      return L;
+    }
+    if (c.tier === "buy") return ["漲到龍頭漲幅的一半（算跟上），或龍頭噴出滿 24 小時 → 回到觀望"];
+    if (c.tier === "hot") return c.reason === "leader" ? ["龍頭噴出滿 24 小時 → 回到觀望"] : [`RSI 回到 70 以下（現在 ${rsi}）或 24h 超額回到 8% 以下（現在 ${ex}）→ 觀望`];
+    return [`24h 比大盤的跌幅收斂到 8% 以內（現在 ${ex}）→ 觀望`];
+  }
+  function verdictBlock(c) {
+    const { P, N, I } = factorsOf(c);
+    const li = (a, k) => a.map((x) => `<li class="${k}">${esc(x)}</li>`).join("");
+    const nx = nextOf(c);
+    return `<div class="verdict"><p class="do">${esc(actionOf(c))}</p>
+      ${c.why && !(c.tier === "wait" && !c.reason) ? `<p class="why">${esc(c.why)}</p>` : ""}
+      ${P.length || N.length || I.length ? `<ul>${li(P, "p")}${li(N, "n")}${li(I, "i")}</ul>` : ""}
+      <p class="next"><b>什麼情況會換道</b>：${nx.map(esc).join("；")}</p>
+      <p class="odds">${esc(laneOdds(c.tier))}</p></div>`;
+  }
+  function linksOf(c) {
+    const bn = c.bn, L = [];
+    if (bn) L.push(["幣安合約", `https://www.binance.com/zh-TC/futures/${bn}`], ["TradingView", `https://www.tradingview.com/chart/?symbol=BINANCE:${bn}.P`], ["Coinglass", `https://www.coinglass.com/tv/Binance_${bn}`]);
+    if ((DATA.hlBases || []).includes(c.sym)) L.push(["Hyperliquid", `https://app.hyperliquid.xyz/trade/${(bn || "").startsWith("1000") ? "k" + c.sym : c.sym}`]);
+    return L.length ? `<div class="links">${L.map(([k, u]) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${k} ↗</a>`).join("")}</div>` : "";
+  }
   function renderCard() {
     const c = selected.c, col = colors[c.tier];
     const px = priceOf(c), r24 = r24Of(c);
@@ -1582,7 +1764,8 @@ footer { color: var(--ink3); font-size: 12px; }
       <div class="card-h"><b>${esc(c.sym)}</b><span class="pill t-${c.tier}">${NAME[c.tier]}</span>
         <button class="x" type="button" aria-label="關閉">×</button></div>
       <div class="px"><strong>${fmtPx(px)}</strong><span class="mono ${cls(r24)}">${fmtPct(r24)} 24h</span></div>
-      <p class="why">${esc(c.why)}</p>
+      ${verdictBlock(c)}
+      ${linksOf(c)}
       ${(DATA.listings || []).filter((e) => e.base === c.sym).slice(0, 2).map((e) => `<div class="news"><small>${esc(e.kind)}（${tpeFull(e.t)}）</small><p>${esc(e.advice || e.title || "")}${e.since != null ? `　事件後到現在 <b class="${cls(e.since)}">${fmtPct(e.since)}</b>` : ""}</p></div>`).join("")}
       ${nhBlock(c)}
       ${(DATA.liqVol || []).filter((h) => h.sym === c.sym).slice(-1).map((h) => `<div class="news"><small>LIQ≥2＋放量（${tpeFull(h.t)}）</small><p>LIQ ${sgn(h.liq)}、24h 成交額是 7 天日均的 ${h.vr} 倍。一週樣本：72h 跑贏其他幣 55%、平均 +2%；24h 只有 31%，短線常先震，看 3 天。樣本很小，還在驗證。</p></div>`).join("")}
