@@ -97,6 +97,27 @@ button { font: inherit; color: inherit; }
 .rgd .pop { left: 0; right: auto; }
 .rgd .rg-hot { font: 700 12px/1 var(--body); color: var(--hot); border: 1px solid var(--hot); border-radius: 999px; padding: 4px 9px; background: color-mix(in srgb, var(--hot) 12%, transparent); white-space: nowrap; }
 .rgd .rg-hotnote { color: var(--ink); border-left: 3px solid var(--hot); padding-left: 8px; }
+.ilid .il-k { font: 700 11px/1.2 var(--body); color: var(--ink3); display: grid; gap: 3px; }
+.ilid .il-n { font: 800 21px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--ink); }
+.ilid .il-pill { font: 700 12px/1 var(--body); border: 1px solid currentColor; border-radius: 999px; padding: 4px 9px; white-space: nowrap; background: color-mix(in srgb, currentColor 10%, transparent); }
+.il-無, .il-靜 { color: var(--ink2); }
+.il-黃 { color: var(--nh); }
+.il-紅 { color: var(--avoid); }
+.ilid .pop { width: min(420px, calc(100vw - 32px)); }
+.ilid .il-bars { display: grid; gap: 6px; }
+.ilid .il-bar { display: grid; grid-template-columns: 92px 1fr 34px; gap: 8px; align-items: center; font-size: 12px; }
+.ilid .il-bar i { display: block; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--ink3) 30%, transparent); overflow: hidden; }
+.ilid .il-bar i::after { content: ""; display: block; height: 100%; width: var(--w); background: var(--ink2); border-radius: 3px; }
+.ilid .il-bar b { font: 700 12px var(--mono); text-align: right; }
+.ilid .il-bar small { grid-column: 2 / -1; margin-top: -4px; font: 500 11px var(--mono); color: var(--ink3); }
+.ilid .il-state { border-left: 3px solid currentColor; padding-left: 8px; }
+.ilid .il-state span { color: var(--ink); }
+.ilid .il-ev { display: grid; gap: 2px; font: 500 11.5px/1.45 var(--mono); }
+.ilid .il-note { font-size: 11.5px; line-height: 1.5; color: var(--ink3); }
+.ilid .il-chart { width: 100%; height: 70px; }
+.ilid .il-chart .ln50 { stroke: var(--ink3); stroke-dasharray: 3 3; opacity: .6; }
+.ilid .il-chart .btc { stroke: var(--ink3); opacity: .55; }
+.ilid .il-chart .mk { stroke-dasharray: none; opacity: .9; }
 .tally { flex: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; min-width: min(100%, 460px); }
 .tile { text-align: left; border: 1px solid var(--line); background: var(--panel); border-radius: var(--r); padding: 8px 14px; cursor: pointer; display: flex; align-items: baseline; gap: 8px; transition: border-color .2s, background .2s, transform .15s; min-width: 0; }
 .tile:active { transform: translateY(1px); }
@@ -368,6 +389,8 @@ footer { color: var(--ink3); font-size: 12px; }
   .rgd > summary { padding: 6px 12px; }
   .rgd .rg-state { font-size: 18px; }
   .rgd svg { margin-left: auto; }
+  .ilid .il-n { font-size: 18px; }
+  .ilid > summary .il-k br { display: none; }
   .tally { min-width: 0; gap: 6px; }
   .tile { flex-direction: column; gap: 2px; padding: 6px 8px; }
   .tile b { font-size: 22px; }
@@ -414,6 +437,7 @@ footer { color: var(--ink3); font-size: 12px; }
         <summary>怎麼看</summary>
         <div class="pop">
           <span><b>位置</b>：由左到右是可以埋伏、觀望、追高風險高、別碰。越左邊，過去一年的勝率越高。</span>
+          <span><b>機構資金 ILI</b>：美元流動性、MSTR mNAV、BTC ETF 流入合成的 0–100 分數。BTC 創 30 日新高但 ILI 比上次創高時低＝黃燈（多頭後勁變弱），創歷史新高又背離且 ILI &lt; 50＝紅燈（收手）。</span>
           <span><b>顏色</b>：綠＝可以埋伏，橘紅＝追高風險高，紅＝別碰。觀望道的底色只是 24h 漲跌。</span>
           <span><b>金色太陽</b>：24 小時內突破 20 天新高、離前高 8% 以內，可以追強（強牛才適用）。<b>大太陽</b>＝30 分鐘內剛刷新新高（放大、光芒更強），30 分鐘沒再創高就變回<b>小太陽</b>。離 30 日線超過 25% 的太陽會變淡（研究顯示追這種最差）。清單上的「真買盤」＝突破那根主動買 ≥55%。</span>
           <span><b>紅／綠閃亮外圈＋星光</b>：Hyperliquid 大戶正在用 TWAP 大量賣出（紅，可做空）或買入（綠，可做多），每小時量 ≥ 成交量 10%。TWAP 結束就平倉。</span>
@@ -428,6 +452,7 @@ footer { color: var(--ink3); font-size: 12px; }
 
   <section class="dbar" aria-label="現在的市況與分道">
     <details class="rgd" id="regime" hidden></details>
+    <details class="rgd ilid" id="ili" hidden></details>
     <div class="tally" id="tally"></div>
   </section>
 
@@ -993,6 +1018,11 @@ footer { color: var(--ink3); font-size: 12px; }
       setFocus({ tier: b.dataset.t });
     }));
     renderRegime();
+    renderIli();
+    if (!window.__popClose) {   // 點外面就收起頂部的彈出說明（兩個同時開會疊在一起）
+      window.__popClose = true;
+      document.addEventListener("click", (e) => document.querySelectorAll("details.rgd[open], details.menu[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; }));
+    }
     $("head").innerHTML = esc(DATA.market.head) + (DATA.legacy ? `<small>這輪幣安資料沒抓到，暫時用 CoinKarma 舊分類。</small>` : "");
     document.title = "Karma Bubbles";
     renderSub();
@@ -1016,6 +1046,54 @@ footer { color: var(--ink3); font-size: 12px; }
         <span><b>現在</b>：BTC ${Number(R.btc).toLocaleString()}，${R.btcVsMa >= 0 ? "高於" : "低於"} 200 日線 ${Math.abs(R.btcVsMa)}%；${Math.round(R.breadth * 100)}% 站上 50 日線（小圖是 14 天走勢，虛線 60%／40%）。</span>
         <span><b>該怎麼做</b>：${esc(R.play)}</span>
         ${R.hot ? `<span class="rg-hotnote"><b>過熱提醒</b>：${esc(R.hotNote)}</span>` : ""}</div>`;
+    el.open = open;
+  }
+
+  // ---------- 機構資金 ILI（近似版，D131） ----------
+  function renderIli() {
+    const I = DATA.ili, el = $("ili");
+    el.hidden = !(I && I.ili != null);
+    if (el.hidden) return;
+    const pill = { "無": "沒背離", "靜": "沒在創高", "黃": "黃燈", "紅": "紅燈" }[I.state] || I.state;
+    const sp = I.spark || [], W = 84, H = 26;
+    const line = (vals, w, h, lo, hi) => vals.map((v, i) => `${((i / Math.max(1, vals.length - 1)) * w).toFixed(1)},${(h - ((v - lo) / Math.max(1e-9, hi - lo)) * h).toFixed(1)}`).join(" ");
+    const iv = sp.map((x) => x[1]), bv = sp.map((x) => x[2]);
+    const mini = iv.length > 1 ? `<svg class="il-${I.state}" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" aria-hidden="true">
+      <line x1="0" x2="${W}" y1="${H / 2}" y2="${H / 2}"/><polyline points="${line(iv.slice(-60), W, H, 0, 100)}" fill="none" stroke="currentColor" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>` : "";
+    const CW = 400, CH = 70, bl = Math.min(...bv), bh = Math.max(...bv);
+    const flagsIn = (I.events || []).filter((e) => (e.kind === "黃" || e.kind === "紅") && sp.length && e.t >= sp[0][0]);
+    const xOf = (t) => { const k = sp.findIndex((x) => x[0] === t); return k < 0 ? null : (k / Math.max(1, sp.length - 1)) * CW; };
+    const chart = iv.length > 1 ? `<svg class="il-chart" viewBox="0 0 ${CW} ${CH}" preserveAspectRatio="none" aria-label="近 180 天 ILI（實線）與 BTC（淡線）">
+      <line class="ln50" x1="0" x2="${CW}" y1="${CH / 2}" y2="${CH / 2}" vector-effect="non-scaling-stroke"/>
+      <polyline class="btc" points="${line(bv, CW, CH, bl, bh)}" fill="none" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+      <polyline points="${line(iv, CW, CH, 0, 100)}" fill="none" stroke="var(--ink)" stroke-width="1.8" vector-effect="non-scaling-stroke"/>
+      ${flagsIn.map((e) => { const x = xOf(e.t); return x == null ? "" : `<line class="mk" x1="${x}" x2="${x}" y1="0" y2="${CH}" style="stroke:${e.kind === "紅" ? "var(--avoid)" : "var(--nh)"}" stroke-width="2" vector-effect="non-scaling-stroke"/>`; }).join("")}</svg>` : "";
+    const bar = (k, v, sub) => `<div class="il-bar"><span>${k}</span><i style="--w:${v}%"></i><b>${v}</b><small>${sub}</small></div>`;
+    const md = (t) => t ? `${+t.slice(5, 7)}/${+t.slice(8, 10)}` : "-";
+    const ymd = (t) => t ? `${t.slice(0, 4)}/${+t.slice(5, 7)}/${+t.slice(8, 10)}` : "-";
+    const R = I.raw || {}, P = I.parts || {};
+    const nx = I.next;
+    const nextTxt = nx && (I.state === "無" || I.state === "靜")
+      ? `<span><b>下一步看什麼</b>：BTC 下次創 30 日新高時${I.btc < nx.px ? `（而且收盤高於 $${Math.round(nx.px).toLocaleString()}）` : ""}，ILI 如果低於 <b>${nx.ili}</b>（${md(nx.t)} 高點那天的值）就亮黃燈；現在 <b>${I.ili.toFixed(0)}</b>。紅燈要 BTC 收盤破歷史新高 $${Math.round(I.ath).toLocaleString()}，而且 ILI 低於 50。</span>` : "";
+    const cyc = I.cycle?.since
+      ? `本輪（BTC ${ymd(I.cycle.since)} 站上 200 日線起）：黃燈 <b>${I.cycle.yellow}</b> 次、紅燈 <b>${I.cycle.red}</b> 次`
+      : "BTC 在 200 日線下，還沒進入新一輪多頭";
+    const flags = (I.events || []).filter((e) => e.kind === "黃" || e.kind === "紅").slice(-5).reverse();
+    const open = el.open;
+    el.innerHTML = `<summary><span class="il-k">機構資金<br>ILI</span><span class="il-n">${I.ili.toFixed(0)}</span><span class="il-pill il-${I.state}">${pill}</span>${mini}</summary>
+      <div class="pop">
+        <span class="il-state il-${I.state}"><b class="il-${I.state}">${pill}</b>　<span>${esc(I.guide)}</span></span>
+        <div class="il-bars">
+          ${bar("美元流動性", P.liq, `Fed 淨流動性 13 週 ${fmtPct(R.liq13w, 1)}`)}
+          ${bar("MSTR mNAV", P.mnav, `市值是持有 BTC 的 ${R.mnav} 倍`)}
+          ${bar("BTC ETF 流入", P.etf, `近 20 個交易日 ${R.etf20 >= 0 ? "+" : "−"}$${(Math.abs(R.etf20) / 1000).toFixed(1)}B${I.etfStale ? "（資料停在 " + md(I.etfLast) + "）" : ""}`)}
+        </div>
+        ${chart ? `<div>${chart}<small class="il-note">近 180 天：實線 ILI、淡線 BTC、虛線 50${flagsIn.length ? "、直線是燈號" : ""}</small></div>` : ""}
+        <span>${cyc}</span>
+        ${nextTxt}
+        ${flags.length ? `<div class="il-ev"><b>最近的燈號</b><small class="il-note">ILI 現值←上一段高點時的值</small>${flags.map((e) => `<span class="il-${e.kind}">${ymd(e.t)} ${e.kind}燈 BTC $${Math.round(e.px / 1000)}K ILI ${Math.round(e.ili)}←${Math.round(e.prevIli)}</span>`).join("")}</div>` : ""}
+        <span class="il-note">三個成分各自換成過去一年的百分位再平均（0–100），7 天前 ${I.ili7 ?? "-"}。這是用公開資料自己組的近似版，和 CoinKarma 的數字不會一樣。回測 2021–2026：黃燈之後 BTC 60 天中位還漲 +17%，不是賣訊號；紅燈 5 次、之後 90 天中位 −21%，2021/11 和 2024/12 的頂都有亮，但也有提早 2–4 個月的。樣本很小，只當週期刻度。資料到 ${md(I.asOf)} 收盤。</span>
+      </div>`;
     el.open = open;
   }
 
