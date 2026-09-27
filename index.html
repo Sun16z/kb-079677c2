@@ -1470,6 +1470,12 @@ footer { color: var(--ink3); font-size: 12px; }
     const RS = DATA.stats?.revenue;
     const inField = new Set(DATA.coins.map((c) => c.bn));
     const revs = Object.entries(DATA.revenue || {}).filter(([, v]) => v.cand).sort((a, b) => (b[1].g30 ?? 0) - (a[1].g30 ?? 0));
+    const bbs = Object.entries(DATA.buyback || {}).filter(([, v]) => v.hit).sort((a, b) => b[1].by - a[1].by);
+    const bbRow = ([bn, v]) => {
+      const sym = DATA.coins.find((c) => c.bn === bn)?.sym || bn.replace(/USDT$/, "").replace(/^1000+/, "");
+      const body = `<b class="t-buy">${esc(sym)}</b><p>回購殖利率 ${v.by.toFixed(1)}%／年，流通量一年 ${fmtPct(v.dil, 0)}，市值 ${fmtUsd(v.mc)}。</p>`;
+      return inField.has(bn) ? `<li><button class="row" type="button" data-sym="${esc(sym)}">${body}</button></li>` : `<li><div class="row" style="cursor:default">${body}<span class="meta2"><span>不在泡泡圖</span></span></div></li>`;
+    };
     const revRow = ([bn, v]) => {
       const sym = DATA.coins.find((c) => c.bn === bn)?.sym || bn.replace(/USDT$/, "").replace(/^1000+/, "");
       const body = `<b class="t-buy">${esc(sym)}</b><p>${esc(v.type)}近 30 天 ${fmtUsd(v.r30)}，比前 30 天 ${fmtPct(v.g30, 0)}；幣價 30 天比大盤 ${fmtPct(v.ex30)}。</p>`;
@@ -1479,7 +1485,9 @@ footer { color: var(--ink3); font-size: 12px; }
       `<h3><span class="t-${t}">${NAME[t]}</span><small>${list.length} 檔｜${sub}${laneWin(t) ? `｜勝率 ${laneWin(t)}` : ""}</small></h3>` +
       (list.length ? `<ol>${list.map(row).join("")}</ol>` : `<p class="none">這輪沒有。</p>`)).join("") +
       `<h3><span class="t-buy">營收轉強</span><small>${revs.length} 檔｜項目營收 30 天成長 ≥30%、幣價還沒反映${RS ? `｜30 天勝率 ${Math.round(RS.beat * 100)}%（平常 ${Math.round(RS.base * 100)}%，證據偏弱）` : ""}</small></h3>` +
-      (revs.length ? `<ol>${revs.map(revRow).join("")}</ol>` : `<p class="none">目前沒有。</p>`);
+      (revs.length ? `<ol>${revs.map(revRow).join("")}</ol>` : `<p class="none">目前沒有。</p>`) +
+      `<h3><span class="t-buy">回購（觀察中）</span><small>${bbs.length} 檔｜回購殖利率 ≥5%／年、新增供給 ≤10%／年｜過去 30 天跑贏 62%，是事後找到的條件，還在驗證，不影響分道</small></h3>` +
+      (bbs.length ? `<ol>${bbs.map(bbRow).join("")}</ol>` : `<p class="none">目前沒有。</p>`);
     const waits = by("wait").sort((a, b) => Math.abs(r24Of(b) ?? 0) - Math.abs(r24Of(a) ?? 0));
     $("waitBox").hidden = !waits.length;
     $("waitSum").innerHTML = `觀望 ${waits.length} 檔 <small style="font:500 12.5px var(--body);color:var(--ink3)">沒有明顯優勢，跟大盤差不多</small>`;
@@ -1542,13 +1550,16 @@ footer { color: var(--ink3); font-size: 12px; }
   }
 
   const fmtUsd = (v) => v == null ? "-" : Math.abs(v) >= 1e6 ? "$" + (v / 1e6).toFixed(2) + "M" : "$" + Math.round(v / 1e3) + "K";
-  function revBlock(rv) {
-    if (!rv) return "";
+  // 回購殖利率（D135）：只是參考，回測是事後找到的組合，正在 rule_log 往後驗證
+  const bbLine = (bb) => bb ? `<p>回購殖利率 <b>${bb.by.toFixed(1)}%</b>／年（近 30 天持幣人營收 × 12 ÷ 市值），流通量 90 天換算一年 <span class="${bb.dil > 10 ? "dn" : ""}">${fmtPct(bb.dil, 0)}</span>${bb.hit ? `<br><span class="tag">回購 ≥5% 而且稀釋小（觀察中：過去 30 天跑贏 62%，事後找到的條件，還在驗證）</span>` : bb.by >= 5 ? `<br><small>回購不少，但新增供給也多，回測看不出優勢。</small>` : ""}</p>` : "";
+  function revBlock(rv, bb) {
+    if (!rv) return bb ? `<div class="rev"><small>回購（DefiLlama＋CoinGecko）</small>${bbLine(bb)}</div>` : "";
     const w = rv.weeks || [], mx = Math.max(1, ...w.map((x) => Math.abs(x)));
     const bars = w.map((v, i) => `<rect x="${i * (300 / w.length) + 2}" y="${34 - Math.max(1, 32 * Math.max(0, v) / mx)}" width="${300 / w.length - 4}" height="${Math.max(1, 32 * Math.max(0, v) / mx)}" rx="2" fill="${i === w.length - 1 ? colors.buy : rgba(colors.buy, 0.4)}"/>`).join("");
     const S = DATA.stats?.revenue;
     return `<div class="rev"><small>項目營收（DefiLlama，${esc(rv.type)}，資料到 ${esc(rv.asOf)}）</small>
       <p>近 30 天 <b>${fmtUsd(rv.r30)}</b>，比前 30 天 <span class="${cls(rv.g30)}">${rv.g30 == null ? "-" : fmtPct(rv.g30, 0)}</span>；近 7 天 ${fmtUsd(rv.r7)}（${rv.g7 == null ? "-" : fmtPct(rv.g7, 0)}）。幣價 30 天比大盤 ${fmtPct(rv.ex30)}。</p>
+      ${bbLine(bb)}
       ${rv.cand ? `<p class="tag">營收轉強、幣價還沒反映${S ? `：過去一年這種情況 30 天後 ${Math.round(S.beat * 100)}% 跑贏大盤（這些有營收的幣平常 ${Math.round(S.base * 100)}%，${S.n} 次，證據偏弱）` : ""}</p>` : ""}
       ${w.length ? `<svg viewBox="0 0 300 34" preserveAspectRatio="none" aria-label="近 12 週營收">${bars}</svg><small>近 12 週每週營收</small>` : ""}</div>`;
   }
@@ -1579,7 +1590,7 @@ footer { color: var(--ink3); font-size: 12px; }
       ${whaleBlock(c)}
       ${ambushBlock(c)}
       ${newsBlock(DATA.news?.[c.bn])}
-      ${revBlock(DATA.revenue?.[c.bn])}
+      ${revBlock(DATA.revenue?.[c.bn], DATA.buyback?.[c.bn])}
       ${sentiBlock(DATA.sentiment?.[c.bn])}
       ${plan}
       <dl class="stats">
