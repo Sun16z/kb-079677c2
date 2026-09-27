@@ -326,8 +326,19 @@ body.simple .adv { display: none !important; }
 @media (max-width: 760px) { .lane-empty { width: calc(100% - 24px); } }
 
 /* 詳情卡 */
-.card { position: absolute; width: 340px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); z-index: 2; display: grid; gap: 12px; }
+.card { position: absolute; width: 380px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; box-shadow: 0 20px 50px rgb(0 0 0 / .35); z-index: 2; display: grid; gap: 12px; }
 .card-h { display: flex; align-items: center; gap: 10px; }
+/* 卡片 K 線（使用者 2026-09-27：點開泡泡最上面看 15 分 K；TradingView lightweight-charts） */
+.kbox { display: grid; gap: 6px; min-width: 0; }
+.kseg { display: flex; gap: 4px; align-items: center; }
+.kseg button { font: 700 11.5px/1 var(--body); color: var(--ink3); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; cursor: pointer; }
+.kseg button[aria-pressed="true"] { color: var(--ink); border-color: var(--ink3); background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.kmore { margin-left: auto; font: 600 11.5px var(--body); color: var(--ink3); text-decoration: none; }
+.kmore:hover { color: var(--ink); }
+.kchart { position: relative; height: 200px; min-width: 0; }
+.kmsg { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; font-size: 12px; color: var(--ink3); z-index: 1; pointer-events: none; }
+.kmsg[hidden] { display: none; }
+@media (max-width: 760px) { .kchart { height: 190px; } }
 .card-h b { font: 800 26px/1 var(--display); }
 .pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid currentColor; }
 .x { margin-left: auto; border: 0; background: none; font-size: 20px; line-height: 1; cursor: pointer; color: var(--ink3); padding: 4px 6px; border-radius: 8px; }
@@ -1074,7 +1085,7 @@ footer { color: var(--ink3); font-size: 12px; }
 
   function select(n) {
     selected = n;
-    if (!n) { card.hidden = true; return; }
+    if (!n) { card.hidden = true; kStop(); kKey = ""; return; }
     renderCard(); card.hidden = false; placeCard();
   }
   function selectSym(sym) {
@@ -1753,6 +1764,101 @@ footer { color: var(--ink3); font-size: 12px; }
     if ((DATA.hlBases || []).includes(c.sym)) L.push(["Hyperliquid", `https://app.hyperliquid.xyz/trade/${(bn || "").startsWith("1000") ? "k" + c.sym : c.sym}`]);
     return L.length ? `<div class="links">${L.map(([k, u]) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${k} ↗</a>`).join("")}</div>` : "";
   }
+  // ---------- 卡片 K 線（使用者 2026-09-27）----------
+  // 資料：幣安 USDⓈ-M klines（有 CORS）；卡片開著時用 kline 串流更新最後一根，關掉就斷線。
+  const LWC = "https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.3/dist/lightweight-charts.standalone.production.js";
+  const KINTS = [["15m", "15 分"], ["1h", "1 小時"], ["4h", "4 小時"]], TV_INT = { "15m": "15", "1h": "60", "4h": "240" };
+  const TZ = 8 * 3600;                             // 圖上時間顯示台北時間
+  let kInt = "15m";
+  try { kInt = localStorage.getItem("kb-kint") || "15m"; } catch (_) {}
+  let kLib = null, kChart = null, kSeries = null, kVol = null, kLine = null, kKey = "", kWs = null, kBox = null, kSeq = 0;
+  // 先用同網站的檔案（Cloudflare 部署時一起上傳，最快），失敗才用 CDN
+  const loadLwc = () => kLib || (kLib = (async () => {
+    for (const src of ["lightweight-charts.js", LWC]) {
+      try {
+        await new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.async = true; sc.onload = ok; sc.onerror = no; document.head.appendChild(sc); });
+        if (window.LightweightCharts) return window.LightweightCharts;
+      } catch (_) {}
+    }
+    kLib = null;
+    throw new Error("lwc");
+  })());
+  const pxFmt = (p) => { const precision = p < 0.0001 ? 8 : p < 0.01 ? 6 : p < 1 ? 4 : p < 100 ? 3 : 2; return { type: "price", precision, minMove: 1 / 10 ** precision }; };
+  const kTheme = () => ({
+    layout: { background: { color: "transparent" }, textColor: colors.ink3, fontFamily: "JetBrains Mono, ui-monospace, monospace", fontSize: 10 },
+    grid: { vertLines: { color: rgba(colors.line, 0.5) }, horzLines: { color: rgba(colors.line, 0.5) } },
+    rightPriceScale: { borderColor: colors.line }, timeScale: { borderColor: colors.line, timeVisible: true, secondsVisible: false, rightOffset: 3 },
+  });
+  const volCol = (o, c) => rgba(+c >= +o ? colors.buy : colors.avoid, 0.35);
+  function kBoxEl() {
+    if (kBox) return kBox;
+    kBox = document.createElement("div");
+    kBox.className = "kbox";
+    kBox.innerHTML = `<div class="kseg">${KINTS.map(([v, t]) => `<button type="button" data-k="${v}" aria-pressed="${v === kInt}">${t}</button>`).join("")}<a class="kmore" target="_blank" rel="noopener noreferrer">TradingView ↗</a></div>
+      <div class="kchart" aria-label="K 線圖"><p class="kmsg">載入 K 線…</p></div>`;
+    kBox.querySelectorAll("[data-k]").forEach((b) => b.addEventListener("click", () => {
+      kInt = b.dataset.k;
+      try { localStorage.setItem("kb-kint", kInt); } catch (_) {}
+      kBox.querySelectorAll("[data-k]").forEach((x) => x.setAttribute("aria-pressed", x.dataset.k === kInt));
+      kKey = "";
+      showChart(selected?.c);
+    }));
+    return kBox;
+  }
+  async function showChart(c) {
+    if (!c?.bn || !kBox) return;
+    kBox.querySelector(".kmore").href = `https://www.tradingview.com/chart/?symbol=BINANCE:${c.bn}.P&interval=${TV_INT[kInt]}`;
+    const key = c.bn + "|" + kInt;
+    if (key === kKey && kChart) return;
+    kKey = key;
+    const seq = ++kSeq, msg = kBox.querySelector(".kmsg"), host = kBox.querySelector(".kchart");
+    msg.hidden = false; msg.textContent = "載入 K 線…";
+    try {
+      const [L, raw] = await Promise.all([loadLwc(), fetch(`https://fapi.binance.com/fapi/v1/klines?symbol=${c.bn}&interval=${kInt}&limit=240`).then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })]);
+      if (seq !== kSeq) return;
+      const m = mult(c.bn);
+      const bars = raw.map((x) => ({ time: x[0] / 1000 + TZ, open: x[1] / m, high: x[2] / m, low: x[3] / m, close: x[4] / m }));
+      const vols = raw.map((x) => ({ time: x[0] / 1000 + TZ, value: +x[7], color: volCol(x[1], x[4]) }));
+      if (!kChart) {
+        kChart = L.createChart(host, { autoSize: true, ...kTheme(), crosshair: { mode: 0 }, handleScroll: { vertTouchDrag: false }, localization: { locale: "zh-TW" } });
+        kSeries = kChart.addCandlestickSeries({ upColor: colors.buy, downColor: colors.avoid, borderVisible: false, wickUpColor: colors.buy, wickDownColor: colors.avoid });
+        kVol = kChart.addHistogramSeries({ priceScaleId: "", priceFormat: { type: "volume" }, lastValueVisible: false, priceLineVisible: false });
+        kVol.priceScale().applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+        kSeries.priceScale().applyOptions({ scaleMargins: { top: 0.08, bottom: 0.22 } });
+      }
+      kSeries.applyOptions({ priceFormat: pxFmt(bars.at(-1)?.close || 1) });
+      kSeries.setData(bars);
+      kVol.setData(vols);
+      if (kLine) { kSeries.removePriceLine(kLine); kLine = null; }
+      if (c.hi20 > 0) kLine = kSeries.createPriceLine({ price: c.hi20, color: colors.nh, lineWidth: 1, lineStyle: 2, axisLabelVisible: true, title: "20天高" });
+      kChart.timeScale().setVisibleLogicalRange({ from: Math.max(0, bars.length - (vertical ? 56 : 72)), to: bars.length + 2 });
+      msg.hidden = true;
+      kStream(c.bn);
+    } catch (e) {
+      if (seq === kSeq) { msg.hidden = false; msg.textContent = "K 線載入失敗，稍後再點一次"; kKey = ""; }
+    }
+  }
+  function kStream(bn) {
+    kStop();
+    try { kWs = new WebSocket(WS_URLS[urlIdx] + bn.toLowerCase() + "@kline_" + kInt); } catch (_) { return; }
+    const m = mult(bn), want = kInt;
+    kWs.onmessage = (e) => {
+      const d = JSON.parse(e.data).data?.k;
+      if (!d || !kSeries || want !== kInt) return;
+      const t = d.t / 1000 + TZ;
+      kSeries.update({ time: t, open: d.o / m, high: d.h / m, low: d.l / m, close: d.c / m });
+      kVol.update({ time: t, value: +d.q, color: volCol(d.o, d.c) });
+    };
+  }
+  function kStop() {
+    if (kWs) { kWs.onmessage = null; try { kWs.close(); } catch (_) {} kWs = null; }
+  }
+  function kRetheme() {
+    if (!kChart) return;
+    kChart.applyOptions(kTheme());
+    kSeries.applyOptions({ upColor: colors.buy, downColor: colors.avoid, wickUpColor: colors.buy, wickDownColor: colors.avoid });
+    if (kLine) kLine.applyOptions({ color: colors.nh });
+  }
   function renderCard() {
     const c = selected.c, col = colors[c.tier];
     const px = priceOf(c), r24 = r24Of(c);
@@ -1764,6 +1870,7 @@ footer { color: var(--ink3); font-size: 12px; }
       <div class="card-h"><b>${esc(c.sym)}</b><span class="pill t-${c.tier}">${NAME[c.tier]}</span>
         <button class="x" type="button" aria-label="關閉">×</button></div>
       <div class="px"><strong>${fmtPx(px)}</strong><span class="mono ${cls(r24)}">${fmtPct(r24)} 24h</span></div>
+      <div class="kslot"></div>
       ${verdictBlock(c)}
       ${linksOf(c)}
       ${(DATA.listings || []).filter((e) => e.base === c.sym).slice(0, 2).map((e) => `<div class="news"><small>${esc(e.kind)}（${tpeFull(e.t)}）</small><p>${esc(e.advice || e.title || "")}${e.since != null ? `　事件後到現在 <b class="${cls(e.since)}">${fmtPct(e.since)}</b>` : ""}</p></div>`).join("")}
@@ -1787,6 +1894,8 @@ footer { color: var(--ink3); font-size: 12px; }
       <div class="spark adv"><small>CoinKarma 參考（回測沒有預測力）：LIQ ${sgn(c.liq)}${(c.liq ?? -99) >= LIQ_GLOW ? "（≥2.5，買盤掛單很強）" : ""}、狀態 ${esc(c.ck && c.ck !== "-" ? c.ck : "無")}，近 ${c.liqHist.length} 期</small>${spark(c.liqHist, colors.wait)}</div>
       ${c.ckDesc ? `<p class="why adv" style="color:var(--ink2);font-size:13px">CoinKarma：${esc(c.ckDesc)}</p>` : ""}`;
     card.querySelector(".x").addEventListener("click", () => select(null));
+    card.querySelector(".kslot").replaceWith(kBoxEl());       // 同一個 K 線元件搬進新卡片，資料更新時不重畫
+    requestAnimationFrame(() => showChart(c));
     tickLive();
   }
 
@@ -1971,7 +2080,7 @@ footer { color: var(--ink3); font-size: 12px; }
   // ---------- 開機 ----------
   readColors();
   const mq = matchMedia("(prefers-color-scheme: light)");
-  const retheme = () => { readColors(); if (DATA) { renderRotation(); renderHeat(); } if (selected && !card.hidden) renderCard(); };
+  const retheme = () => { readColors(); if (DATA) { renderRotation(); renderHeat(); } kRetheme(); if (selected && !card.hidden) renderCard(); };
   mq.addEventListener?.("change", retheme);
   new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   try {
