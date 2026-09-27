@@ -1895,7 +1895,7 @@ footer { color: var(--ink3); font-size: 12px; }
       ${c.ckDesc ? `<p class="why adv" style="color:var(--ink2);font-size:13px">CoinKarma：${esc(c.ckDesc)}</p>` : ""}`;
     card.querySelector(".x").addEventListener("click", () => select(null));
     card.querySelector(".kslot").replaceWith(kBoxEl());       // 同一個 K 線元件搬進新卡片，資料更新時不重畫
-    requestAnimationFrame(() => showChart(c));
+    setTimeout(() => showChart(c), 0);                           // 等 select() 把卡片顯示出來再畫（背景分頁 rAF 會暫停，所以不用 rAF）
     tickLive();
   }
 
