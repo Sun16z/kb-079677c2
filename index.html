@@ -436,7 +436,7 @@ footer { color: var(--ink3); font-size: 12px; }
       <details class="menu">
         <summary>怎麼看</summary>
         <div class="pop">
-          <span><b>位置</b>：由左到右是可以埋伏、觀望、追高風險高、別碰。越左邊，過去一年的勝率越高。</span>
+          <span><b>位置</b>：由左到右是可以埋伏、觀望、追高風險高、別碰。越左邊，過去一年的勝率越高。同一道裡 LIQ 越高排越前面（沒有 LIQ 的排最後）。</span>
           <span><b>機構資金 ILI</b>：美元流動性、MSTR mNAV、BTC ETF 流入合成的 0–100 分數。BTC 創 30 日新高但 ILI 比上次創高時低＝黃燈（多頭後勁變弱），創歷史新高又背離且 ILI &lt; 50＝紅燈（收手）。</span>
           <span><b>顏色</b>：綠＝可以埋伏，橘紅＝追高風險高，紅＝別碰。觀望道的底色只是 24h 漲跌。</span>
           <span><b>金色太陽</b>：24 小時內突破 20 天新高、離前高 8% 以內，可以追強（強牛才適用）。<b>大太陽</b>＝30 分鐘內剛刷新新高（放大、光芒更強），30 分鐘沒再創高就變回<b>小太陽</b>。離 30 日線超過 25% 的太陽會變淡（研究顯示追這種最差）。清單上的「真買盤」＝突破那根主動買 ≥55%。</span>
@@ -685,7 +685,9 @@ footer { color: var(--ink3); font-size: 12px; }
       if (snap) { L.s0 = L.t0; L.s1 = L.t1; }
     });
     TIERS.forEach((t) => {
-      const ns = nodes.filter((n) => n.c.tier === t).sort((a, b) => b.c.karma - a.c.karma);
+      // 同一道裡 LIQ 越高越前面（左／上），沒有 LIQ 的排最後；LIQ 一樣再看原本的分數（使用者 2026-09-27）
+      const lq = (c) => c.liq ?? -Infinity;
+      const ns = nodes.filter((n) => n.c.tier === t).sort((a, b) => lq(b.c) - lq(a.c) || b.c.karma - a.c.karma);
       ns.forEach((n, i) => { n.f = (i + 0.5) / ns.length; n.row = ((i * 7) % 5) / 4 - 0.5; });
     });
     if (snap) nodes.forEach((n) => { const p = target(n); n.x = p.x + (Math.random() - .5) * 40; n.y = p.y + (Math.random() - .5) * 40; n.r = n.tr * 0.3; });
