@@ -1621,17 +1621,19 @@ footer { color: var(--ink3); font-size: 12px; }
     const m = DATA.market;
     const btc = DATA.coins.find((c) => c.sym === "BTC");
     const px = btc ? priceOf(btc) : m.btc;
-    const age = DATA.ckTime ? Math.round((Date.now() - new Date(DATA.ckTime)) / 60000) : null;
+    // 版本年齡用「手上最新的資料」算：有暫存的新資料時用它，避免誤報沒新版
+    const ckT = pending?.ckTime && (!DATA.ckTime || pending.ckTime > DATA.ckTime) ? pending.ckTime : DATA.ckTime;
+    const age = ckT ? Math.round((Date.now() - new Date(ckT)) / 60000) : null;
     // CoinKarma 整點版約 :15 才出現；下一版＝版本時間 + 75 分
-    const next = DATA.ckTime ? new Date(new Date(DATA.ckTime).getTime() + 75 * 60000) : null;
+    const next = ckT ? new Date(new Date(ckT).getTime() + 75 * 60000) : null;
     const late = age != null && age > 90;
     const banner = $("banner");
-    banner.hidden = !(DATA.stale || late);
-    if (!banner.hidden) banner.textContent = `CoinKarma 最後一版是 ${tpe(DATA.ckTime)}，已經 ${age} 分鐘沒出新版（正常每小時 :15 更新）。分道不受影響，但卡片裡的 LIQ 是舊數字。`;
+    banner.hidden = !((pending ? pending.stale : DATA.stale) || late);
+    if (!banner.hidden) banner.textContent = `CoinKarma 最後一版是 ${tpe(ckT)}，已經 ${age} 分鐘沒出新版（正常每小時 :15 更新）。分道不受影響，但卡片裡的 LIQ 是舊數字。`;
     $("sub").innerHTML =
       `<span>BTC <b class="mono">${fmtPx(px)}</b> <span class="mono ${cls(m.btc4h)}">${fmtPct(m.btc4h, 2)}</span> 4H</span>` +
       `<span>上漲家數 <b class="mono">${Math.round((m.breadth ?? 0) * 100)}%</b></span>` +
-      `<span>CoinKarma <b class="mono">${tpe(DATA.ckTime)}</b> 版，下一版約 <b class="mono">${next && next > Date.now() ? tpe(next.toISOString()) : "隨時"}</b></span>`;
+      `<span>CoinKarma <b class="mono">${tpe(DATA.ckTime)}</b> 版${ckT !== DATA.ckTime ? `（<b class="mono">${tpe(ckT)}</b> 版已到，點「有新資料」更新）` : ""}，下一版約 <b class="mono">${next && next > Date.now() ? tpe(next.toISOString()) : "隨時"}</b></span>`;
   }
 
   function renderRotation() {
@@ -2222,7 +2224,8 @@ footer { color: var(--ink3); font-size: 12px; }
   const GIST_OWNER = "Sun16z";
   // 閱讀保護（2026-09-27，手機看卡片看到一半被更新關掉）：卡片或頂部說明開著、或 20 秒內有碰螢幕，新資料先暫存，
   // 底部出現「有新資料」按鈕；看完（都關掉且 20 秒沒碰）自動套用，或自己點按鈕。
-  let pending = null, lastTouch = 0;
+  let pending = null, pendingAt = 0, lastTouch = 0;
+  const HOLD_MAX = 3 * 60e3;     // 最多暫存 3 分鐘（2026-09-28：監控螢幕卡片一直開著，資料卡住、誤報 CoinKarma 沒新版）
   ["pointerdown", "touchstart", "wheel", "keydown"].forEach((ev) => addEventListener(ev, () => { lastTouch = Date.now(); }, { passive: true, capture: true }));
   addEventListener("scroll", () => { lastTouch = Date.now(); }, { passive: true, capture: true });
   const reading = () => (selected && !card.hidden) || !!document.querySelector("details.rgd[open], details.menu[open]") || Date.now() - lastTouch < 20000;
@@ -2238,7 +2241,8 @@ footer { color: var(--ink3); font-size: 12px; }
     if (keepScroll != null && !card.hidden) card.scrollTop = keepScroll;
     if (d.coins.map((c) => c.bn).join() !== prevSyms) { connect(); seedHist(); }
   }
-  setInterval(() => { if (pending && !reading()) commit(pending); }, 3000);
+  // 看完就套用；暫存超過 3 分鐘也套用（手指正在滑的 5 秒內除外）——套用時卡片、捲動位置、K 線都保留
+  setInterval(() => { if (pending && (!reading() || (Date.now() - pendingAt > HOLD_MAX && Date.now() - lastTouch > 5000))) commit(pending); }, 3000);
   $("fresh").addEventListener("click", () => { if (pending) commit(pending); });
 
   async function poll() {
@@ -2249,7 +2253,7 @@ footer { color: var(--ink3); font-size: 12px; }
       if (!r.ok) throw r.status;
       const d = await r.json();
       if (d.runAt !== DATA?.runAt || (d.updatedAt && d.updatedAt !== DATA?.updatedAt)) {   // watch 每 2 分鐘的更新也要重畫
-        if (DATA && reading()) { pending = d; $("fresh").hidden = false; }            // 正在看卡片／說明：先暫存，不打斷
+        if (DATA && reading()) { if (!pending) pendingAt = Date.now(); pending = d; $("fresh").hidden = false; renderSub(); }   // 正在看卡片／說明：先暫存，不打斷
         else commit(d);
       }
     } catch (e) {
