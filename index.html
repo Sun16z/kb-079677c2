@@ -1,7 +1,15 @@
 <!doctype html>
 <html lang="zh-Hant">
 <meta charset="utf-8">
-<title>Karma Bubbles</title>
+<title>J Bubbles</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-180.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="J Bubbles">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#070b10">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -407,7 +415,7 @@ footer { color: var(--ink3); font-size: 12px; }
 
 <div class="app" id="app">
   <header class="bar">
-    <div class="brand">Karma <span>Bubbles</span></div>
+    <div class="brand">J <span>Bubbles</span></div>
     <div class="meta" id="sub"></div>
     <div class="controls">
       <span class="live" id="live" data-s="off"><i></i><span>快照</span></span>
@@ -1026,7 +1034,7 @@ footer { color: var(--ink3); font-size: 12px; }
       document.addEventListener("click", (e) => document.querySelectorAll("details.rgd[open], details.menu[open]").forEach((d) => { if (!d.contains(e.target)) d.open = false; }));
     }
     $("head").innerHTML = esc(DATA.market.head) + (DATA.legacy ? `<small>這輪幣安資料沒抓到，暫時用 CoinKarma 舊分類。</small>` : "");
-    document.title = "Karma Bubbles";
+    document.title = "J Bubbles";
     renderSub();
   }
 
@@ -1688,7 +1696,12 @@ footer { color: var(--ink3); font-size: 12px; }
   // 分享版：網頁放 GitHub Pages（不含數據），數據在 secret gist，gist ID 放在連結的 # 後面。
   // 讀 gist 的 raw 網址（內容 CDN，沒有次數限制）；不要用 api.github.com，未登入每個 IP 每小時只有 60 次，
   // 一個分頁每分鐘讀一次就會用完（2026-09-25 實際發生過）。raw 會快取 5 分鐘，所以加上以分鐘為單位的參數。
-  const GIST = (location.hash.match(/^#([0-9a-f]{20,40})$/) || [])[1] || null;
+  // 第一次用完整連結（# 後面是 gist ID）打開就記在這台裝置，之後只打網址、或從主畫面圖示開也讀得到（2026-09-27）
+  const GIST_IN_URL = (location.hash.match(/^#([0-9a-f]{20,40})$/) || [])[1] || null;
+  let GIST_SAVED = null;
+  try { GIST_SAVED = localStorage.getItem("jb-gist"); if (GIST_IN_URL) localStorage.setItem("jb-gist", GIST_IN_URL); } catch (_) {}
+  const GIST = GIST_IN_URL || GIST_SAVED;
+  if (!GIST_IN_URL && GIST && location.protocol !== "file:") history.replaceState(null, "", "#" + GIST);   // 加入主畫面時帶著通行碼
   const GIST_OWNER = "Sun16z";
   async function poll() {
     try {
@@ -1703,7 +1716,9 @@ footer { color: var(--ink3); font-size: 12px; }
         if (d.coins.map((c) => c.bn).join() !== prevSyms) { connect(); seedHist(); }
       }
     } catch (e) {
-      if (GIST && !DATA) $("head").textContent = e === 404 ? "連結失效：資料不存在" : "資料載入失敗，稍後自動重試";
+      if (GIST && !DATA) $("head").textContent = e === 404 ? "連結失效：資料不存在，請跟分享的人要新的連結" : "資料載入失敗，稍後自動重試";
+      if (GIST && e === 404 && !GIST_IN_URL) { try { localStorage.removeItem("jb-gist"); } catch (_) {} }
+      if (!GIST && !DATA && location.protocol !== "file:") $("head").textContent = "這台裝置還沒有通行碼：請用分享給你的完整連結（# 後面那一段）打開一次，之後只打網址就能看。";
       if (location.protocol === "file:" && performance.now() > 15 * 60000) location.reload();
     }
   }
