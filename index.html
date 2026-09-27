@@ -987,7 +987,8 @@ footer { color: var(--ink3); font-size: 12px; }
     const p = pt(e);
     if (drag && !drag.moved) {
       const n = drag.n;
-      if (n) select(n); else if (Math.hypot(p.x - drag.p0.x, p.y - drag.p0.y) < 6) select(null);
+      // 手機：卡片開著時碰到泡泡圖空白處（常是想捲頁面）不關卡片，只能按 × 關（2026-09-27 看到一半被關掉）
+      if (n) select(n); else if (e.pointerType === "mouse" && Math.hypot(p.x - drag.p0.x, p.y - drag.p0.y) < 6) select(null);
     }
     if (drag?.n) { drag.n.vx *= 0.6; drag.n.vy *= 0.6; }
     drag = null; cv.classList.remove("dragging");
