@@ -1259,7 +1259,7 @@ footer { color: var(--ink3); font-size: 12px; }
     for (const c of DATA.coins) if (nhFresh(c)) items.push({ t: peakOf(c).t, sym: c.sym, k: "nh", txt: "剛刷新 20 天新高" });
     for (const h of DATA.liqVol || []) {
       const t = Date.parse(h.t);
-      if (now - t < H4) items.push({ t, sym: h.sym, k: "buy", txt: `LIQ≥2＋放量 ${h.vr} 倍` });
+      if (now - t < H4) items.push({ t, sym: h.sym, k: "wait", txt: `LIQ≥2＋放量 ${h.vr} 倍（回測沒通過）` });
     }
     items.sort((a, b) => b.t - a.t);
     el.hidden = false;
@@ -1526,7 +1526,7 @@ footer { color: var(--ink3); font-size: 12px; }
       ev.push({ t: x.time, html: `<a class="it" href="${esc(x.url || "#")}" target="_blank" rel="noopener noreferrer"><b class="${x.impact === "利多" ? "t-buy" : x.impact === "利空" ? "t-avoid" : "t-wait"}">${esc(x.impact || "新聞")}</b><span>${esc(x.title)}</span><em></em><small>${x.verify.n} 站核實｜${tpeFull(x.time)}</small></a>` });
     for (const h of DATA.liqVol || []) {
       const on = DATA.coins.some((c) => c.sym === h.sym);
-      const body = `<b class="up">${esc(h.sym)}</b><span>LIQ≥2＋放量：LIQ ${sgn(h.liq)}、量 ${h.vr} 倍</span><em class="${cls(h.r24)}">${h.r24 != null ? fmtPct(h.r24) : ""}</em><small>一週樣本 72h 跑贏 55%｜${tpeFull(h.t)}</small>`;
+      const body = `<b>${esc(h.sym)}</b><span>LIQ≥2＋放量：LIQ ${sgn(h.liq)}、量 ${h.vr} 倍</span><em class="${cls(h.r24)}">${h.r24 != null ? fmtPct(h.r24) : ""}</em><small>回測沒通過（D139：72h 跑贏 33–40%，隨便挑是 49%），只當參考｜${tpeFull(h.t)}</small>`;
       ev.push({ t: h.t, html: on ? `<button type="button" class="it" data-sym="${esc(h.sym)}">${body}</button>` : `<div class="it">${body}</div>` });
     }
     for (const x of DATA.whales?.events || []) if (now - new Date(x.t) < 24 * 3600000) {
@@ -1942,7 +1942,7 @@ footer { color: var(--ink3); font-size: 12px; }
       if (nw.start) add(Date.parse(nw.start), "belowBar", "arrowUp", colors.hot, "開漲", `開始漲（查到的原因：${nw.reason || "-"}）`);
     }
     for (const e of DATA.listings || []) if (e.base === sym) add(Date.parse(e.t), "belowBar", "arrowUp", colors.buy, "上幣", `${e.kind}：${e.title || ""}`);
-    for (const h of DATA.liqVol || []) if (h.sym === sym) add(Date.parse(h.t), "belowBar", "circle", colors.buy, "LIQ放量", `LIQ ${sgn(h.liq)}、24h 成交額是 7 天日均的 ${h.vr} 倍`);
+    for (const h of DATA.liqVol || []) if (h.sym === sym) add(Date.parse(h.t), "belowBar", "circle", colors.ink3, "LIQ放量", `LIQ ${sgn(h.liq)}、24h 成交額是 7 天日均的 ${h.vr} 倍（回測沒通過，只當參考）`);
     for (const e of DATA.rotation?.events || []) {
       if (e.lead === c.bn) add(Date.parse(e.t) - 3600e3, "belowBar", "arrowUp", colors.hot, "龍頭噴", `${e.group}龍頭噴出（24h 比大盤 +${Math.round(e.leadEx24)}%）`);
       else if (e.cands?.some((x) => x.sym === c.bn)) add(Date.parse(e.t) - 3600e3, "belowBar", "circle", colors.buy, "可埋伏", `${e.group}龍頭 ${e.leadBase} 噴出，它還沒跟上`);
@@ -2081,7 +2081,7 @@ footer { color: var(--ink3); font-size: 12px; }
       ${linksOf(c)}
       ${(DATA.listings || []).filter((e) => e.base === c.sym).slice(0, 2).map((e) => `<div class="news"><small>${esc(e.kind)}（${tpeFull(e.t)}）</small><p>${esc(e.advice || e.title || "")}${e.since != null ? `　事件後到現在 <b class="${cls(e.since)}">${fmtPct(e.since)}</b>` : ""}</p></div>`).join("")}
       ${nhBlock(c)}
-      ${(DATA.liqVol || []).filter((h) => h.sym === c.sym).slice(-1).map((h) => `<div class="news"><small>LIQ≥2＋放量（${tpeFull(h.t)}）</small><p>LIQ ${sgn(h.liq)}、24h 成交額是 7 天日均的 ${h.vr} 倍。一週樣本：72h 跑贏其他幣 55%、平均 +2%；24h 只有 31%，短線常先震，看 3 天。樣本很小，還在驗證。</p></div>`).join("")}
+      ${(DATA.liqVol || []).filter((h) => h.sym === c.sym).slice(-1).map((h) => `<div class="news"><small>LIQ≥2＋放量（${tpeFull(h.t)}）</small><p>LIQ ${sgn(h.liq)}、24h 成交額是 7 天日均的 ${h.vr} 倍。回測沒通過：一開始看起來 72h 跑贏 55%，補齊同一週後面的資料後只剩 33–40%（隨便挑一檔是 49%），晚 4h 或 12h 進場也沒改善（D139）。只當參考，不推 TG。</p></div>`).join("")}
       ${twapBlock(c)}
       ${whaleBlock(c)}
       ${ambushBlock(c)}
