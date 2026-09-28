@@ -1878,6 +1878,8 @@ footer { color: var(--ink3); font-size: 12px; }
     }
     if ((c.rsi ?? 0) > 70) N.push(`RSI ${Math.round(c.rsi)}，過熱`);
     if (c.ex24 != null && c.ex24 < -8) N.push(`24h 比大盤多跌 ${Math.abs(c.ex24).toFixed(0)}%`);
+    if (c.ex24 != null && c.ex24 >= 8) N.push(`24h 比大盤多漲 ${Math.round(c.ex24)}%：過去一年這種急漲之後 72h 只有 43% 跑贏大盤（D140）`);
+    if (c.mover) I.push(`全市場成交額第 ${c.mover} 名，不在 CoinKarma 名單（大異動補進來）`);
     if (DATA.revenue?.[c.bn]?.cand) P.push("項目營收轉強、幣價還沒反映（證據偏弱）");
     const bb = DATA.buyback?.[c.bn];
     if (bb?.hit) P.push(`回購殖利率 ${bb.by.toFixed(1)}%／年、新增供給少（觀察中）`);
