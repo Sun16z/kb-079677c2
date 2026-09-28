@@ -312,6 +312,10 @@ body.simple .adv { display: none !important; }
 .field { position: relative; background: var(--field); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; height: var(--fh); touch-action: pan-y; }
 .field canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; }
 .field canvas.pointing { cursor: pointer; }
+#rcContra h3 { align-items: center; }
+#rcContra .ctw { margin-left: auto; padding: 2px; }
+#rcContra .ctw button { padding: 3px 9px; font-size: 11.5px; }
+.ctw-h { margin: 0 0 2px; font-size: 11.5px; color: var(--ink3); }
 .usd { margin-top: 4px; font-size: 12.5px; color: var(--ink2); }
 .usd > summary { cursor: pointer; padding: 6px 2px; color: var(--ink3); }
 .usd[open] > summary { color: var(--ink2); }
@@ -1418,25 +1422,41 @@ footer { color: var(--ink3); font-size: 12px; }
     return `<div class="news twcard"><small>Hyperliquid 大戶 TWAP 進行中（全鏈掃描）</small>${sig}${L.map((g) => `<p>${twapLine(g)}　<a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></p>`).join("")}</div>`;
   }
   // ---------- 逆勢異動（D142，進階模式）：只為了知道為什麼逆勢，不是買點 ----------
+  let contraWin = "1h";
+  try { contraWin = localStorage.getItem("kb-contra") || "1h"; } catch (_) {}
   function renderContra() {
-    const X = DATA.contra, el = $("rcContra");
-    el.hidden = !X?.items;
+    const el = $("rcContra"), X = contraWin === "1h" ? DATA.contra1h : DATA.contra;
+    el.hidden = !(DATA.contra?.items || DATA.contra1h?.items);
     if (el.hidden) return;
-    const head = X.weak ? `大盤偏弱：前 ${X.n} 大 24h 中位 ${fmtPct(X.med, 1)}、上漲 ${Math.round(X.up * 100)}%` : `大盤沒有偏弱（中位 ${fmtPct(X.med, 1)}），只列相對最強的`;
+    const w = contraWin === "1h" ? "1h" : "24h";
+    const seg = `<span class="seg ctw">${[["1h", "1 小時"], ["24h", "24 小時"]].map(([v, t]) => `<button type="button" data-w="${v}" aria-pressed="${v === contraWin}">${t}</button>`).join("")}</span>`;
+    if (!X?.items) { el.innerHTML = `<h3><span>逆勢異動</span>${seg}</h3><p class="none">這個時間窗的資料還沒算好。</p>`; bindCtw(el); return; }
+    const head = X.weak ? `大盤偏弱：前 ${X.n} 大 ${w} 中位 ${fmtPct(X.med, 1)}、上漲 ${Math.round(X.up * 100)}%` : `大盤沒有偏弱（${w} 中位 ${fmtPct(X.med, 1)}），只列相對最強的`;
     const why = (x) => {
       const nw = DATA.news?.[x.bn];
       if (nw?.status === "done") return esc(nw.reason || "查不到明確原因");
       if (nw?.status === "pending") return "正在查原因…";
-      return x.r24 >= 5 ? "排隊查原因中（每 2 分鐘檢查）" : "漲幅不大，沒有特別查";
+      return (x.kind !== "抗跌" && x.r >= (w === "1h" ? 3 : 5)) ? "排隊查原因中（每 2 分鐘檢查）" : "漲幅不大，沒有特別查";
     };
     const row = (x) => {
-      const body = `<b class="${x.kind === "抗跌" ? "" : "up"}">${esc(x.sym)}</b><span>${x.kind}：24h ${fmtPct(x.r24, 1)}（比大盤 ${fmtPct(x.ex, 1)}）${x.hl ? "" : "・Hyperliquid 買不到"}</span><em>$${Math.round(x.qv / 1e6)}M</em><small>${why(x)}</small>`;
+      const r = x.r ?? x.r24;
+      const body = `<b class="${x.kind === "抗跌" ? "" : "up"}">${esc(x.sym)}</b><span>${x.kind}：${w} ${fmtPct(r, 1)}（比大盤 ${fmtPct(x.ex, 1)}）${x.hl ? "" : "・Hyperliquid 買不到"}</span><em>$${Math.round(x.qv / 1e6)}M</em><small>${why(x)}</small>`;
       return `<li>${x.onPage ? `<button type="button" class="it" data-sym="${esc(x.sym)}">${body}</button>` : `<a class="it" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
     };
-    el.innerHTML = `<h3><span>逆勢異動</span><small>${head}</small></h3>
-      <ol>${X.items.map(row).join("")}</ol>
-      <p class="rule">看原因用，不是買點：回測大盤偏弱時逆勢漲的幣，之後 72h 只有 46% 跑贏（消息暴衝的 41%），抗跌的 49%（D142）。</p>`;
+    const note = w === "1h" ? "看原因用，不是買點：1 小時版沒有回測（門檻：大盤中位 ≤ −0.5%、逆勢漲 ≥ +1%、抗跌多 1.5%）。24 小時版回測：逆勢漲之後 72h 只有 46% 跑贏（D142）。"
+      : "看原因用，不是買點：回測大盤偏弱時逆勢漲的幣，之後 72h 只有 46% 跑贏（消息暴衝的 41%），抗跌的 49%（D142）。";
+    el.innerHTML = `<h3><span>逆勢異動</span>${seg}</h3><p class="ctw-h">${head}</p>
+      ${X.items.length ? `<ol>${X.items.map(row).join("")}</ol>` : `<p class="none">這個時間窗沒有逆勢的幣。</p>`}
+      <p class="rule">${note}</p>`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    bindCtw(el);
+  }
+  function bindCtw(el) {
+    el.querySelectorAll(".ctw button").forEach((b) => b.addEventListener("click", () => {
+      contraWin = b.dataset.w;
+      try { localStorage.setItem("kb-contra", contraWin); } catch (_) {}
+      renderContra();
+    }));
   }
   function renderRailTwap() {
     const T = DATA.twaps, el = $("rcTwap");
