@@ -393,6 +393,7 @@ body.simple .adv { display: none !important; }
 .news p { margin: 0; font-size: 13px; }
 .news .cat { font-weight: 700; color: var(--hot); margin-right: 6px; }
 .news .lead { color: var(--ink2); }
+.news.pal { background: color-mix(in srgb, var(--liq) 8%, transparent); }
 .news ul { margin: 0; padding: 0 0 0 16px; display: grid; gap: 3px; font-size: 12px; }
 .news a { color: var(--ink2); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
 
@@ -1422,6 +1423,12 @@ footer { color: var(--ink3); font-size: 12px; }
     return `<div class="news twcard"><small>Hyperliquid 大戶 TWAP 進行中（全鏈掃描）</small>${sig}${L.map((g) => `<p>${twapLine(g)}　<a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></p>`).join("")}</div>`;
   }
   // ---------- 逆勢異動（D142，進階模式）：只為了知道為什麼逆勢，不是買點 ----------
+  // 常一起動的幣（research/companions_20260928）：龍頭 1h 大漲時，同一小時跟漲的比例；之後 4h 約 50%，不會補漲
+  const pals = (sym) => DATA.companions?.[sym] || [];
+  const palNow = (sym, win) => {
+    const chg = (win === "24h" ? DATA.contra : DATA.contra1h)?.chg || {};
+    return pals(sym).map((p) => { const v = chg[p.sym]; return `${esc(p.sym)} ${v == null ? "-" : fmtPct(v, 1)}`; }).join("・");
+  };
   let contraWin = "1h";
   try { contraWin = localStorage.getItem("kb-contra") || "1h"; } catch (_) {}
   function renderContra() {
@@ -1440,7 +1447,7 @@ footer { color: var(--ink3); font-size: 12px; }
     };
     const row = (x) => {
       const r = x.r ?? x.r24;
-      const body = `<b class="${x.kind === "抗跌" ? "" : "up"}">${esc(x.sym)}</b><span>${x.kind}：${w} ${fmtPct(r, 1)}（比大盤 ${fmtPct(x.ex, 1)}）${x.hl ? "" : "・Hyperliquid 買不到"}</span><em>$${Math.round(x.qv / 1e6)}M</em><small>${why(x)}</small>`;
+      const body = `<b class="${x.kind === "抗跌" ? "" : "up"}">${esc(x.sym)}</b><span>${x.kind}：${w} ${fmtPct(r, 1)}（比大盤 ${fmtPct(x.ex, 1)}）${x.hl ? "" : "・Hyperliquid 買不到"}</span><em>$${Math.round(x.qv / 1e6)}M</em><small>${why(x)}${pals(x.sym).length ? `<br>常一起動（現在 ${w}）：${palNow(x.sym, w)}` : ""}</small>`;
       return `<li>${x.onPage ? `<button type="button" class="it" data-sym="${esc(x.sym)}">${body}</button>` : `<a class="it" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
     };
     const note = w === "1h" ? "看原因用，不是買點：1 小時版沒有回測（門檻：大盤中位 ≤ −0.5%、逆勢漲 ≥ +1%、抗跌多 1.5%）。24 小時版回測：逆勢漲之後 72h 只有 46% 跑贏（D142）。"
@@ -1953,6 +1960,14 @@ footer { color: var(--ink3); font-size: 12px; }
       <p class="next"><b>什麼情況會換道</b>：${nx.map(esc).join("；")}</p>
       <p class="odds">${esc(laneOdds(c.tier))}</p></div>`;
   }
+  function palBlock(c) {
+    const P = pals(c.sym);
+    if (!P.length) return "";
+    const ch1 = DATA.contra1h?.chg || {}, ch24 = DATA.contra?.chg || {};
+    return `<div class="news pal"><small>常一起動的幣（過去一年 ${esc(c.sym)} 1 小時大漲時，同一小時也漲的比例）</small>
+      <p>${P.map((p) => `<b>${esc(p.sym)}</b> ${Math.round(p.hit * 100)}%（現在 1h ${ch1[p.sym] == null ? "-" : fmtPct(ch1[p.sym], 1)}、24h ${ch24[p.sym] == null ? "-" : fmtPct(ch24[p.sym], 1)}）`).join("　")}</p>
+      <p class="lead">通常同一小時一起動；之後 4 小時再補漲的比例約 ${Math.round(P.reduce((a, p) => a + (p.after4 ?? 0.5), 0) / P.length * 100)}%，看到它噴時同伴多半已經動過。</p></div>`;
+  }
   function linksOf(c) {
     const bn = c.bn, L = [];
     if (bn) L.push(["幣安合約", `https://www.binance.com/zh-TC/futures/${bn}`], ["TradingView", `https://www.tradingview.com/chart/?symbol=BINANCE:${bn}.P`], ["Coinglass", `https://www.coinglass.com/tv/Binance_${bn}`]);
@@ -2122,6 +2137,7 @@ footer { color: var(--ink3); font-size: 12px; }
       <div class="px"><strong>${fmtPx(px)}</strong><span class="mono ${cls(r24)}">${fmtPct(r24)} 24h</span></div>
       <div class="kslot"></div>
       ${verdictBlock(c)}
+      ${palBlock(c)}
       ${linksOf(c)}
       ${(DATA.listings || []).filter((e) => e.base === c.sym).slice(0, 2).map((e) => `<div class="news"><small>${esc(e.kind)}（${tpeFull(e.t)}）</small><p>${esc(e.advice || e.title || "")}${e.since != null ? `　事件後到現在 <b class="${cls(e.since)}">${fmtPct(e.since)}</b>` : ""}</p></div>`).join("")}
       ${nhBlock(c)}
