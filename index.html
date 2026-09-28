@@ -595,6 +595,7 @@ footer { color: var(--ink3); font-size: 12px; }
     </section>
     <aside class="rail" aria-label="現在可以做什麼">
       <p class="say" id="head">載入中</p>
+      <section class="rc adv" id="rcContra" hidden></section>
       <section class="rc" id="rcTwap" hidden></section>
       <section class="rc" id="rcAmbush"></section>
       <section class="rc" id="rcChase"></section>
@@ -775,7 +776,7 @@ footer { color: var(--ink3); font-size: 12px; }
       return n;
     });
     if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
-    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderRailTwap(); renderRail(); nhSig = ""; renderNH(); renderTabs(); layout(first); renderList();
+    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderRailTwap(); renderRail(); renderContra(); nhSig = ""; renderNH(); renderTabs(); layout(first); renderList();
     if (selected) renderCard(); else card.hidden = true;
   }
 
@@ -1415,6 +1416,27 @@ footer { color: var(--ink3); font-size: 12px; }
     const S = L.find((g) => g.signal && leftOf(g) > 0);
     const sig = S ? `<p class="sigline ${S.signal}"><b>${sigName(S)}</b>：${sigExit(S)}。回測（D119）衝擊 ≥10% 勝率約 58–62%，每筆平均 +0.25～0.5%，優勢不大；抱到 24 小時平均轉負。</p>` : "";
     return `<div class="news twcard"><small>Hyperliquid 大戶 TWAP 進行中（全鏈掃描）</small>${sig}${L.map((g) => `<p>${twapLine(g)}　<a href="https://hypurrscan.io/address/${esc(g.user)}" target="_blank" rel="noopener noreferrer">${esc(g.user.slice(0, 6))}…</a></p>`).join("")}</div>`;
+  }
+  // ---------- 逆勢異動（D142，進階模式）：只為了知道為什麼逆勢，不是買點 ----------
+  function renderContra() {
+    const X = DATA.contra, el = $("rcContra");
+    el.hidden = !X?.items;
+    if (el.hidden) return;
+    const head = X.weak ? `大盤偏弱：前 ${X.n} 大 24h 中位 ${fmtPct(X.med, 1)}、上漲 ${Math.round(X.up * 100)}%` : `大盤沒有偏弱（中位 ${fmtPct(X.med, 1)}），只列相對最強的`;
+    const why = (x) => {
+      const nw = DATA.news?.[x.bn];
+      if (nw?.status === "done") return esc(nw.reason || "查不到明確原因");
+      if (nw?.status === "pending") return "正在查原因…";
+      return x.r24 >= 5 ? "排隊查原因中（每 2 分鐘檢查）" : "漲幅不大，沒有特別查";
+    };
+    const row = (x) => {
+      const body = `<b class="${x.kind === "抗跌" ? "" : "up"}">${esc(x.sym)}</b><span>${x.kind}：24h ${fmtPct(x.r24, 1)}（比大盤 ${fmtPct(x.ex, 1)}）${x.hl ? "" : "・Hyperliquid 買不到"}</span><em>$${Math.round(x.qv / 1e6)}M</em><small>${why(x)}</small>`;
+      return `<li>${x.onPage ? `<button type="button" class="it" data-sym="${esc(x.sym)}">${body}</button>` : `<a class="it" href="https://www.binance.com/zh-TC/futures/${esc(x.bn)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
+    };
+    el.innerHTML = `<h3><span>逆勢異動</span><small>${head}</small></h3>
+      <ol>${X.items.map(row).join("")}</ol>
+      <p class="rule">看原因用，不是買點：回測大盤偏弱時逆勢漲的幣，之後 72h 只有 46% 跑贏（消息暴衝的 41%），抗跌的 49%（D142）。</p>`;
+    el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
   function renderRailTwap() {
     const T = DATA.twaps, el = $("rcTwap");
