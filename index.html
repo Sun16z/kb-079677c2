@@ -1960,13 +1960,20 @@ footer { color: var(--ink3); font-size: 12px; }
       <p class="next"><b>什麼情況會換道</b>：${nx.map(esc).join("；")}</p>
       <p class="odds">${esc(laneOdds(c.tier))}</p></div>`;
   }
+  // 同聯盟／同題材（2026-09-28）：DeRec Alliance 創始成員（Hedera、Algorand、Ripple／XRPL Labs、Cardano IOG）；ISO 20022 概念幣是市場題材、不是正式聯盟
+  const ALLIANCES = [["DeRec 聯盟", ["HBAR", "ALGO", "XRP", "ADA"]], ["ISO 20022 題材", ["XRP", "XLM", "HBAR", "ADA", "ALGO", "QNT", "XDC", "IOTA"]]];
+  function allyLine(c) {
+    const ch1 = DATA.contra1h?.chg || {}, ch24 = DATA.contra?.chg || {};
+    return ALLIANCES.filter(([, m]) => m.includes(c.sym)).map(([name, m]) => `<p><b>${name}</b>：${m.filter((x) => x !== c.sym).map((x) => `${x} 1h ${ch1[x] == null ? "-" : fmtPct(ch1[x], 1)}／24h ${ch24[x] == null ? "-" : fmtPct(ch24[x], 1)}`).join("、")}</p>`).join("");
+  }
   function palBlock(c) {
-    const P = pals(c.sym);
-    if (!P.length) return "";
+    const P = pals(c.sym), A = allyLine(c);
+    if (!P.length && !A) return "";
     const ch1 = DATA.contra1h?.chg || {}, ch24 = DATA.contra?.chg || {};
     return `<div class="news pal"><small>常一起動的幣（過去一年 ${esc(c.sym)} 1 小時大漲時，同一小時也漲的比例）</small>
-      <p>${P.map((p) => `<b>${esc(p.sym)}</b> ${Math.round(p.hit * 100)}%（現在 1h ${ch1[p.sym] == null ? "-" : fmtPct(ch1[p.sym], 1)}、24h ${ch24[p.sym] == null ? "-" : fmtPct(ch24[p.sym], 1)}）`).join("　")}</p>
-      <p class="lead">通常同一小時一起動；之後 4 小時再補漲的比例約 ${Math.round(P.reduce((a, p) => a + (p.after4 ?? 0.5), 0) / P.length * 100)}%，看到它噴時同伴多半已經動過。</p></div>`;
+      ${P.length ? "" : ""}<p>${P.map((p) => `<b>${esc(p.sym)}</b> ${Math.round(p.hit * 100)}%（現在 1h ${ch1[p.sym] == null ? "-" : fmtPct(ch1[p.sym], 1)}、24h ${ch24[p.sym] == null ? "-" : fmtPct(ch24[p.sym], 1)}）`).join("　")}</p>
+      ${A}
+      <p class="lead">通常同一小時一起動；之後 4 小時再補漲的比例約 ${P.length ? Math.round(P.reduce((a, p) => a + (p.after4 ?? 0.5), 0) / P.length * 100) : 50}%，看到它噴時同伴多半已經動過。</p></div>`;
   }
   function linksOf(c) {
     const bn = c.bn, L = [];
