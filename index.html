@@ -561,10 +561,10 @@ footer { color: var(--ink3); font-size: 12px; }
       <details class="menu">
         <summary>怎麼看</summary>
         <div class="pop">
-          <span><b>位置</b>：由左到右是穩健、中性、過熱／高波動、急跌（分道 v2，2026-10-04 起）。六年回測（2021–2026、含已下架幣）剛進這一道之後 72 小時跑贏大盤：穩健 56%、中性 50%、高波動 45%、過熱 41%、急跌 45%，每一年順序都一樣。同一道裡 LIQ 越高排越前面。</span>
+          <span><b>位置</b>：由左到右是穩健、中性、過熱／高波動、急跌（分道 v2，2026-10-04 起）。今年（2026 年 1–9 月）剛進這一道之後 72 小時跑贏大盤：穩健 58%、中性 49%、高波動 44%、過熱 42%、急跌 43%，每一季順序都一樣（六年回測也一樣）。同一道裡 LIQ 越高排越前面。</span>
           <span><b>機構資金 ILI</b>：美元流動性、MSTR mNAV、BTC ETF 流入合成的 0–100 分數。BTC 創 30 日新高但 ILI 比上次創高時低＝黃燈（多頭後勁變弱），創歷史新高又背離且 ILI &lt; 50＝紅燈（收手）。</span>
           <span><b>顏色</b>：只代表分類。淡綠＝穩健（波動低；要抱山寨就挑這區，但扣成本後跟抱 BTC 差不多，不是買點），灰＝中性，橘紅＝過熱／高波動，紅＝急跌。目前沒有一種訊號通過「每年都賺」的實戰回測，所以沒有「可以買」的顏色；族群輪動、新高、暴漲原因是事件資訊，標在泡泡和卡片上。漲跌看泡泡裡的數字。</span>
-          <span><b>金色太陽</b>：24 小時內突破 20 天新高、離前高 8% 以內，單看新高六年回測沒有優勢；強牛＋真買盤＋離 30 日線 ≤25% 同時成立才有小優勢（大多來自牛市本身）。<b>大太陽</b>＝30 分鐘內剛刷新新高（放大、光芒更強），30 分鐘沒再創高就變回<b>小太陽</b>。離 30 日線超過 25% 的太陽會變淡（研究顯示追這種最差）。清單上的「真買盤」＝突破那根主動買 ≥55%。</span>
+          <span><b>金色太陽</b>：24 小時內突破 20 天新高、離前高 8% 以內。今年單看新高 72h 跑贏 48%，沒有優勢；離 30 日線 ≤10% 的 59%、突破真買盤＋離 30 日線 ≤25% 的 57%，但扣成本實戰跟隨便買差不多。<b>大太陽</b>＝30 分鐘內剛刷新新高（放大、光芒更強），30 分鐘沒再創高就變回<b>小太陽</b>。離 30 日線超過 25% 的太陽會變淡（研究顯示追這種最差）。清單上的「真買盤」＝突破那根主動買 ≥55%。</span>
           <span><b>紅／綠閃亮外圈＋星光</b>：Hyperliquid 大戶正在用 TWAP 大量賣出（紅，可做空）或買入（綠，可做多），每小時量 ≥ 成交量 10%。TWAP 結束就平倉。</span>
           <span><b>閃動外圈</b>：即時異動，15 分鐘漲跌 3% 或 5 分鐘 2% 以上。是提醒，不是買點。</span>
           <span><b>左上角小標</b>：<b>T</b>有大戶正在 Hyperliquid 用 TWAP 分批賣（紅）或買（綠），<b>！</b>查到暴漲原因，<b>↑↓</b>這輪剛換道，<b>$</b>營收轉強。一顆泡泡只顯示最重要的一個。</span>
@@ -640,21 +640,26 @@ footer { color: var(--ink3); font-size: 12px; }
   const pc = (x) => x == null ? "-" : Math.round(x * 100) + "%";
   const laneLog = () => (DATA.laneChanges || []).filter((x) => x.ver === DATA.laneVer);   // 分道改版前的換道紀錄意思不同，不顯示
   const V2K = { buy: ["穩健"], wait: ["中性"], hot: ["過熱", "高波動"], avoid: ["急跌"] };
+  const laneStats = () => DATA?.stats?.y || DATA?.stats?.v2;            // y＝今年（D151）；沒有時用六年 v2
   const laneWin = (t) => {
-    const L = DATA?.stats?.v2?.lanes;
+    const L = laneStats()?.lanes;
     if (!L) return "";
     const v = V2K[t].map((k) => L[k]?.b72).filter((x) => x != null).map((x) => Math.round(x * 100));
     return v.length ? (v.length > 1 ? `${Math.min(...v)}–${Math.max(...v)}%` : v[0] + "%") : "";
   };
+  const partsTxt = (x) => { const v = Object.values(x?.parts || x?.years || {}).map((y) => Math.round(y * 100)); return v.length ? `${Math.min(...v)}–${Math.max(...v)}%` : "-"; };
   const laneOdds = (t) => {
-    const S = DATA?.stats?.v2;
+    const S = laneStats();
     if (!S) return "";
+    const per = S.label ? `${S.label}（${S.from.replace("-", "/")}–${S.to.replace("-", "/")}）` : `過去六年（${S.from.replace("-", "/")}–${S.to.replace("-", "/")}，含已下架幣）`;
+    const unit = S.label ? "每季" : "每年";
     const parts = V2K[t].filter((k) => S.lanes[k]).map((k) => {
-      const x = S.lanes[k], yrs = Object.values(x.years || {}).map((v) => Math.round(v * 100));
-      return `${k} ${pc(x.b72)}（${x.n.toLocaleString()} 次，每年 ${Math.min(...yrs)}–${Math.max(...yrs)}%，中位 ${fmtPct(x.med72, 1)}；扣成本絕對報酬 ${fmtPct(x.abs72, 2)}，同時間抱 BTC ${fmtPct(x.btc72, 2)}）`;
+      const x = S.lanes[k];
+      return `${k} ${pc(x.b72)}（${x.n.toLocaleString()} 次，${unit} ${partsTxt(x)}，中位 ${fmtPct(x.med72, 1)}；扣成本絕對報酬 ${fmtPct(x.abs72, 2)}，同時間抱 BTC ${fmtPct(x.btc72, 2)}）`;
     });
-    return `過去六年（${S.from.replace("-", "/")}–${S.to.replace("-", "/")}，含已下架幣）剛進這一道之後 72 小時跑贏大盤：${parts.join("；")}。`;
+    return `${per}剛進這一道之後 72 小時跑贏大盤：${parts.join("；")}。`;
   };
+
 
   const ago = (ms) => { const m = Math.max(0, Math.round((Date.now() - ms) / 60000)); return m < 1 ? "剛剛" : m < 60 ? `${m} 分前` : `${Math.floor(m / 60)} 小時前`; };
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1248,9 +1253,9 @@ footer { color: var(--ink3); font-size: 12px; }
     let lv, txt;
     if (I?.state === "紅") [lv, txt] = ["alert", "ILI 紅燈：BTC 創歷史新高但機構資金沒跟上。不開新槓桿、山寨大幅減碼。"];
     else if (R.state === "強熊") [lv, txt] = ["alert", "強熊：過去這種時候追強和埋伏都是虧的，多數時間拿現金，單日反彈不算轉強。"];
-    else if (R.state === "強牛" && R.hot) [lv, txt] = ["warn", `強牛而且過熱：追強只挑真買盤、離 30 日線 ≤25% 的（現在 ${nChase} 檔），停損 −20%。過熱之後 2–4 週過去六年沒有比平常差（樣本少）。族群埋伏 2025 年起回測是虧的。`];
-    else if (R.state === "強牛") [lv, txt] = ["ok", `強牛：追強只挑突破真買盤、離 30 日線 ≤25% 的（現在 ${nChase} 檔），停損 −20%、從最高收盤回落 20% 才出；優勢不大。族群埋伏 2025 年起回測是虧的，只當觀察。`];
-    else if (R.state === "偏多") [lv, txt] = ["mid", "偏多：追強的優勢變小、部位縮小；族群埋伏 2025 年起回測是虧的，金色太陽只當參考。"];
+    else if (R.state === "強牛" && R.hot) [lv, txt] = ["warn", `強牛而且過熱：追強只挑真買盤、離 30 日線 ≤25% 的（現在 ${nChase} 檔），停損 −20%。過熱之後 2–4 週過去六年沒有比平常差（樣本少）。族群埋伏近兩年回測是虧的。`];
+    else if (R.state === "強牛") [lv, txt] = ["ok", `強牛：追強只挑突破真買盤、離 30 日線 ≤25% 的（現在 ${nChase} 檔），停損 −20%、從最高收盤回落 20% 才出；優勢不大。族群埋伏近兩年回測是虧的，只當觀察。`];
+    else if (R.state === "偏多") [lv, txt] = ["mid", "偏多：追強的優勢變小、部位縮小；族群埋伏近兩年回測是虧的，金色太陽只當參考。"];
     else [lv, txt] = ["mid", "偏空：追強勝率偏低，以短打和減碼為主；金色太陽只當參考。"];
     if (I?.state === "黃" && lv !== "alert") txt += " ILI 黃燈：多頭後勁變弱，槓桿不要再加。";
     const crowd = crowded();
@@ -1567,7 +1572,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const total = buys.length + (twl.match(/<li>/g) || []).length + (wl.match(/<li>/g) || []).length;
     $("rcAmbush").innerHTML = `<h3><span class="t-buy">早期訊號</span><small>${total} 個機會</small></h3>
       ${total ? `<ol>${twl}${amb}${wl}</ol>` : `<p class="none">現在沒有族群輪動候選、大戶 TWAP 買入或巨鯨新多單。</p>`}
-      <p class="rule"><b>輪動</b>：同族群龍頭剛噴、它還沒跟上。六年實戰回測：2021–24 小賺，2025 年起照著買（抱 72 小時、停損 10%）是虧的，現在只當觀察。<br><b>TWAP</b>：大戶正在分批買（勝率約 62%），TWAP 結束或取消就平倉。<br><b>巨鯨</b>：追蹤中的大戶剛開多，只是參考，沒有回測。</p>`;
+      <p class="rule"><b>輪動</b>：同族群龍頭剛噴、它還沒跟上。近兩年實戰回測：照著買（抱 72 小時、停損 10%）每筆 −0.45%，2026 上半年 −1.77%，只當觀察。<br><b>TWAP</b>：大戶正在分批買（勝率約 62%），TWAP 結束或取消就平倉。<br><b>巨鯨</b>：追蹤中的大戶剛開多，只是參考，沒有回測。</p>`;
 
     // 重大事件：上幣／下架（48h）、暴漲原因（24h）、多站核實的新聞
     const now = Date.now(), ev = [];
@@ -1618,7 +1623,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const nf = list.filter(nhFresh).length;
     el.innerHTML = `<h3><span style="color:var(--nh)">追強</span><small>${nf ? `剛創新高 ${nf}｜` : ""}離前高 8% 以內 ${list.length} 檔</small></h3>
       ${list.length ? `<ol>${list.slice(0, 5).map(row).join("")}</ol>` : `<p class="none">現在沒有 24 小時內剛突破 20 天新高的幣。</p>`}
-      <p class="rule">${sb ? "強牛做法：只挑突破真買盤、離 30 日線 ≤25% 的；停損 −20%，不設停利，從最高收盤回落 20% 才賣。其他新高六年回測沒有優勢。" : "現在不是強牛：非強牛時追突破常整年虧錢，只當參考。"}${DATA.regime?.hot ? `<br><b style="color:var(--hot)">市場過熱</b>：過去六年之後 14 天山寨中位 +3.8%（平常 −3.3%）、30 天 −2.5%（平常 −6.3%），沒有比平常差；只有 49 天、多半連在一起，證據不強。` : ""}</p>
+      <p class="rule">${sb ? "強牛做法：只挑突破真買盤、離 30 日線 ≤25% 的；停損 −20%，不設停利，從最高收盤回落 20% 才賣。今年單看新高 72h 只有 48%。" : "現在不是強牛：非強牛時追突破常整年虧錢，只當參考。"}${DATA.regime?.hot ? `<br><b style="color:var(--hot)">市場過熱</b>：過去六年之後 14 天山寨中位 +3.8%（平常 −3.3%）、30 天 −2.5%（平常 −6.3%），沒有比平常差；只有 49 天、多半連在一起，證據不強。` : ""}</p>
       ${list.length > 5 ? `<button type="button" class="link">看全部 ${list.length} 檔</button>` : ""}`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
     el.querySelector(".link")?.addEventListener("click", () => openTab("nh", true));
@@ -1770,6 +1775,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const d = (iso) => new Date(iso).toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei", year: "numeric", month: "numeric", day: "numeric" });
     const pc = (x) => x == null ? "-" : Math.round(x * 100) + "%";
     const R = S.rotation || {};
+    if (S.y) return renderTrackY(S, pc);
     if (S.six) return renderTrack6(S, pc);
     $("trackSum").textContent = `過熱 ${pc(S.lanes.hot.beat)}、急跌 ${pc(S.lanes.avoid.beat)}、埋伏 ${laneWin("buy")}、觀望 ${pc(S.lanes.wait.beat)}`;
     const cells = [
@@ -1790,6 +1796,37 @@ footer { color: var(--ink3); font-size: 12px; }
         <dt>跑贏大盤</dt><dd>${pc(b)}</dd>
         ${b1 != null ? `<dt>前半／後半</dt><dd>${pc(b1)}／${pc(b2)}</dd>` : ""}
         <dt>備註</dt><dd style="font-weight:500;color:var(--ink3);font-family:var(--body)">${note}</dd></dl></div>`).join("")}</div>`;
+  }
+
+  // 今年（D151）：分道 v2、頁面指標 2026-01～09；族群輪動近兩年
+  function renderTrackY(S, pc) {
+    const Y = S.y, V = Y.lanes, N = Y.nh, R = Y.rot, P = Y.practical;
+    const pt = (x) => Object.entries(x?.parts || {}).map(([k, v]) => `${k} ${pc(v)}`).join("、");
+    $("trackSum").textContent = `今年：穩健 ${pc(V["穩健"]?.b72)}、中性 ${pc(V["中性"]?.b72)}、高波動 ${pc(V["高波動"]?.b72)}、過熱 ${pc(V["過熱"]?.b72)}、急跌 ${pc(V["急跌"]?.b72)}`;
+    const cells = [
+      ["buy", "穩健（波動最穩的 30%）", V["穩健"], `絕對報酬 ${fmtPct(V["穩健"]?.abs72, 2)}，抱 BTC ${fmtPct(V["穩健"]?.btc72, 2)}`],
+      ["wait", "中性", V["中性"], "等於大盤"],
+      ["hot", "高波動（最晃的 30%）", V["高波動"], "多數時候落後，少數暴漲"],
+      ["hot", "過熱（RSI>70＋多漲 8%）", V["過熱"], "反過來放空也沒有優勢"],
+      ["avoid", "急跌（多跌 8%）", V["急跌"], ""],
+      ["nh", "新高（離前高 ≤8%）", N.all, "單看沒有優勢"],
+      ["nh", "新高＋離 30 日線 ≤10%", N.e30Lo, "樣本內最好的一組，要往後驗證"],
+      ["nh", "新高＋突破真買盤＋離 30 日線 ≤25%", N.good, `實戰抱 72h＋停損 10% 每筆 ${fmtPct(P.good72.avg, 2)}，隨便買 ${fmtPct(P.good72.ctl, 2)}`],
+      ["hot", "追族群龍頭（近兩年）", R.lead, ""],
+      ["wait", "族群輪動（近兩年，事件資訊）", R.amb, `照著買每筆 ${fmtPct(P.amb72.avg, 2)}，2026 上半年 ${fmtPct(P.amb72.h2026, 2)}`],
+      ["wait", "敘事輪動（近兩年，事件資訊）", R.narr, "敘事表 2025-09 建立"],
+      ["wait", "追敘事龍頭（近兩年，觀察中）", R.leadNarr, "ZEC、HYPE 占一半，要往後驗證"],
+    ];
+    const ns = DATA.newsStats;
+    $("track").innerHTML = `<div>
+      <p>勝率＝訊號出現後 72 小時跑贏同時間前 150 大中位數的比例，50% 就是沒有優勢。分道和指標用今年（2026 年 1–9 月），族群輪動用近兩年。穩健到過熱每一季順序都一樣，但穩健扣成本後的絕對報酬跟抱 BTC 差不多，它回答的是「要抱山寨挑哪類」；目前沒有一種訊號在實戰裡明顯贏過隨便買，所以頁面沒有「可以買」的顏色。</p>
+      ${ns?.n ? `<p>暴漲時新聞和價格誰先動：目前累計 ${ns.n} 次，${ns.priceLed} 次在新聞出來前價格或量能就先動了。</p>` : ""}
+      <small>幣安永續 1 小時 K 線（含已下架幣），同一檔同一訊號 24 小時只算一次；實戰扣 0.15% 手續費滑價和資金費率。六年版的結果順序相同（D146／D149）。</small></div>
+      <div class="track-grid">${cells.map(([t, name, v, note]) => `<div><b class="t-${t}">${name}</b><dl>
+        <dt>跑贏大盤</dt><dd>${pc(v?.b72)}</dd>
+        ${v?.parts ? `<dt>分段</dt><dd style="font-weight:500">${pt(v)}</dd>` : ""}
+        ${v?.n ? `<dt>次數</dt><dd>${v.n.toLocaleString()}</dd>` : ""}
+        ${note ? `<dt>備註</dt><dd style="font-weight:500;color:var(--ink3);font-family:var(--body)">${note}</dd>` : ""}</dl></div>`).join("")}</div>`;
   }
 
   // 六年重測（D146）＋實戰版（D147）
@@ -1881,9 +1918,10 @@ footer { color: var(--ink3); font-size: 12px; }
   // 六年實戰回測（D147）：只有強牛＋真買盤＋離 30 日線 ≤25% 的新高，配 20% 移動停損才有小優勢
   const nhGood = (c) => c.brkTk != null && c.brkTk >= 0.55 && !far30(c);
   const chaseTxt = () => {
-    const P = DATA.stats?.six?.practical?.chase;
-    return P ? `六年實戰回測（${P.n} 次）每筆平均 ${fmtPct(P.avg, 1)}，但同時間隨便買也有 ${fmtPct(P.ctl, 1)}（大多是牛市本身）；${P.lossYears} 年是虧的，模擬帳戶最大回撤 ${Math.round(P.mdd)}%。` : "";
+    const P = DATA.stats?.y?.practical?.combo;
+    return P ? `今年實戰回測（${P.n} 次，20% 移動停損）每筆平均 ${fmtPct(P.avg, 1)}，同時間隨便買也有 ${fmtPct(P.ctl, 1)}：賺的幾乎都是牛市本身。` : "";
   };
+
   const CHASE_PLAY = "強牛做法：只挑突破那根真買盤（主動買 ≥55%）、離 30 日線 ≤25% 的；進場設 −20% 停損，不設停利，從進場後最高收盤回落 20% 才賣，每個訊號小部位照做、別挑。";
   const CHASE_WARN = "現在不是強牛：過去非強牛時追突破常整年虧錢（2022、2025），這份清單只當參考。";
   function nhBlock(c) {
@@ -1892,17 +1930,19 @@ footer { color: var(--ink3); font-size: 12px; }
     const tag = a <= NH_FRESH ? "剛突破，離前高很近" : a > NH_FAR ? "已經衝太遠，追高風險也高" : "突破中";
     return `<div class="news nhcard"><small>24 小時內突破 20 天新高｜${tag}</small>
       <p>現價比 20 天前高 ${fmtPx(c.hi20)} 多 ${fmtPct(a, 1)}${w != null ? `；從 20 天低點算已漲 ${Math.round(w)}%` : ""}。</p>
-      ${qualTags(c) ? `<p class="qline">${qualTags(c)}</p>${DATA.stats?.six?.nh ? `<p class="lead">六年回測（72 小時跑贏大盤）：新高全部 ${pc(DATA.stats.six.nh.all.b72)}；突破主動買 ≥55% 的 ${pc(DATA.stats.six.nh.tkHi.b72)}、<50% 的 ${pc(DATA.stats.six.nh.tkLo.b72)}；離 30 日線 ≤10% 的 ${pc(DATA.stats.six.nh.e30Lo.b72)}、>25% 的 ${pc(DATA.stats.six.nh.e30Hi.b72)}。</p>` : ""}` : ""}
-      <p class="lead">${strongBull() ? (nhGood(c) ? CHASE_PLAY + chaseTxt() : "這個新高不符合「真買盤＋離 30 日線 ≤25%」，六年回測單看新高沒有優勢，只當參考。") : CHASE_WARN}</p></div>`;
+      ${qualTags(c) ? `<p class="qline">${qualTags(c)}</p>${DATA.stats?.y?.nh ? `<p class="lead">今年回測（72 小時跑贏大盤）：新高全部 ${pc(DATA.stats.y.nh.all.b72)}；突破主動買 ≥55% 的 ${pc(DATA.stats.y.nh.tkHi.b72)}、<50% 的 ${pc(DATA.stats.y.nh.tkLo.b72)}；離 30 日線 ≤10% 的 ${pc(DATA.stats.y.nh.e30Lo.b72)}、>25% 的 ${pc(DATA.stats.y.nh.e30Hi.b72)}。</p>` : ""}` : ""}
+      <p class="lead">${strongBull() ? (nhGood(c) ? CHASE_PLAY + chaseTxt() : "這個新高不符合「真買盤＋離 30 日線 ≤25%」，今年單看新高 72h 只有 48%，只當參考。") : CHASE_WARN}</p></div>`;
   }
 
   function ambushBlock(c) {
     if (!c.rot) return "";
-    const P = DATA.stats?.six?.practical?.ambush;
-    return `<div class="news"><small>族群輪動（事件資訊）：照著買的實戰回測（D147，2021–2026，扣手續費和資金費率）</small>
-      <p>${P ? `照這個訊號買、抱 72 小時、跌 10% 停損，每筆平均 ${fmtPct(P.avg, 2)}；2021–2024 每年都賺，但 2025 年起轉虧（模擬帳戶每筆 10% 資金、最多同時 10 筆：2025 年 ${P.y2025}%、2026 年 ${P.y2026}%）。` : "2025 年起照這個訊號買是虧的。"}</p>
-      <p class="lead">優勢可能已經消失，現在只當觀察，不建議照著買。</p></div>`;
+    const R = DATA.stats?.y?.rot, P = DATA.stats?.y?.practical?.amb72, x = R?.[c.rot.narrative === true ? "narr" : "amb"];
+    const half = x ? Object.entries(x.parts || {}).map(([k, v]) => `${k} ${pc(v)}`).join("、") : "";
+    return `<div class="news"><small>族群輪動（事件資訊）：近兩年回測（2024-10～2026-09，扣手續費和資金費率）</small>
+      <p>${x ? `這種情況 72h 跑贏大盤 ${pc(x.b72)}（${x.n} 次；每半年 ${half}）。` : ""}${P ? `照著買、抱 72 小時、跌 10% 停損，每筆平均 ${fmtPct(P.avg, 2)}，2026 上半年 ${fmtPct(P.h2026, 2)}。` : ""}</p>
+      <p class="lead">照著買是虧的，只當觀察。</p></div>`;
   }
+
 
 
   function newsBlock(nw) {
@@ -1947,16 +1987,16 @@ footer { color: var(--ink3); font-size: 12px; }
   function actionOf(c) {
     const sg = sigOn(c.sym);
     if (sg) return `Hyperliquid 大戶正在用 TWAP ${sg.buy ? "買入" : "賣出"}：${sigName(sg)}，${sigExit(sg)}。`;
-    const V = DATA.stats?.v2?.lanes || {}, p = (k) => V[k] ? Math.round(V[k].b72 * 100) + "%" : "-";
-    if (c.tier === "avoid") return `還在急跌：過去六年這種時候 72h 只有 ${p("急跌")} 跑贏大盤，等它回到中性再看。`;
+    const V = laneStats()?.lanes || {}, p = (k) => V[k] ? Math.round(V[k].b72 * 100) + "%" : "-";
+    if (c.tier === "avoid") return `還在急跌：今年這種時候 72h 只有 ${p("急跌")} 跑贏大盤，等它回到中性再看。`;
     if (c.tier === "hot" && c.reason !== "highvol") return "追高風險也高：新倉等它回到中性再說，手上有的可以分批落袋。";
     if (isNH(c) && !nhFar(c)) {
       if (far30(c)) return "剛創新高，但離 30 日線太遠（>25%），追高風險也高。";
       if (!strongBull()) return "剛創新高，但現在不是強牛：過去非強牛追突破常整年虧錢，只當參考。";
       if (nhGood(c)) return "強牛＋真買盤＋離 30 日線不遠：可以小倉追，停損 −20%，從最高收盤回落 20% 才出；優勢不大，大多來自牛市本身。";
     }
-    if (c.tier === "hot") return `波動很大：過去六年這類幣 72h 只有 ${p("高波動")} 跑贏大盤，多數時候落後、少數暴漲；要碰就小部位、停損先設。`;
-    if (c.tier === "buy") return `波動低：要抱山寨就挑這類（過去六年 72h 跑贏 ${p("穩健")}，每年都過半），但扣成本後跟抱 BTC 差不多，不是買點。`;
+    if (c.tier === "hot") return `波動很大：今年這類幣 72h 只有 ${p("高波動")} 跑贏大盤，多數時候落後、少數暴漲；要碰就小部位、停損先設。`;
+    if (c.tier === "buy") return `波動低：要抱山寨就挑這類（今年 72h 跑贏 ${p("穩健")}，每一季都過半），但扣成本後跟抱 BTC 差不多，不是買點。`;
     return "沒有明顯差別，不用動。";
   }
 
@@ -1975,13 +2015,13 @@ footer { color: var(--ink3); font-size: 12px; }
     }
     if ((c.rsi ?? 0) > 70) N.push(`RSI ${Math.round(c.rsi)}，過熱`);
     if (c.ex24 != null && c.ex24 < -8) N.push(`24h 比大盤多跌 ${Math.abs(c.ex24).toFixed(0)}%`);
-    if (c.ex24 != null && c.ex24 >= 8) N.push(`24h 比大盤多漲 ${Math.round(c.ex24)}%：過去六年這種急漲之後 72h 只有 41% 跑贏大盤（D146）`);
+    if (c.ex24 != null && c.ex24 >= 8) N.push(`24h 比大盤多漲 ${Math.round(c.ex24)}%：今年這種急漲之後 72h 只有 ${pc(DATA.stats?.y?.ind?.up8?.b72 ?? 0.42)} 跑贏大盤`);
     if (c.mover) I.push(`全市場成交額第 ${c.mover} 名，不在 CoinKarma 名單（大異動補進來）`);
     if (c.vp != null) {
       if (c.vp <= 0.3) P.push(`30 天波動在前 150 大裡排 ${Math.round(c.vp * 100)}%（最穩的 30%）`);
       else if (c.vp >= 0.7) N.push(`30 天波動在前 150 大裡排 ${Math.round(c.vp * 100)}%（最晃的 30%）`);
     }
-    if (c.rot) I.push(`族群輪動：${c.rot.group}龍頭 ${c.rot.lead} 24h 多漲 ${Math.round(c.rot.leadEx24)}%，它還沒跟上（只當資訊：2025 年起照著買是虧的）`);
+    if (c.rot) I.push(`族群輪動：${c.rot.group}龍頭 ${c.rot.lead} 24h 多漲 ${Math.round(c.rot.leadEx24)}%，它還沒跟上（只當資訊：近兩年照著買是虧的）`);
     if (DATA.revenue?.[c.bn]?.cand) P.push("項目營收轉強、幣價還沒反映（證據偏弱）");
     const bb = DATA.buyback?.[c.bn];
     if (bb?.hit) P.push(`回購殖利率 ${bb.by.toFixed(1)}%／年、新增供給少（觀察中）`);
