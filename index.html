@@ -29,6 +29,7 @@
   --ink3: #6c7888;
   --line: #1b2532;
   --buy: #2bd98a;
+  --obs: #6f9e8c;
   --wait: #7f8ea5;
   --hot: #ff7a3d;
   --avoid: #ff4f61;
@@ -46,14 +47,14 @@
     color-scheme: light;
     --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff; --panel2: #f3f5f8;
     --ink: #0c141e; --ink2: #475262; --ink3: #7a8494; --line: #d3dae3;
-    --buy: #0a9a63; --wait: #5d6c83; --hot: #c2410c; --avoid: #dc1f3c; --liq: #0b8fc4; --nh: #b07d00; --glow: 0;
+    --buy: #0a9a63; --obs: #5a7d70; --wait: #5d6c83; --hot: #c2410c; --avoid: #dc1f3c; --liq: #0b8fc4; --nh: #b07d00; --glow: 0;
   }
 }
 :root[data-theme="light"] {
   color-scheme: light;
   --bg: #e9edf2; --field: #f4f6f9; --panel: #ffffff; --panel2: #f3f5f8;
   --ink: #0c141e; --ink2: #475262; --ink3: #7a8494; --line: #d3dae3;
-  --buy: #0a9a63; --wait: #5d6c83; --hot: #c2410c; --avoid: #dc1f3c; --liq: #0b8fc4; --nh: #b07d00; --glow: 0;
+  --buy: #0a9a63; --obs: #5a7d70; --wait: #5d6c83; --hot: #c2410c; --avoid: #dc1f3c; --liq: #0b8fc4; --nh: #b07d00; --glow: 0;
 }
 
 * { box-sizing: border-box; }
@@ -64,7 +65,7 @@ body { margin: 0; font: 14px/1.55 var(--body); -webkit-font-smoothing: antialias
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.t-buy { color: var(--buy); } .t-wait { color: var(--wait); } .t-hot { color: var(--hot); } .t-avoid { color: var(--avoid); } .t-nh { color: var(--nh); }
+.t-buy { color: var(--obs); } .t-wait { color: var(--wait); } .t-hot { color: var(--hot); } .t-avoid { color: var(--avoid); } .t-nh { color: var(--nh); }
 
 /* 第一階段（2026-09-27）：規則說、剛剛變了什麼、卡片判斷 */
 .rulebar { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 9px 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); font-size: 13.5px; line-height: 1.55; color: var(--ink); }
@@ -168,7 +169,7 @@ button { font: inherit; color: inherit; }
 .tile b { font: 800 26px/1 var(--display); font-variant-numeric: tabular-nums; }
 .tile span { font: 700 13px/1.2 var(--body); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile.zero b { color: var(--ink3); }
-.tile.t-buy:not(.zero) { border-color: color-mix(in srgb, var(--buy) 45%, var(--line)); background: color-mix(in srgb, var(--buy) 8%, var(--panel)); }
+.tile.t-buy:not(.zero) { border-color: color-mix(in srgb, var(--obs) 45%, var(--line)); background: color-mix(in srgb, var(--obs) 8%, var(--panel)); }
 .tile.t-nh { color: var(--nh); }
 .tile.t-nh:not(.zero) { border-color: color-mix(in srgb, var(--nh) 50%, var(--line)); background: color-mix(in srgb, var(--nh) 8%, var(--panel)); }
 .tile.t-hot:not(.zero) { border-color: color-mix(in srgb, var(--hot) 45%, var(--line)); background: color-mix(in srgb, var(--hot) 7%, var(--panel)); }
@@ -560,9 +561,9 @@ footer { color: var(--ink3); font-size: 12px; }
       <details class="menu">
         <summary>怎麼看</summary>
         <div class="pop">
-          <span><b>位置</b>：由左到右是可以埋伏、觀望、追高風險高、別碰。橘紅和紅兩道六年回測都低於五成（41%、44%），綠色只有 52%，而且 2025 年起照著買是虧的。同一道裡 LIQ 越高排越前面（沒有 LIQ 的排最後）。</span>
+          <span><b>位置</b>：由左到右是輪動觀察、觀望、追高風險高、別碰。橘紅和紅兩道六年回測都低於五成（41%、44%），輪動觀察只有 52%，而且 2025 年起照著買是虧的。同一道裡 LIQ 越高排越前面（沒有 LIQ 的排最後）。</span>
           <span><b>機構資金 ILI</b>：美元流動性、MSTR mNAV、BTC ETF 流入合成的 0–100 分數。BTC 創 30 日新高但 ILI 比上次創高時低＝黃燈（多頭後勁變弱），創歷史新高又背離且 ILI &lt; 50＝紅燈（收手）。</span>
-          <span><b>顏色</b>：只代表動作。綠＝可以埋伏，灰＝觀望，橘紅＝追高風險高，紅＝別碰。漲跌看泡泡裡的數字。</span>
+          <span><b>顏色</b>：只代表動作。淡綠＝輪動觀察（族群龍頭噴了、它還沒跟上；2025 年起照著買是虧的，不是買點），灰＝觀望，橘紅＝追高風險高，紅＝別碰。目前沒有一種訊號通過「每年都賺」的實戰回測，所以沒有「可以買」的顏色。漲跌看泡泡裡的數字。</span>
           <span><b>金色太陽</b>：24 小時內突破 20 天新高、離前高 8% 以內，單看新高六年回測沒有優勢；強牛＋真買盤＋離 30 日線 ≤25% 同時成立才有小優勢（大多來自牛市本身）。<b>大太陽</b>＝30 分鐘內剛刷新新高（放大、光芒更強），30 分鐘沒再創高就變回<b>小太陽</b>。離 30 日線超過 25% 的太陽會變淡（研究顯示追這種最差）。清單上的「真買盤」＝突破那根主動買 ≥55%。</span>
           <span><b>紅／綠閃亮外圈＋星光</b>：Hyperliquid 大戶正在用 TWAP 大量賣出（紅，可做空）或買入（綠，可做多），每小時量 ≥ 成交量 10%。TWAP 結束就平倉。</span>
           <span><b>閃動外圈</b>：即時異動，15 分鐘漲跌 3% 或 5 分鐘 2% 以上。是提醒，不是買點。</span>
@@ -592,7 +593,7 @@ footer { color: var(--ink3); font-size: 12px; }
     <button type="button" data-l="list" aria-pressed="false">清單</button>
   </div>
   <div class="stage">
-    <section class="field" id="field" aria-label="泡泡圖：依可以埋伏、觀望、追高風險高、別碰分四區">
+    <section class="field" id="field" aria-label="泡泡圖：依輪動觀察、觀望、追高風險高、別碰分四區">
       <canvas id="cv"></canvas>
       <div id="lanes"></div>
       <div class="lanelist" id="lanelist" hidden></div>
@@ -633,7 +634,7 @@ footer { color: var(--ink3); font-size: 12px; }
 (() => {
   const DATA0 = /*__DATA__*/null;
   const TIERS = ["buy", "wait", "hot", "avoid"];
-  const NAME = { buy: "可以埋伏", wait: "觀望", hot: "追高風險高", avoid: "別碰" };
+  const NAME = { buy: "輪動觀察", wait: "觀望", hot: "追高風險高", avoid: "別碰" };
   const HINT = { buy: "龍頭噴了、它還沒跟", wait: "沒有優勢", hot: "過熱或正在噴的龍頭，追高風險也高", avoid: "還在急跌" };
   // 各道過去一年 24h 跑贏大盤的比例（winrate_stats.json）
   const laneWin = (t) => {
@@ -768,7 +769,8 @@ footer { color: var(--ink3); font-size: 12px; }
 
   function readColors() {
     const cs = getComputedStyle(document.documentElement);
-    for (const k of [...TIERS, "ink", "ink2", "ink3", "line", "field", "liq", "nh"]) colors[k] = cs.getPropertyValue("--" + k).trim();
+    for (const k of [...TIERS, "ink", "ink2", "ink3", "line", "field", "liq", "nh", "obs"]) colors[k] = cs.getPropertyValue("--" + k).trim();
+    colors.tier = (t) => t === "buy" ? colors.obs : colors[t];     // 族群埋伏 2025 起回測轉虧（D147）：道顏色降成淡綠，colors.buy 仍給「上漲／做多訊號」用
     dark = cs.getPropertyValue("--glow").trim() === "1";
   }
   const rgba = (hex, a) => {
@@ -987,7 +989,7 @@ footer { color: var(--ink3); font-size: 12px; }
     ctx.clearRect(0, 0, W, H);
     TIERS.forEach((tier, i) => {
       const L = lanes[tier]; if (!L) return;
-      const col = colors[tier];
+      const col = colors.tier(tier);
       const g = vertical ? ctx.createLinearGradient(0, L.s0, 0, L.s1) : ctx.createLinearGradient(0, 0, 0, H);
       g.addColorStop(0, rgba(col, dark ? 0.1 : 0.09)); g.addColorStop(0.5, rgba(col, 0.02)); g.addColorStop(1, rgba(col, 0));
       ctx.fillStyle = g;
@@ -1003,7 +1005,7 @@ footer { color: var(--ink3); font-size: 12px; }
   }
 
   function bubble(n, t) {
-    const c = n.c, col = colors[c.tier], r = n.r;
+    const c = n.c, col = colors.tier(c.tier), r = n.r;
     // 顏色只代表動作（2026-09-27 第一階段）：觀望一律灰色，漲跌看泡泡裡的數字
     const fillCol = col;
     const tint = 1;
@@ -1248,7 +1250,7 @@ footer { color: var(--ink3); font-size: 12px; }
     let lv, txt;
     if (I?.state === "紅") [lv, txt] = ["alert", "ILI 紅燈：BTC 創歷史新高但機構資金沒跟上。不開新槓桿、山寨大幅減碼。"];
     else if (R.state === "強熊") [lv, txt] = ["alert", "強熊：過去這種時候追強和埋伏都是虧的，多數時間拿現金，單日反彈不算轉強。"];
-    else if (R.state === "強牛" && R.hot) [lv, txt] = ["warn", `強牛但過熱：新倉縮小，追強只挑真買盤、離 30 日線 ≤25% 的（現在 ${nChase} 檔），停損 −20%；2–4 週後回落機率偏高。族群埋伏 2025 年起回測是虧的。`];
+    else if (R.state === "強牛" && R.hot) [lv, txt] = ["warn", `強牛而且過熱：追強只挑真買盤、離 30 日線 ≤25% 的（現在 ${nChase} 檔），停損 −20%。過熱之後 2–4 週過去六年沒有比平常差（樣本少）。族群埋伏 2025 年起回測是虧的。`];
     else if (R.state === "強牛") [lv, txt] = ["ok", `強牛：追強只挑突破真買盤、離 30 日線 ≤25% 的（現在 ${nChase} 檔），停損 −20%、從最高收盤回落 20% 才出；優勢不大。族群埋伏 2025 年起回測是虧的，只當觀察。`];
     else if (R.state === "偏多") [lv, txt] = ["mid", "偏多：追強的優勢變小、部位縮小；族群埋伏 2025 年起回測是虧的，金色太陽只當參考。"];
     else [lv, txt] = ["mid", "偏空：追強勝率偏低，以短打和減碼為主；金色太陽只當參考。"];
@@ -1257,7 +1259,7 @@ footer { color: var(--ink3); font-size: 12px; }
     if (crowd.length) txt += " 擁擠：" + crowd.map((g) => `${g.group} ${g.n} 顆同時噴（${g.syms.slice(0, 4).join("、")}）`).join("；") + "，追高風險也高。";
     el.className = `rulebar lv-${lv}${ruleOpen ? " open" : ""}`;
     el.onclick = () => { ruleOpen = !ruleOpen; el.classList.toggle("open", ruleOpen); };
-    el.innerHTML = `<b>規則說</b>${crowd.length ? `<i class="crowd">擁擠</i>` : ""}<span>${esc(txt)}${nBuy ? ` 可以埋伏 ${nBuy} 檔。` : ""}</span><small>分道只針對做多・不是投資建議</small>`;
+    el.innerHTML = `<b>規則說</b>${crowd.length ? `<i class="crowd">擁擠</i>` : ""}<span>${esc(txt)}${nBuy ? ` 輪動觀察 ${nBuy} 檔。` : ""}</span><small>分道只針對做多・不是投資建議</small>`;
   }
   // 剛剛變了什麼（第一階段）：近 4 小時的換道、大戶 TWAP 訊號、剛刷新新高、LIQ 放量
   function renderFeed() {
@@ -1565,7 +1567,7 @@ footer { color: var(--ink3); font-size: 12px; }
       return `<li>${on ? `<button type="button" class="it" data-sym="${esc(sym)}">${body}</button>` : `<a class="it" href="https://hypurrscan.io/address/${esc(x.address)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
     }).join("");
     const total = buys.length + (twl.match(/<li>/g) || []).length + (wl.match(/<li>/g) || []).length;
-    $("rcAmbush").innerHTML = `<h3><span class="t-buy">提前埋伏</span><small>${total} 個機會</small></h3>
+    $("rcAmbush").innerHTML = `<h3><span class="t-buy">早期訊號</span><small>${total} 個機會</small></h3>
       ${total ? `<ol>${twl}${amb}${wl}</ol>` : `<p class="none">現在沒有族群輪動候選、大戶 TWAP 買入或巨鯨新多單。</p>`}
       <p class="rule"><b>輪動</b>：同族群龍頭剛噴、它還沒跟上。六年實戰回測：2021–24 小賺，2025 年起照著買（抱 72 小時、停損 10%）是虧的，現在只當觀察。<br><b>TWAP</b>：大戶正在分批買（勝率約 62%），TWAP 結束或取消就平倉。<br><b>巨鯨</b>：追蹤中的大戶剛開多，只是參考，沒有回測。</p>`;
 
@@ -1618,7 +1620,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const nf = list.filter(nhFresh).length;
     el.innerHTML = `<h3><span style="color:var(--nh)">追強</span><small>${nf ? `剛創新高 ${nf}｜` : ""}離前高 8% 以內 ${list.length} 檔</small></h3>
       ${list.length ? `<ol>${list.slice(0, 5).map(row).join("")}</ol>` : `<p class="none">現在沒有 24 小時內剛突破 20 天新高的幣。</p>`}
-      <p class="rule">${sb ? "強牛做法：只挑突破真買盤、離 30 日線 ≤25% 的；停損 −20%，不設停利，從最高收盤回落 20% 才賣。其他新高六年回測沒有優勢。" : "現在不是強牛：非強牛時追突破常整年虧錢，只當參考。"}${DATA.regime?.hot ? `<br><b style="color:var(--hot)">市場過熱</b>：2–4 週後回落機率偏高，新倉縮小。` : ""}</p>
+      <p class="rule">${sb ? "強牛做法：只挑突破真買盤、離 30 日線 ≤25% 的；停損 −20%，不設停利，從最高收盤回落 20% 才賣。其他新高六年回測沒有優勢。" : "現在不是強牛：非強牛時追突破常整年虧錢，只當參考。"}${DATA.regime?.hot ? `<br><b style="color:var(--hot)">市場過熱</b>：過去六年之後 14 天山寨中位 +3.8%（平常 −3.3%）、30 天 −2.5%（平常 −6.3%），沒有比平常差；只有 49 天、多半連在一起，證據不強。` : ""}</p>
       ${list.length > 5 ? `<button type="button" class="link">看全部 ${list.length} 檔</button>` : ""}`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
     el.querySelector(".link")?.addEventListener("click", () => openTab("nh", true));
@@ -1770,6 +1772,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const d = (iso) => new Date(iso).toLocaleDateString("zh-TW", { timeZone: "Asia/Taipei", year: "numeric", month: "numeric", day: "numeric" });
     const pc = (x) => x == null ? "-" : Math.round(x * 100) + "%";
     const R = S.rotation || {};
+    if (S.six) return renderTrack6(S, pc);
     $("trackSum").textContent = `過熱 ${pc(S.lanes.hot.beat)}、急跌 ${pc(S.lanes.avoid.beat)}、埋伏 ${laneWin("buy")}、觀望 ${pc(S.lanes.wait.beat)}`;
     const cells = [
       ["buy", "可以埋伏（細分族群）", R.volume?.lagBeat, null, null, `比平常多 ${fmtPct((R.volume?.lagEx ?? 0) - (R.volume?.lagBase ?? 0), 2)}`],
@@ -1788,6 +1791,33 @@ footer { color: var(--ink3); font-size: 12px; }
       <div class="track-grid">${cells.map(([t, name, b, b1, b2, note]) => `<div><b class="t-${t}">${name}</b><dl>
         <dt>跑贏大盤</dt><dd>${pc(b)}</dd>
         ${b1 != null ? `<dt>前半／後半</dt><dd>${pc(b1)}／${pc(b2)}</dd>` : ""}
+        <dt>備註</dt><dd style="font-weight:500;color:var(--ink3);font-family:var(--body)">${note}</dd></dl></div>`).join("")}</div>`;
+  }
+
+  // 六年重測（D146）＋實戰版（D147）
+  function renderTrack6(S, pc) {
+    const X = S.six, L = X.lanes, N = X.nh, P = X.practical;
+    $("trackSum").textContent = `追高 ${pc(L.hot.b72)}、急跌 ${pc(L.avoid.b72)}、輪動 ${pc(L.buy.b72)}、觀望 ${pc(L.wait.b72)}`;
+    const cells = [
+      ["hot", "追高風險高：過熱", L.hot, "每一年都低於五成"],
+      ["hot", "追高風險高：追龍頭", L.lead, "族群龍頭剛噴出時才買"],
+      ["avoid", "別碰：急跌中", L.avoid, "每一年都低於五成"],
+      ["wait", "觀望：其他", L.wait, "等於大盤"],
+      ["buy", "輪動觀察（細分族群）", L.buy, `實戰：抱 72h＋停損 10%，2025 年 ${P.ambush.y2025}%、2026 年 ${P.ambush.y2026}%（每筆 10% 資金）`],
+      ["buy", "輪動觀察（敘事表）", L.narr, "敘事表 2025-09 才整理，有事後挑選"],
+      ["nh", "新高（離前高 ≤8%）", N.all, "單看比觀望還差"],
+      ["nh", "新高＋強牛＋真買盤＋離 30 日線 ≤25%", N.combo, `實戰：20% 移動停損每筆 ${fmtPct(P.chase.avg, 1)}，隨便買也有 ${fmtPct(P.chase.ctl, 1)}；${P.chase.lossYears} 年虧`],
+      ...(S.revenue ? [["buy", "營收轉強（看 30 天，只有一年資料）", { b72: S.revenue.beat, b1: S.revenue.beat1, b2: S.revenue.beat2 }, `這些有營收的幣平常 ${Math.round(S.revenue.base * 100)}%；${S.revenue.n} 次，證據偏弱`]] : []),
+    ];
+    const ns = DATA.newsStats;
+    $("track").innerHTML = `<div>
+      <p>勝率＝買進後 72 小時跑贏同時間全市場中位數的比例，50% 就是沒有優勢。能穩定拉開差距的是「避開」：追高、急跌、追龍頭六年每年都低於五成。買進類最多五成多一點；扣手續費、資金費率的實戰回測，沒有一種在每一年都賺，所以頁面沒有「可以買」的顏色。反過來放空追高也沒有優勢（會被少數暴漲吃掉）。</p>
+      ${ns?.n ? `<p>暴漲時新聞和價格誰先動：目前累計 ${ns.n} 次，${ns.priceLed} 次在新聞出來前價格或量能就先動了。</p>` : ""}
+      <small>幣安永續 ${X.coins} 檔（含已下架）1 小時 K 線，${X.from.replace("-", "/")} 到 ${X.to.replace("-", "/")}；每個時間點只算成交額前 150，同一檔同一訊號 24 小時只算一次。規則在看結果前定好，前半段、後半段分開看。</small></div>
+      <div class="track-grid">${cells.map(([t, name, v, note]) => `<div><b class="t-${t}">${name}</b><dl>
+        <dt>跑贏大盤</dt><dd>${pc(v.b72)}</dd>
+        ${v.b1 != null ? `<dt>前半／後半</dt><dd>${pc(v.b1)}／${pc(v.b2)}</dd>` : ""}
+        ${v.n ? `<dt>次數</dt><dd>${v.n.toLocaleString()}</dd>` : ""}
         <dt>備註</dt><dd style="font-weight:500;color:var(--ink3);font-family:var(--body)">${note}</dd></dl></div>`).join("")}</div>`;
   }
 
@@ -1946,7 +1976,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const bb = DATA.buyback?.[c.bn];
     if (bb?.hit) P.push(`回購殖利率 ${bb.by.toFixed(1)}%／年、新增供給少（觀察中）`);
     else if (bb && bb.dil > 20) N.push(`流通量一年增加約 ${Math.round(bb.dil)}%（解鎖稀釋）`);
-    if (DATA.regime?.hot && (c.tier === "buy" || isNH(c))) N.push("市場過熱：2–4 週後回落機率偏高");
+    if (DATA.regime?.hot && (c.tier === "buy" || isNH(c))) I.push("市場過熱：過去六年之後 2–4 週沒有比平常差（樣本少），停損照設");
     if (DATA.ili?.state === "紅") N.push("ILI 紅燈：機構資金沒跟上");
     const w = whalesOn(c.sym).filter((x) => x.p);
     if (w.length) I.push(`監控的巨鯨：${w.slice(0, 3).map(({ w: ww, p }) => `${whaleName(ww)} ${p.side}單`).join("、")}${w.length > 3 ? ` 等 ${w.length} 個` : ""}`);
@@ -1956,7 +1986,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const rsi = c.rsi == null ? "-" : Math.round(c.rsi), ex = c.ex24 == null ? "-" : fmtPct(c.ex24, 1);
     if (c.tier === "wait") {
       const L = [`RSI 超過 70（現在 ${rsi}）而且 24h 比大盤多漲 8%（現在 ${ex}）→ 追高風險高`, `24h 比大盤多跌 8%（現在 ${ex}）→ 別碰`];
-      if (c.group) L.push(`${c.group}的龍頭噴出、它還沒跟上 → 可以埋伏`);
+      if (c.group) L.push(`${c.group}的龍頭噴出、它還沒跟上 → 輪動觀察`);
       return L;
     }
     if (c.tier === "buy") return ["漲到龍頭漲幅的一半（算跟上），或龍頭噴出滿 24 小時 → 回到觀望"];
@@ -2007,7 +2037,7 @@ footer { color: var(--ink3); font-size: 12px; }
   // 事件標在 K 線上（使用者 2026-09-27）：換道、TWAP、巨鯨、暴漲原因、上幣、LIQ 放量、族群輪動、突破 20 天高
   function kEvents(c) {
     const E = [], sym = c.sym, add = (ms, pos, shape, color, short, long) => { if (Number.isFinite(ms)) E.push({ ms, pos, shape, color, short, long }); };
-    for (const x of DATA.laneChanges || []) if (x.sym === sym) add(Date.parse(x.t), "aboveBar", "circle", colors[x.to], "→" + NAME[x.to].slice(0, 2), `${x.from ? NAME[x.from] : "新進榜"} → ${NAME[x.to]}`);
+    for (const x of DATA.laneChanges || []) if (x.sym === sym) add(Date.parse(x.t), "aboveBar", "circle", colors.tier(x.to), "→" + NAME[x.to].slice(0, 2), `${x.from ? NAME[x.from] : "新進榜"} → ${NAME[x.to]}`);
     const tw = [...(DATA.twaps?.active || []), ...(DATA.twaps?.ended || [])].filter((g) => g.market !== "美股／HIP-3" && whaleCoin(g.base || g.coin) === sym);
     for (const g of tw) {
       add(g.t, g.buy ? "belowBar" : "aboveBar", g.buy ? "arrowUp" : "arrowDown", g.buy ? colors.buy : colors.avoid, `TWAP${g.buy ? "買" : "賣"}`,
@@ -2145,7 +2175,7 @@ footer { color: var(--ink3); font-size: 12px; }
     if (kLine) kLine.applyOptions({ color: colors.nh });
   }
   function renderCard() {
-    const c = selected.c, col = colors[c.tier];
+    const c = selected.c, col = colors.tier(c.tier);
     const px = priceOf(c), r24 = r24Of(c);
     const plan = DATA.legacy && c.tier === "buy" && c.trigger ? `<div class="plan">
         <div><small>進場：站上</small><b>${fmtPx(c.trigger)}</b></div>
