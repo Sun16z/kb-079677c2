@@ -1289,7 +1289,7 @@ footer { color: var(--ink3); font-size: 12px; }
   setInterval(() => { if (DATA && !document.hidden) renderFeed(); }, 60000);   // 「幾分鐘前」每分鐘更新
   function renderHeader() {
     const cnt = (t) => DATA.coins.filter((c) => c.tier === t).length;
-    const tiles = [["buy", cnt("buy"), NAME.buy], ["nh", chaseList().length, "追強"], ["hot", cnt("hot"), `追高<span class="lng">風險高</span>`], ["avoid", cnt("avoid"), NAME.avoid]];
+    const tiles = [["buy", cnt("buy"), NAME.buy], ["nh", chaseList().length, "追強"], ["hot", cnt("hot"), `過熱<span class="lng">／高波動</span>`], ["avoid", cnt("avoid"), NAME.avoid]];
     $("tally").innerHTML = tiles.map(([t, n, name]) => {
       const w = t === "nh" ? "強牛時勝率約四成、每筆 +5.5%（D115）" : laneWin(t) ? `過去一年 24h 勝率 ${laneWin(t)}` : "";
       return `<button type="button" class="tile t-${t}${n ? "" : " zero"}" data-t="${t}" aria-pressed="${focus?.tier === t}" title="${esc(w)}"><b>${n}</b><span>${name}</span></button>`;
