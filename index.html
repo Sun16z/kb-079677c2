@@ -162,7 +162,20 @@ button { font: inherit; color: inherit; }
 .pop b { color: var(--ink); }
 .pop .seg { justify-self: start; }
 
-/* 決策列：牛熊＋四個數字（手機固定在頂部） */
+/* 頂部 hero：左邊「現在該做什麼」，右邊市況（2026-10-04 整理：要動手的放最前面，其他收到下面或進階） */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 12px; align-items: start; }
+.hero .dbar { flex-direction: column; flex-wrap: nowrap; }
+.hero .dbar .rgd > summary { width: 100%; }
+.sec-head { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; }
+.sec-head h2 { margin: 0; font: 800 16px/1.2 var(--display); letter-spacing: -0.01em; }
+.sec-head small { font-size: 12px; color: var(--ink3); }
+.sec-head .layout-seg { margin-left: auto; }
+.rc details.more-d { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 2px; }
+.rc details.more-d > summary { cursor: pointer; list-style: none; font: 700 12px/1.6 var(--body); color: var(--ink3); }
+.rc details.more-d > summary::-webkit-details-marker { display: none; }
+.rc details.more-d > summary::after { content: " ▾"; }
+.rc details.more-d[open] > summary::after { content: " ▴"; }
+/* 決策列：牛熊＋四個數字 */
 .dbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
 .rgd { position: relative; }
 .rgd > summary { list-style: none; cursor: pointer; height: 100%; display: flex; align-items: center; gap: 12px; padding: 8px 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--panel); }
@@ -516,6 +529,9 @@ footer { color: var(--ink3); font-size: 12px; }
 .banner { background: color-mix(in srgb, var(--avoid) 14%, transparent); color: var(--ink); border: 1px solid color-mix(in srgb, var(--avoid) 40%, transparent); border-radius: 12px; padding: 10px 14px; font-size: 13px; }
 
 @media (max-width: 1100px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .hero .dbar { flex-direction: row; flex-wrap: wrap; }
+  .hero .dbar .rgd { flex: 1 1 260px; }
   .stage { grid-template-columns: minmax(0, 1fr); }
   .rail { max-height: none; overflow: visible; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   .rail .say { grid-column: 1 / -1; }
@@ -524,7 +540,7 @@ footer { color: var(--ink3); font-size: 12px; }
 @media (max-width: 760px) {
   .app { padding-inline: 16px; padding-block: 10px 32px; gap: 10px; }
   .controls { margin-left: auto; }
-  .dbar { position: sticky; top: 0; z-index: 4; background: var(--bg); margin-inline: -16px; padding: 6px 16px 8px; border-bottom: 1px solid var(--line); }
+  .dbar { margin-inline: 0; padding: 0; }
   .rgd { flex: 1 1 100%; }
   .rgd > summary { padding: 6px 12px; }
   .rgd .rg-state { font-size: 18px; }
@@ -537,7 +553,10 @@ footer { color: var(--ink3); font-size: 12px; }
   .controls { order: 1; gap: 6px; }
   .live, .menu > summary { padding: 5px 10px; font-size: 12px; }
   .meta { order: 2; flex: 1 1 100%; font-size: 11.5px; gap: 1px 10px; }
-  .dbar { gap: 6px; padding: 6px 16px; }
+  .dbar { gap: 6px; padding: 0; }
+  .sec-head small { display: none; }
+  .hero .dbar { flex-wrap: nowrap; }
+  .hero .dbar .rgd { flex: 1 1 0; min-width: 0; }
   .rgd { flex: 1 1 0; min-width: 0; }
   .rgd > summary { padding: 6px 10px; gap: 8px; }
   #regime > summary .rg-sub, #regime > summary svg, #ili > summary svg, .ilid .lng { display: none; }
@@ -613,23 +632,28 @@ footer { color: var(--ink3); font-size: 12px; }
     </div>
   </header>
 
-  <section class="todo" id="todo" aria-label="現在該做什麼" hidden></section>
-  <section class="dbar" aria-label="現在的市況與分道">
-    <details class="rgd" id="regime" hidden></details>
-    <details class="rgd ilid" id="ili" hidden></details>
-    <div class="tally" id="tally"></div>
-  </section>
-  <div class="rulebar" id="rulebar" hidden></div>
-  <nav class="feed" id="feed" aria-label="近 4 小時的換道與新訊號" hidden></nav>
+  <div class="hero">
+    <section class="todo" id="todo" aria-label="現在該做什麼" hidden></section>
+    <section class="dbar" aria-label="現在的市況">
+      <details class="rgd" id="regime" hidden></details>
+      <details class="rgd ilid" id="ili" hidden></details>
+      <div class="tally adv" id="tally"></div>
+    </section>
+  </div>
+  <div class="rulebar adv" id="rulebar" hidden></div>
+  <nav class="feed adv" id="feed" aria-label="近 4 小時的換道與新訊號" hidden></nav>
 
   <div id="banner" class="banner" hidden></div>
   <button type="button" id="fresh" class="fresh" hidden>有新資料・點一下更新</button>
   <div class="movers adv" id="movers" hidden></div>
   <nav class="heat adv" id="heat" aria-label="族群 24 小時強弱"></nav>
 
-  <div class="layout-seg seg" id="layoutSeg" role="group" aria-label="顯示方式">
-    <button type="button" data-l="bubble" aria-pressed="true">泡泡</button>
-    <button type="button" data-l="list" aria-pressed="false">清單</button>
+  <div class="sec-head">
+    <h2>所有幣的分類</h2><small>參考用，平常不用看</small>
+    <div class="layout-seg seg" id="layoutSeg" role="group" aria-label="顯示方式">
+      <button type="button" data-l="bubble" aria-pressed="true">泡泡</button>
+      <button type="button" data-l="list" aria-pressed="false">清單</button>
+    </div>
   </div>
   <div class="stage">
     <section class="field" id="field" aria-label="泡泡圖：依穩健、中性、過熱／高波動、急跌分四區">
@@ -639,13 +663,13 @@ footer { color: var(--ink3); font-size: 12px; }
       <div class="card" id="card" hidden role="dialog" aria-live="polite"></div>
     </section>
     <aside class="rail" aria-label="現在可以做什麼">
-      <p class="say" id="head">載入中</p>
+      <p class="say adv" id="head">載入中</p>
       <section class="rc" id="rcIntra" hidden></section>
       <section class="rc" id="rcShort" hidden></section>
       <section class="rc adv" id="rcContra" hidden></section>
-      <section class="rc" id="rcTwap" hidden></section>
-      <section class="rc" id="rcAmbush"></section>
-      <section class="rc" id="rcChase"></section>
+      <section class="rc adv" id="rcTwap" hidden></section>
+      <section class="rc adv" id="rcAmbush"></section>
+      <section class="rc adv" id="rcChase"></section>
       <section class="rc" id="rcEvents"></section>
     </aside>
   </div>
@@ -1301,7 +1325,7 @@ footer { color: var(--ink3); font-size: 12px; }
     if (I?.state === "黃" && lv !== "alert") txt += " ILI 黃燈：多頭後勁變弱，槓桿不要再加。";
     const crowd = crowded();
     if (crowd.length) txt += " 擁擠：" + crowd.map((g) => `${g.group} ${g.n} 顆同時噴（${g.syms.slice(0, 4).join("、")}）`).join("；") + "，追高風險也高。";
-    el.className = `rulebar lv-${lv}${ruleOpen ? " open" : ""}`;
+    el.className = `rulebar adv lv-${lv}${ruleOpen ? " open" : ""}`;
     el.onclick = () => { ruleOpen = !ruleOpen; el.classList.toggle("open", ruleOpen); };
     el.innerHTML = `<b>規則說</b>${crowd.length ? `<i class="crowd">擁擠</i>` : ""}<span>${esc(txt)}${nBuy ? ` 族群輪動事件 ${nBuy} 檔（只當資訊）。` : ""}</span><small>分道只針對做多・不是投資建議</small>`;
   }
@@ -1626,7 +1650,7 @@ footer { color: var(--ink3); font-size: 12px; }
     el.classList.toggle("on-short", !A && dbl.length > 0);
     el.innerHTML = `<h2>現在該做什麼<small>${tpeFull(DATA.updatedAt || DATA.runAt)} 更新</small></h2>${verdict}${holdBlock()}${long}${short}
       ${mkt ? `<div class="act mkt"><b>大盤</b><div><p>${esc(mkt)}</p></div></div>` : ""}
-      <p class="more">只有上面這幾種情況需要動手；下面的泡泡圖、追強、巨鯨等都是參考資訊，不用每次看。</p>`;
+`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
     if (draft != null && $("holdTxt")) $("holdTxt").value = draft;
     el.querySelectorAll("[data-h]").forEach((b) => b.addEventListener("click", (ev) => {
@@ -1655,9 +1679,9 @@ footer { color: var(--ink3); font-size: 12px; }
     const hist = (D.history || []).filter((e) => e.result).slice(-5).reverse().map((e) => `${tpeFull(e.t).slice(0, 11)} ${e.result.avg > 0 ? "+" : ""}${e.result.avg}%（${e.result.wins}/${e.result.n}）`).join("、");
     el.innerHTML = `<h3><span style="color:var(--buy)">日內策略</span><small>驗證中</small></h3>${st}
       ${rows ? `<ol>${rows}</ol>` : ""}
-      <p class="rule">整體 LIQ（CoinKarma 名單 LIQ 中位數）≥ ${D.th} 時，買名單裡 Hyperliquid 流動性前 ${R.picks}；能開 10x 就 10x，否則 5x；價格 +${R.tpPrice}%（10x＝帳面 +100%）才出一半、剩下停損移成本；進場掛停損 −${R.slPrice}%；最多抱 ${R.hold} 小時（${R.hold}h 內碰到 +10% 只有約 ${Math.round(B.hit10 * 100)}%，多數是時間到出場）。<br>
-      回測 ${B.period} 只有 ${B.episodes} 波：10x 每筆平均約 +${B.avg10}%、5x 約 +${B.avg5}%（佔保證金），${Math.round(B.epWin * 100)}% 的波賺錢；任意時間照做 10x 約 +${B.base10}%、一半的波賺錢。隨機抽 20 個時間點約 ${Math.round(B.luck * 100)}% 機率也有這種成績，還不能排除運氣。<br>
-      實際紀錄：${L?.n ? `${L.n} 次，每筆平均 ${L.avg > 0 ? "+" : ""}${L.avg}%，${Math.round(L.epWin * 100)}% 的次數賺錢${hist ? `（最近：${hist}）` : ""}` : "還沒有結算的觸發（每次觸發滿 25 小時自動結算）"}。觸發時會推 Telegram。</p>`;
+      <p class="rule">實際紀錄：${L?.n ? `${L.n} 次，每筆平均 ${L.avg > 0 ? "+" : ""}${L.avg}%，${Math.round(L.epWin * 100)}% 的次數賺錢${hist ? `（最近：${hist}）` : ""}` : "還沒有結算的觸發"}。</p>
+      <details class="more-d"><summary>規則與回測</summary><p class="rule">整體 LIQ（CoinKarma 名單 LIQ 中位數）≥ ${D.th} 時，買名單裡 Hyperliquid 流動性前 ${R.picks}；能開 10x 就 10x，否則 5x；價格 +${R.tpPrice}%（10x＝帳面 +100%）才出一半、剩下停損移成本；進場掛停損 −${R.slPrice}%；最多抱 ${R.hold} 小時（${R.hold}h 內碰到 +10% 只有約 ${Math.round(B.hit10 * 100)}%，多數是時間到出場）。<br>
+      回測 ${B.period} 只有 ${B.episodes} 波：10x 每筆平均約 +${B.avg10}%、5x 約 +${B.avg5}%（佔保證金），${Math.round(B.epWin * 100)}% 的波賺錢；任意時間照做 10x 約 +${B.base10}%、一半的波賺錢。隨機抽 20 個時間點約 ${Math.round(B.luck * 100)}% 機率也有這種成績，還不能排除運氣。每次觸發滿 25 小時自動結算；觸發時會推 Telegram。</p></details>`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
   // 做空觀察（D154，驗證中）：~/short 軋空掃描的做空 ⭐3+；只顯示、不改顏色、不推 TG
@@ -1686,8 +1710,10 @@ footer { color: var(--ink3); font-size: 12px; }
     }).join("<br>");
     el.innerHTML = `<h3><span class="t-avoid">做空觀察</span><small>驗證中｜${D.active.length} 檔</small></h3>
       ${D.active.length ? `<ol>${D.active.map(arow).join("")}</ol>` : `<p class="none">過去 ${D.hold} 小時沒有新的強訊號。</p>`}
+      <p class="rule">雙強實際：${ld.n ? `${ld.n} 次、${Math.round(ld.win24 * 100)}% 賺、${ld.avg24 > 0 ? "+" : ""}${ld.avg24}%` : "還沒結算"}；出現時會推 Telegram。</p>
+      <details class="more-d"><summary>最近結算、成績與說明</summary>
       ${D.recent.length ? `<p class="rule"><b>最近結算（${D.hold}h 後做空報酬，扣手續費、未含資金費率）</b></p><ol>${D.recent.map(rrow).join("")}</ol>` : ""}
-      <p class="rule"><b style="color:var(--avoid)">雙強</b>＝同一檔 24h 內兩種以上強訊號，會推 Telegram：回測 ${BD.period} ${BD.n} 次，24h 後 ${Math.round((BD.win || 0) * 100)}% 下跌、扣費 +${BD.net}%（前後段 ${BD.halves}）；實際 ${ld.n ? `${ld.n} 次、${Math.round(ld.win24 * 100)}% 賺、${ld.avg24 > 0 ? "+" : ""}${ld.avg24}%` : "還沒結算"}。單強只觀察；同時被熱度榜／追高風險／Alpha 反做空標到的，回測表現較差（已被追高、軋空風險大）。<br>${stats}<br>來源：~/short 掃描器（它們的 Telegram 已停推）。回測期間山寨整體偏跌，做空本來就較容易贏；不改分道顏色。</p>`;
+      <p class="rule"><b style="color:var(--avoid)">雙強</b>＝同一檔 24h 內兩種以上強訊號，會推 Telegram：回測 ${BD.period} ${BD.n} 次，24h 後 ${Math.round((BD.win || 0) * 100)}% 下跌、扣費 +${BD.net}%（前後段 ${BD.halves}）；實際 ${ld.n ? `${ld.n} 次、${Math.round(ld.win24 * 100)}% 賺、${ld.avg24 > 0 ? "+" : ""}${ld.avg24}%` : "還沒結算"}。單強只觀察；同時被熱度榜／追高風險／Alpha 反做空標到的，回測表現較差（已被追高、軋空風險大）。<br>${stats}<br>來源：~/short 掃描器（它們的 Telegram 已停推）。回測期間山寨整體偏跌，做空本來就較容易贏；不改分道顏色。</p></details>`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
 
