@@ -1508,25 +1508,32 @@ footer { color: var(--ink3); font-size: 12px; }
     const D = DATA.shortwatch, el = $("rcShort");
     el.hidden = !D;
     if (!D) return;
-    const K = D.kinds || {}, BT = D.bt || {}, LV = D.live || {};
+    const K = D.kinds || {}, BT = D.bt || {}, LV = D.live || {}, BD = D.btDouble || {};
     const onPage = new Set(DATA.coins.map((c) => c.bn));
-    const row = (x) => {
-      const h = Math.round((Date.now() - Date.parse(x.t)) / 3600e3);
-      const tag = `<i class="src">${esc(K[x.kind || "squeeze"] || "")}</i>`;
-      const body = `<b class="dn">${esc(x.base)}</b><span>${tag}${x.stars ? "⭐".repeat(x.stars) + " " : ""}進 ${fmtPx(x.price)}｜${h} 小時前</span><em>${x.res ? `${x.res.r24 > 0 ? "+" : ""}${x.res.r24}%` : `剩 ${Math.max(0, D.hold - h)}h`}</em>
-        <small class="lv">${esc((x.why || []).join("、"))}${x.warn?.length ? `｜${esc(x.warn.join("、"))}` : ""}</small>`;
-      return `<li>${onPage.has(x.sym) ? `<button type="button" class="it" data-sym="${esc(x.base)}">${body}</button>` : `<a class="it" href="https://www.binance.com/zh-TC/futures/${esc(x.sym)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
+    const G = { double: ["雙強", "var(--avoid)"], single: ["單強", "var(--hot)"], weak: ["已被追高", "var(--ink3)"] };
+    const link = (sym, base, body) => onPage.has(sym) ? `<button type="button" class="it" data-sym="${esc(base)}">${body}</button>` : `<a class="it" href="https://www.binance.com/zh-TC/futures/${esc(sym)}" target="_blank" rel="noopener noreferrer">${body}</a>`;
+    const arow = (x) => {
+      const h = Math.round((Date.now() - Date.parse(x.tLast)) / 3600e3), [gl, gc] = G[x.grade] || G.single;
+      const body = `<b class="dn">${esc(x.base)}</b><span><i class="src" style="color:${gc};border-color:${gc}">${gl}</i>${x.kinds.map((k) => esc(K[k] || k)).join("＋")}</span><em>進 ${fmtPx(x.price)}</em>
+        <small class="lv">${h} 小時前｜${esc((x.why || []).join("、"))}${x.weak?.length ? `｜⚠️ ${esc(x.weak.join("、"))}：軋空風險較大` : ""}</small>`;
+      return `<li>${link(x.sym, x.base, body)}</li>`;
     };
+    const rrow = (x) => {
+      const body = `<b class="dn">${esc(x.base)}</b><span><i class="src">${esc(K[x.kind || "squeeze"] || "")}</i>進 ${fmtPx(x.price)}｜${tpeFull(x.t)}</span><em class="${x.res.r24 > 0 ? "up" : "dn"}">${x.res.r24 > 0 ? "+" : ""}${x.res.r24}%</em>`;
+      return `<li>${link(x.sym, x.base, body)}</li>`;
+    };
+    const ld = LV.double || {};
     const stats = Object.keys(K).map((k) => {
       const b = BT[k] || {}, l = LV[k] || {};
-      return `<b>${esc(K[k])}</b>：回測 ${b.period} ${b.n} 次，24h 扣費勝率 ${Math.round((b.win || 0) * 100)}%、平均 +${b.net}%（前後段 ${b.halves}）；實際 ${l.n ? `${l.n} 次、${Math.round(l.win24 * 100)}% 賺、平均 ${l.avg24 > 0 ? "+" : ""}${l.avg24}%` : "還沒有結算"}`;
+      return `<b>${esc(K[k])}</b>：回測 ${b.n} 次扣費勝率 ${Math.round((b.win || 0) * 100)}%、+${b.net}%；實際 ${l.n ? `${l.n} 次、${Math.round(l.win24 * 100)}% 賺、${l.avg24 > 0 ? "+" : ""}${l.avg24}%` : "還沒結算"}`;
     }).join("<br>");
-    el.innerHTML = `<h3><span class="t-avoid">做空觀察</span><small>驗證中｜${D.active.length} 個進行中</small></h3>
-      ${D.active.length ? `<ol>${D.active.map(row).join("")}</ol>` : `<p class="none">過去 ${D.hold} 小時沒有新的做空訊號。</p>`}
-      ${D.recent.length ? `<p class="rule"><b>最近結算（${D.hold}h 後做空報酬，扣手續費、未含資金費率）</b></p><ol>${D.recent.map(row).join("")}</ol>` : ""}
-      <p class="rule">來源：~/short 三個掃描器裡回測有效的做空訊號（它們的 Telegram 已全部停推）。<br>${stats}<br>這段回測期間山寨整體偏跌，做空本來就較容易贏；只做觀察，不改分道顏色。</p>`;
+    el.innerHTML = `<h3><span class="t-avoid">做空觀察</span><small>驗證中｜${D.active.length} 檔</small></h3>
+      ${D.active.length ? `<ol>${D.active.map(arow).join("")}</ol>` : `<p class="none">過去 ${D.hold} 小時沒有新的強訊號。</p>`}
+      ${D.recent.length ? `<p class="rule"><b>最近結算（${D.hold}h 後做空報酬，扣手續費、未含資金費率）</b></p><ol>${D.recent.map(rrow).join("")}</ol>` : ""}
+      <p class="rule"><b style="color:var(--avoid)">雙強</b>＝同一檔 24h 內兩種以上強訊號，會推 Telegram：回測 ${BD.period} ${BD.n} 次，24h 後 ${Math.round((BD.win || 0) * 100)}% 下跌、扣費 +${BD.net}%（前後段 ${BD.halves}）；實際 ${ld.n ? `${ld.n} 次、${Math.round(ld.win24 * 100)}% 賺、${ld.avg24 > 0 ? "+" : ""}${ld.avg24}%` : "還沒結算"}。單強只觀察；同時被熱度榜／追高風險／Alpha 反做空標到的，回測表現較差（已被追高、軋空風險大）。<br>${stats}<br>來源：~/short 掃描器（它們的 Telegram 已停推）。回測期間山寨整體偏跌，做空本來就較容易贏；不改分道顏色。</p>`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
+
 
   function renderRailTwap() {
     const T = DATA.twaps, el = $("rcTwap");
