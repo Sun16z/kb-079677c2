@@ -90,6 +90,18 @@ button { font: inherit; color: inherit; }
 .todo.on { border-color: color-mix(in srgb, var(--buy) 50%, var(--line)); }
 .todo.on-short { border-color: color-mix(in srgb, var(--avoid) 50%, var(--line)); }
 .todo .more { font-size: 11.5px; color: var(--ink3); margin: 0; }
+.todo .act.hold > b { color: var(--liq); background: color-mix(in srgb, var(--liq) 12%, transparent); }
+.todo .hrow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; padding: 6px 8px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 4%, transparent); border: 0; width: 100%; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.todo .hrow.warn { box-shadow: inset 3px 0 0 var(--hot); } .todo .hrow.alert { box-shadow: inset 3px 0 0 var(--avoid); } .todo .hrow.ok { box-shadow: inset 3px 0 0 var(--ink3); }
+.todo .hrow b { font: 800 15px/1.3 var(--display); }
+.todo .hrow > span { font-size: 12.5px; color: var(--ink2); min-width: 0; }
+.todo .hrow > em { font: 700 12.5px var(--mono); font-style: normal; white-space: nowrap; }
+.todo .hrow > small { grid-column: 1 / -1; font-size: 12.5px; color: var(--ink); line-height: 1.5; }
+.todo .hedit { display: grid; gap: 6px; }
+.todo .hedit textarea { width: 100%; min-height: 64px; resize: vertical; font: 500 14px/1.5 var(--mono); color: var(--ink); background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 8px; }
+.todo .hbtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.todo .hbtns button, .todo .hset { font: 700 12.5px var(--body); color: var(--ink); background: color-mix(in srgb, var(--ink) 7%, transparent); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.todo .hbtns button.pri { background: color-mix(in srgb, var(--liq) 18%, transparent); border-color: color-mix(in srgb, var(--liq) 45%, var(--line)); }
 .rulebar { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 9px 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); font-size: 13.5px; line-height: 1.55; color: var(--ink); }
 .rulebar > b { font: 800 13px/1.55 var(--display); letter-spacing: .02em; white-space: nowrap; }
 .rulebar > span { flex: 1 1 320px; min-width: 0; }
@@ -1506,9 +1518,90 @@ footer { color: var(--ink3); font-size: 12px; }
       renderContra();
     }));
   }
+  // ---------- 我的持倉（使用者 2026-10-04）：只存在這台裝置的瀏覽器，不上傳 ----------
+  let holds = [], holdEdit = false;
+  try { holds = JSON.parse(localStorage.getItem("jb-hold") || "[]"); } catch (_) { holds = []; }
+  const saveHolds = () => { try { localStorage.setItem("jb-hold", JSON.stringify(holds)); } catch (_) {} };
+  const holdText = () => holds.map((h) => `${h.sym} ${h.side === "short" ? "空" : "多"}${h.entry ? " " + h.entry : ""}`).join("\n");
+  function parseHolds(txt) {
+    const out = [];
+    for (const part of txt.split(/[\n,，、;；]+/)) {
+      const tk = part.trim().split(/\s+/).filter(Boolean);
+      if (!tk.length) continue;
+      let sym = tk[0].toUpperCase().replace(/USDT$|\/USDT$|-USD$/, "").replace(/^1000(?=[A-Z])/, "");
+      if (!/^[A-Z0-9]{1,15}$/.test(sym)) continue;
+      let side = "long", entry = null;
+      for (const t of tk.slice(1)) {
+        if (/^(空|short|s|做空)$/i.test(t)) side = "short";
+        else if (/^(多|long|l|做多)$/i.test(t)) side = "long";
+        else if (/^\d*\.?\d+$/.test(t)) entry = parseFloat(t);
+      }
+      if (!out.some((h) => h.sym === sym && h.side === side)) out.push({ sym, side, entry });
+    }
+    return out.slice(0, 20);
+  }
+  // 每一檔現在怎麼辦：只用驗證過的訊號（分道 v2、做空觀察、日內策略）；level：alert（要處理）／warn（留意）／ok（不用動）
+  function holdAdvice(h) {
+    const c = DATA.coins.find((x) => x.sym === h.sym);
+    const sw = (DATA.shortwatch?.active || []).find((x) => x.base.replace(/^1000/, "") === h.sym);
+    const A = DATA.intraday?.active, inLong = A && (A.picks || []).some((p) => p.sym === h.sym);
+    const V = laneStats()?.lanes || {}, pct = (k) => V[k] ? Math.round(V[k].b72 * 100) + "%" : "-";
+    if (h.side === "long") {
+      if (sw?.grade === "double") return ["alert", `出現做空雙強（${sw.kinds.map((k) => DATA.shortwatch.kinds[k]).join("＋")}）：回測 24h 後 81% 下跌，考慮減碼或先把停損拉近。`];
+      if (!c) return ["ok", "不在泡泡圖名單裡，沒有分道資料；有設停損就照停損走。"];
+      if (c.tier === "avoid") return ["alert", `急跌中：今年這種時候 72h 只有 ${pct("急跌")} 跑贏大盤。別攤平加碼，照停損走。`];
+      if (c.tier === "hot" && c.reason !== "highvol") return ["warn", `${c.reason === "leader" ? "族群龍頭剛噴" : "過熱（RSI>70、24h 多漲 8%）"}：今年之後 72h 只有 ${pct("過熱")} 跑贏大盤，可以分批落袋，別再加碼。`];
+      if (sw) return ["warn", `有做空訊號（${DATA.shortwatch.kinds[sw.kinds[0]]}，單強）：留意，停損別放太遠。`];
+      if (c.tier === "hot") return ["warn", `波動很大：今年這類 72h 只有 ${pct("高波動")} 跑贏大盤，部位別太大、停損要掛。`];
+      if (inLong) return ["ok", "日內做多策略觸發中，這檔也在名單裡：照原計畫抱。"];
+      if (isNH(c) && strongBull() && nhGood(c)) return ["ok", "剛創新高、符合追強條件：可以續抱，從最高收盤回落 20% 再出。"];
+      return ["ok", c.tier === "buy" ? "穩健：不用動。" : "中性：沒有特別訊號，不用動。"];
+    }
+    if (sw?.grade === "double") return ["ok", "做空雙強還在：照 24h 計畫，停損照設。"];
+    if (A) return ["warn", `日內做多策略觸發中（整體 LIQ ${A.med.toFixed(2)}，大盤偏多）：空單小心，停損拉近。`];
+    if (!c) return sw ? ["ok", "做空訊號還在（單強）：照計畫。"] : ["ok", "不在泡泡圖名單裡，沒有分道資料；照你的停損走。"];
+    if (c.tier === "hot" && c.reason !== "highvol") return ["warn", "過熱中，空單有被軋的風險：停損一定要掛。"];
+    if (c.tier === "avoid") return ["ok", "還在急跌，對空單有利：可以把停損移到成本。"];
+    if (sw) return ["ok", "做空訊號還在（單強）：照計畫。"];
+    return ["ok", "沒有特別訊號：照你的停損走。"];
+  }
+  function holdRow(h) {
+    const c = DATA.coins.find((x) => x.sym === h.sym), [lv, msg] = holdAdvice(h);
+    const px = c ? priceOf(c) : null, r = c ? r24Of(c) : (DATA.contra?.chg || {})[h.sym];
+    const pnl = h.entry && px ? ((px / h.entry - 1) * (h.side === "short" ? -1 : 1) * 100) : null;
+    return `<button type="button" class="hrow ${lv}" data-sym="${esc(h.sym)}"><b class="${h.side === "short" ? "dn" : "up"}">${esc(h.sym)}</b>
+      <span>${h.side === "short" ? "空" : "多"}${h.entry ? `｜進 ${fmtPx(h.entry)}` : ""}${px ? `｜現 <i class="hpx" data-sym="${esc(h.sym)}">${fmtPx(px)}</i>` : ""}${r != null ? `｜24h ${fmtPct(r, 1)}` : ""}</span>
+      <em class="${pnl == null ? "" : pnl >= 0 ? "up" : "dn"}" data-pnl="${esc(h.sym)}">${pnl == null ? "" : `${pnl >= 0 ? "+" : ""}${pnl.toFixed(1)}%`}</em>
+      <small>${esc(msg)}</small></button>`;
+  }
+  function holdBlock() {
+    if (holdEdit) return `<div class="act hold"><b>持倉</b><div class="hedit">
+        <textarea id="holdTxt" placeholder="一行一檔：幣名 多／空 進場價（進場價可省略）&#10;ETH 多 2650&#10;SOL 空">${esc(holdText())}</textarea>
+        <div class="hbtns"><button type="button" class="pri" data-h="save">儲存</button><button type="button" data-h="cancel">取消</button>${holds.length ? `<button type="button" data-h="clear">全部清除</button>` : ""}</div>
+        <small>只存在這台裝置的瀏覽器，不會上傳；手機和電腦要各輸入一次。盈虧不含槓桿與手續費。</small></div></div>`;
+    if (!holds.length) return `<div class="act hold idle"><b>持倉</b><div><p>還沒設定。輸入你手上的幣，這裡會告訴你每一檔現在要不要處理。 <button type="button" class="hset" data-h="edit">設定我的持倉</button></p></div></div>`;
+    const rows = holds.map(holdRow).join("");
+    const n = holds.map(holdAdvice).filter(([lv]) => lv !== "ok").length;
+    return `<div class="act hold"><b>持倉</b><div><p>${n ? `${n} 檔要留意：` : "都不用動："} <button type="button" class="hset" data-h="edit">編輯</button></p>${rows}</div></div>`;
+  }
+  // 持倉列的現價和盈虧跟著即時價格更新（不重畫整塊，避免打斷）
+  setInterval(() => {
+    if (!DATA || holdEdit || !holds.length) return;
+    for (const h of holds) {
+      const c = DATA.coins.find((x) => x.sym === h.sym);
+      if (!c) continue;
+      const px = priceOf(c);
+      document.querySelectorAll(`.hpx[data-sym="${h.sym}"]`).forEach((e) => { e.textContent = fmtPx(px); });
+      if (h.entry) {
+        const pnl = (px / h.entry - 1) * (h.side === "short" ? -1 : 1) * 100;
+        document.querySelectorAll(`[data-pnl="${h.sym}"]`).forEach((e) => { e.textContent = `${pnl >= 0 ? "+" : ""}${pnl.toFixed(1)}%`; e.className = pnl >= 0 ? "up" : "dn"; });
+      }
+    }
+  }, 3000);
   // 最上面「現在該做什麼」（使用者 2026-10-04：打開不知道要做什麼）：只放要動手的事，其他都在下面當參考
   function renderTodo() {
     const el = $("todo"), I = DATA.intraday, S = DATA.shortwatch, R = DATA.regime, IL = DATA.ili;
+    const draft = holdEdit ? $("holdTxt")?.value : null;            // 資料更新時正在打字：保留草稿
     if (!I && !S) { el.hidden = true; return; }
     el.hidden = false;
     const A = I?.active, dbl = (S?.active || []).filter((x) => x.grade === "double");
@@ -1527,13 +1620,25 @@ footer { color: var(--ink3); font-size: 12px; }
     let mkt = "";
     if (IL?.state === "紅") mkt = "ILI 紅燈：BTC 創高但機構資金沒跟上，不開新槓桿。";
     else if (R?.state === "強熊") mkt = "強熊：多數時間拿現金，單日反彈不算轉強。";
-    const verdict = A || dbl.length ? "" : `<p class="verdict-line">現在不用動。</p>`;
+    const holdWarn = holds.map(holdAdvice).filter(([lv]) => lv !== "ok").length;
+    const verdict = A || dbl.length || holdWarn ? "" : `<p class="verdict-line">現在不用動。</p>`;
     el.classList.toggle("on", !!A);
     el.classList.toggle("on-short", !A && dbl.length > 0);
-    el.innerHTML = `<h2>現在該做什麼<small>${tpeFull(DATA.updatedAt || DATA.runAt)} 更新</small></h2>${verdict}${long}${short}
+    el.innerHTML = `<h2>現在該做什麼<small>${tpeFull(DATA.updatedAt || DATA.runAt)} 更新</small></h2>${verdict}${holdBlock()}${long}${short}
       ${mkt ? `<div class="act mkt"><b>大盤</b><div><p>${esc(mkt)}</p></div></div>` : ""}
-      <p class="more">只有這兩種情況需要動手；下面的泡泡圖、追強、巨鯨等都是參考資訊，不用每次看。</p>`;
+      <p class="more">只有上面這幾種情況需要動手；下面的泡泡圖、追強、巨鯨等都是參考資訊，不用每次看。</p>`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
+    if (draft != null && $("holdTxt")) $("holdTxt").value = draft;
+    el.querySelectorAll("[data-h]").forEach((b) => b.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const k = b.dataset.h;
+      if (k === "edit") holdEdit = true;
+      else if (k === "cancel") holdEdit = false;
+      else if (k === "clear") { holds = []; saveHolds(); holdEdit = false; }
+      else if (k === "save") { holds = parseHolds($("holdTxt").value); saveHolds(); holdEdit = false; }
+      renderTodo();
+      if (k === "edit") $("holdTxt")?.focus();
+    }));
   }
   // 日內策略 v1（D153，驗證中）：整體 LIQ ≥ 2 觸發，流動性前 5、10x／5x、帳面 +10% 出一半
   function renderRailIntra() {
