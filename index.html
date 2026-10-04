@@ -71,7 +71,9 @@ button { font: inherit; color: inherit; }
 .todo { min-width: 0; display: grid; gap: 8px; padding: 12px 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); }
 .todo > h2 { margin: 0; display: flex; align-items: baseline; gap: 10px; font: 800 17px/1.25 var(--display); }
 .todo > h2 small { font: 500 11.5px var(--mono); color: var(--ink3); }
-.todo .verdict-line { margin: 0; font: 800 20px/1.3 var(--display); }
+.todo .verdict-line { margin: 0; font: 900 22px/1.3 var(--display); color: var(--avoid); text-shadow: 0 0 10px color-mix(in srgb, var(--avoid) 55%, transparent); animation: idleGlow 1.6s ease-in-out infinite; }
+@keyframes idleGlow { 0%, 100% { opacity: 1; text-shadow: 0 0 12px color-mix(in srgb, var(--avoid) 70%, transparent); } 50% { opacity: .55; text-shadow: 0 0 2px color-mix(in srgb, var(--avoid) 20%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .todo .verdict-line { animation: none; } }
 .todo .act { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 12px; align-items: start; padding-top: 8px; border-top: 1px solid var(--line); }
 .todo .act > b { font: 800 13px/1.6 var(--display); text-align: center; border-radius: 8px; padding: 1px 0; }
 .todo .act.long > b { color: var(--buy); background: color-mix(in srgb, var(--buy) 12%, transparent); }
