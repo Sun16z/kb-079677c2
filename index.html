@@ -184,6 +184,10 @@ button { font: inherit; color: inherit; }
 .rc { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; display: grid; gap: 4px; min-width: 0; }
 .rc h3 { margin: 0 0 2px; display: flex; align-items: baseline; gap: 8px; font: 800 14px/1.2 var(--display); }
 .rc h3 small { font: 500 11.5px var(--mono); color: var(--ink3); }
+.rc.on { border-color: color-mix(in srgb, var(--buy) 55%, var(--line)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--buy) 25%, transparent); }
+.rc .intra-st { font: 700 13px/1.4 var(--body); }
+.rc .intra-st b { font-family: var(--mono); }
+.rc .it small.lv { font: 500 11.5px var(--mono); color: var(--ink3); grid-column: 2 / -1; white-space: normal; }
 .rc ol { list-style: none; margin: 0; padding: 0; display: grid; }
 .rc li + li { border-top: 1px solid var(--line); }
 .rc .it { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 10px; align-items: baseline; width: 100%; text-align: left; background: none; border: 0; padding: 7px 2px; cursor: pointer; color: inherit; text-decoration: none; border-radius: 8px; }
@@ -601,6 +605,7 @@ footer { color: var(--ink3); font-size: 12px; }
     </section>
     <aside class="rail" aria-label="現在可以做什麼">
       <p class="say" id="head">載入中</p>
+      <section class="rc" id="rcIntra" hidden></section>
       <section class="rc adv" id="rcContra" hidden></section>
       <section class="rc" id="rcTwap" hidden></section>
       <section class="rc" id="rcAmbush"></section>
@@ -790,7 +795,7 @@ footer { color: var(--ink3); font-size: 12px; }
       return n;
     });
     if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
-    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderRailTwap(); renderRail(); renderContra(); nhSig = ""; renderNH(); renderTabs(); layout(first); renderList();
+    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderRailTwap(); renderRailIntra(); renderRail(); renderContra(); nhSig = ""; renderNH(); renderTabs(); layout(first); renderList();
     if (selected) renderCard(); else card.hidden = true;
   }
 
@@ -1476,6 +1481,26 @@ footer { color: var(--ink3); font-size: 12px; }
       try { localStorage.setItem("kb-contra", contraWin); } catch (_) {}
       renderContra();
     }));
+  }
+  // 日內策略 v1（D153，驗證中）：整體 LIQ ≥ 2 觸發，流動性前 5、10x／5x、帳面 +10% 出一半
+  function renderRailIntra() {
+    const D = DATA.intraday, el = $("rcIntra");
+    el.hidden = !D;
+    if (!D) return;
+    const A = D.active, nw = D.now, R = D.rule, B = D.bt, L = D.live;
+    el.classList.toggle("on", !!A);
+    const left = A ? Math.max(0, Math.round(R.hold - (Date.now() - Date.parse(A.t)) / 3600e3)) : 0;
+    const st = A ? `<p class="intra-st" style="color:var(--buy)">觸發中：整體 LIQ <b>${A.med.toFixed(2)}</b>（${tpeFull(A.t)}），最多再抱 ${left} 小時</p>`
+      : `<p class="intra-st">未觸發：整體 LIQ <b>${nw?.med == null ? "-" : nw.med.toFixed(2)}</b>，需 ≥ ${D.th}</p>`;
+    const rows = (A?.picks || []).map((p) => `<li><button type="button" class="it" data-sym="${esc(p.sym)}"><b class="up">${esc(p.sym)}</b><span>${p.lev}x｜進 ${fmtPx(p.price)}</span><em>+${p.tpPct}% 出半</em>
+      <small class="lv">漲到 ${fmtPx(p.tp)}（帳面 +${p.tpRoe}%）出一半 → 剩下停損移成本｜停損 ${fmtPx(p.sl)}（−${R.slPrice}%，帳面 −${p.slRoe}%）｜沒碰到就 ${R.hold}h 到時出場</small></button></li>`).join("");
+    const hist = (D.history || []).filter((e) => e.result).slice(-5).reverse().map((e) => `${tpeFull(e.t).slice(0, 11)} ${e.result.avg > 0 ? "+" : ""}${e.result.avg}%（${e.result.wins}/${e.result.n}）`).join("、");
+    el.innerHTML = `<h3><span style="color:var(--buy)">日內策略</span><small>驗證中</small></h3>${st}
+      ${rows ? `<ol>${rows}</ol>` : ""}
+      <p class="rule">整體 LIQ（CoinKarma 名單 LIQ 中位數）≥ ${D.th} 時，買名單裡 Hyperliquid 流動性前 ${R.picks}；能開 10x 就 10x，否則 5x；價格 +${R.tpPrice}%（10x＝帳面 +100%）才出一半、剩下停損移成本；進場掛停損 −${R.slPrice}%；最多抱 ${R.hold} 小時（${R.hold}h 內碰到 +10% 只有約 ${Math.round(B.hit10 * 100)}%，多數是時間到出場）。<br>
+      回測 ${B.period} 只有 ${B.episodes} 波：10x 每筆平均約 +${B.avg10}%、5x 約 +${B.avg5}%（佔保證金），${Math.round(B.epWin * 100)}% 的波賺錢；任意時間照做 10x 約 +${B.base10}%、一半的波賺錢。隨機抽 20 個時間點約 ${Math.round(B.luck * 100)}% 機率也有這種成績，還不能排除運氣。<br>
+      實際紀錄：${L?.n ? `${L.n} 次，每筆平均 ${L.avg > 0 ? "+" : ""}${L.avg}%，${Math.round(L.epWin * 100)}% 的次數賺錢${hist ? `（最近：${hist}）` : ""}` : "還沒有結算的觸發（每次觸發滿 25 小時自動結算）"}。觸發時會推 Telegram。</p>`;
+    el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
   function renderRailTwap() {
     const T = DATA.twaps, el = $("rcTwap");
