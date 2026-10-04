@@ -1508,21 +1508,26 @@ footer { color: var(--ink3); font-size: 12px; }
     const D = DATA.shortwatch, el = $("rcShort");
     el.hidden = !D;
     if (!D) return;
-    const B = D.bt, L = D.live;
+    const K = D.kinds || {}, BT = D.bt || {}, LV = D.live || {};
     const onPage = new Set(DATA.coins.map((c) => c.bn));
     const row = (x) => {
       const h = Math.round((Date.now() - Date.parse(x.t)) / 3600e3);
-      const body = `<b class="dn">${esc(x.base)}</b><span>${"⭐".repeat(x.stars)} ${esc(x.stage || "")}｜進 ${fmtPx(x.price)}｜${h} 小時前</span><em>${x.res ? `${x.res.r24 > 0 ? "+" : ""}${x.res.r24}%` : `剩 ${Math.max(0, D.hold - h)}h`}</em>
+      const tag = `<i class="src">${esc(K[x.kind || "squeeze"] || "")}</i>`;
+      const body = `<b class="dn">${esc(x.base)}</b><span>${tag}${x.stars ? "⭐".repeat(x.stars) + " " : ""}進 ${fmtPx(x.price)}｜${h} 小時前</span><em>${x.res ? `${x.res.r24 > 0 ? "+" : ""}${x.res.r24}%` : `剩 ${Math.max(0, D.hold - h)}h`}</em>
         <small class="lv">${esc((x.why || []).join("、"))}${x.warn?.length ? `｜${esc(x.warn.join("、"))}` : ""}</small>`;
       return `<li>${onPage.has(x.sym) ? `<button type="button" class="it" data-sym="${esc(x.base)}">${body}</button>` : `<a class="it" href="https://www.binance.com/zh-TC/futures/${esc(x.sym)}" target="_blank" rel="noopener noreferrer">${body}</a>`}</li>`;
     };
+    const stats = Object.keys(K).map((k) => {
+      const b = BT[k] || {}, l = LV[k] || {};
+      return `<b>${esc(K[k])}</b>：回測 ${b.period} ${b.n} 次，24h 扣費勝率 ${Math.round((b.win || 0) * 100)}%、平均 +${b.net}%（前後段 ${b.halves}）；實際 ${l.n ? `${l.n} 次、${Math.round(l.win24 * 100)}% 賺、平均 ${l.avg24 > 0 ? "+" : ""}${l.avg24}%` : "還沒有結算"}`;
+    }).join("<br>");
     el.innerHTML = `<h3><span class="t-avoid">做空觀察</span><small>驗證中｜${D.active.length} 個進行中</small></h3>
-      ${D.active.length ? `<ol>${D.active.map(row).join("")}</ol>` : `<p class="none">過去 ${D.hold} 小時沒有軋空掃描的做空 ⭐${D.minStars}+ 訊號。</p>`}
-      ${D.recent.length ? `<p class="rule"><b>最近結算（24h 後，做空報酬，扣手續費）</b></p><ol>${D.recent.map(row).join("")}</ol>` : ""}
-      <p class="rule">來源：~/short 軋空掃描器的做空 ⭐${D.minStars}+（它的 Telegram 已停推）。回測 ${B.period} ${B.n} 次：24h 後 ${Math.round(B.win24 * 100)}% 下跌（同批觀望的幣做空 ${Math.round(B.base24 * 100)}%），扣資金費率和手續費平均 +${B.net24}%，前後段勝率 ${B.halves}，但平均報酬大多來自前段。<br>
-      實際紀錄：${L.n ? `${L.n} 次，24h ${Math.round(L.win24 * 100)}% 下跌，平均 ${L.avg24 > 0 ? "+" : ""}${L.avg24}%` : "還沒有結算的訊號（每次滿 24 小時自動結算）"}。只做觀察，不改分道顏色。</p>`;
+      ${D.active.length ? `<ol>${D.active.map(row).join("")}</ol>` : `<p class="none">過去 ${D.hold} 小時沒有新的做空訊號。</p>`}
+      ${D.recent.length ? `<p class="rule"><b>最近結算（${D.hold}h 後做空報酬，扣手續費、未含資金費率）</b></p><ol>${D.recent.map(row).join("")}</ol>` : ""}
+      <p class="rule">來源：~/short 三個掃描器裡回測有效的做空訊號（它們的 Telegram 已全部停推）。<br>${stats}<br>這段回測期間山寨整體偏跌，做空本來就較容易贏；只做觀察，不改分道顏色。</p>`;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
+
   function renderRailTwap() {
     const T = DATA.twaps, el = $("rcTwap");
     const all = (T?.active || []).filter((g) => leftOf(g) > 0);
