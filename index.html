@@ -68,6 +68,26 @@ button { font: inherit; color: inherit; }
 .t-buy { color: var(--obs); } .t-wait { color: var(--wait); } .t-hot { color: var(--hot); } .t-avoid { color: var(--avoid); } .t-nh { color: var(--nh); }
 
 /* 第一階段（2026-09-27）：規則說、剛剛變了什麼、卡片判斷 */
+.todo { min-width: 0; display: grid; gap: 8px; padding: 12px 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); }
+.todo > h2 { margin: 0; display: flex; align-items: baseline; gap: 10px; font: 800 17px/1.25 var(--display); }
+.todo > h2 small { font: 500 11.5px var(--mono); color: var(--ink3); }
+.todo .verdict-line { margin: 0; font: 800 20px/1.3 var(--display); }
+.todo .act { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 4px 12px; align-items: start; padding-top: 8px; border-top: 1px solid var(--line); }
+.todo .act > b { font: 800 13px/1.6 var(--display); text-align: center; border-radius: 8px; padding: 1px 0; }
+.todo .act.long > b { color: var(--buy); background: color-mix(in srgb, var(--buy) 12%, transparent); }
+.todo .act.short > b { color: var(--avoid); background: color-mix(in srgb, var(--avoid) 12%, transparent); }
+.todo .act.mkt > b { color: var(--hot); background: color-mix(in srgb, var(--hot) 12%, transparent); }
+.todo .act.idle > b { color: var(--ink3); background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.todo .act > div { min-width: 0; display: grid; gap: 4px; font-size: 13.5px; line-height: 1.5; }
+.todo .act.idle > div { color: var(--ink2); }
+.todo .act p { margin: 0; }
+.todo .act small { color: var(--ink3); font-size: 11.5px; }
+.todo .pick { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; align-items: baseline; padding: 6px 8px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 4%, transparent); border: 0; text-align: left; color: inherit; font: inherit; cursor: pointer; width: 100%; }
+.todo .pick b { font: 800 15px/1.3 var(--display); }
+.todo .pick span { font: 500 12.5px/1.45 var(--mono); color: var(--ink2); overflow-wrap: anywhere; }
+.todo.on { border-color: color-mix(in srgb, var(--buy) 50%, var(--line)); }
+.todo.on-short { border-color: color-mix(in srgb, var(--avoid) 50%, var(--line)); }
+.todo .more { font-size: 11.5px; color: var(--ink3); margin: 0; }
 .rulebar { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 9px 14px; border-radius: var(--r); border: 1px solid var(--line); background: var(--panel); font-size: 13.5px; line-height: 1.55; color: var(--ink); }
 .rulebar > b { font: 800 13px/1.55 var(--display); letter-spacing: .02em; white-space: nowrap; }
 .rulebar > span { flex: 1 1 320px; min-width: 0; }
@@ -579,6 +599,7 @@ footer { color: var(--ink3); font-size: 12px; }
     </div>
   </header>
 
+  <section class="todo" id="todo" aria-label="現在該做什麼" hidden></section>
   <section class="dbar" aria-label="現在的市況與分道">
     <details class="rgd" id="regime" hidden></details>
     <details class="rgd ilid" id="ili" hidden></details>
@@ -796,7 +817,7 @@ footer { color: var(--ink3); font-size: 12px; }
       return n;
     });
     if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
-    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderRailTwap(); renderRailIntra(); renderRailShort(); renderRail(); renderContra(); nhSig = ""; renderNH(); renderTabs(); layout(first); renderList();
+    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderTodo(); renderRailTwap(); renderRailIntra(); renderRailShort(); renderRail(); renderContra(); nhSig = ""; renderNH(); renderTabs(); layout(first); renderList();
     if (selected) renderCard(); else card.hidden = true;
   }
 
@@ -1482,6 +1503,35 @@ footer { color: var(--ink3); font-size: 12px; }
       try { localStorage.setItem("kb-contra", contraWin); } catch (_) {}
       renderContra();
     }));
+  }
+  // 最上面「現在該做什麼」（使用者 2026-10-04：打開不知道要做什麼）：只放要動手的事，其他都在下面當參考
+  function renderTodo() {
+    const el = $("todo"), I = DATA.intraday, S = DATA.shortwatch, R = DATA.regime, IL = DATA.ili;
+    if (!I && !S) { el.hidden = true; return; }
+    el.hidden = false;
+    const A = I?.active, dbl = (S?.active || []).filter((x) => x.grade === "double");
+    const K = S?.kinds || {}, hold = I?.rule?.hold || 24;
+    const until = (t) => tpeFull(new Date(Date.parse(t) + hold * 3600e3).toISOString());
+    const long = A ? `<div class="act long"><b>做多</b><div>
+        <p>日內策略觸發（整體 LIQ ${A.med.toFixed(2)}）。照下面掛單，最多抱到 <b>${until(A.t)}</b>：</p>
+        ${(A.picks || []).map((p) => `<button type="button" class="pick" data-sym="${esc(p.sym)}"><b>${esc(p.sym)}</b><span>${p.lev}x｜進 ${fmtPx(p.price)}｜漲到 ${fmtPx(p.tp)} 出一半（帳面 +${p.tpRoe}%）｜停損 ${fmtPx(p.sl)}（帳面 −${p.slRoe}%）</span></button>`).join("")}
+        <small>出一半後，剩下的停損移到進場價。回測只有 ${I.bt.episodes} 波、還在驗證。</small></div></div>`
+      : `<div class="act idle"><b>做多</b><div><p>不用做多。整體 LIQ <b>${I?.now?.med == null ? "-" : I.now.med.toFixed(2)}</b>，到 ${I?.th ?? 2} 才觸發日內策略（觸發會推 Telegram）。</p></div></div>`;
+    const short = dbl.length ? `<div class="act short"><b>做空</b><div>
+        <p>出現雙強（兩種強訊號同時亮），看 24 小時、停損自己先設：</p>
+        ${dbl.map((x) => `<button type="button" class="pick" data-sym="${esc(x.base)}"><b>${esc(x.base)}</b><span>訊號價 ${fmtPx(x.price)}｜${x.kinds.map((k) => esc(K[k] || k)).join("＋")}${x.weak?.length ? `｜⚠️ 已被追高（${esc(x.weak.join("、"))}），軋空風險較大` : ""}</span></button>`).join("")}
+        <small>回測 ${S.btDouble.n} 次、還在驗證；同類幣一起噴時會一起被軋。</small></div></div>`
+      : `<div class="act idle"><b>做空</b><div><p>不用做空。目前沒有雙強${(S?.active || []).length ? `（單強 ${(S.active || []).length} 檔只觀察，在下方「做空觀察」）` : ""}。</p></div></div>`;
+    let mkt = "";
+    if (IL?.state === "紅") mkt = "ILI 紅燈：BTC 創高但機構資金沒跟上，不開新槓桿。";
+    else if (R?.state === "強熊") mkt = "強熊：多數時間拿現金，單日反彈不算轉強。";
+    const verdict = A || dbl.length ? "" : `<p class="verdict-line">現在不用動。</p>`;
+    el.classList.toggle("on", !!A);
+    el.classList.toggle("on-short", !A && dbl.length > 0);
+    el.innerHTML = `<h2>現在該做什麼<small>${tpeFull(DATA.updatedAt || DATA.runAt)} 更新</small></h2>${verdict}${long}${short}
+      ${mkt ? `<div class="act mkt"><b>大盤</b><div><p>${esc(mkt)}</p></div></div>` : ""}
+      <p class="more">只有這兩種情況需要動手；下面的泡泡圖、追強、巨鯨等都是參考資訊，不用每次看。</p>`;
+    el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
   }
   // 日內策略 v1（D153，驗證中）：整體 LIQ ≥ 2 觸發，流動性前 5、10x／5x、帳面 +10% 出一半
   function renderRailIntra() {
