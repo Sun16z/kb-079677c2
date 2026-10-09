@@ -1426,10 +1426,13 @@ footer { color: var(--ink3); font-size: 12px; }
     const ymd = (t) => t ? `${t.slice(0, 4)}/${+t.slice(5, 7)}/${+t.slice(8, 10)}` : "-";
     const R = I.raw || {}, P = I.parts || {};
     const nx = I.next;
-    const nextTxt = nx && (I.state === "無" || I.state === "靜")
-      ? `<span><b>下一步看什麼</b>：BTC 下次創 30 日新高時${I.btc < nx.px ? `（而且收盤高於 $${Math.round(nx.px).toLocaleString()}）` : ""}，ILI 如果低於 <b>${nx.ili}</b>（${md(nx.t)} 高點那天的值）就亮黃燈；現在 <b>${I.ili.toFixed(0)}</b>。紅燈要 BTC 收盤破歷史新高 $${Math.round(I.ath).toLocaleString()}，而且 ILI 低於 50。</span>` : "";
+    const num = (v) => typeof v === "number" && Number.isFinite(v);
+    const redTxt = num(I.ath) ? `紅燈要 BTC 收盤破歷史新高 $${Math.round(I.ath).toLocaleString()}，而且 ILI 低於 50。` : "紅燈要 BTC 收盤破歷史新高，而且 ILI 低於 50。";
+    const nextTxt = nx && num(nx.ili) && (I.state === "無" || I.state === "靜")
+      ? `<span><b>下一步看什麼</b>：BTC 下次創 30 日新高時${num(I.btc) && num(nx.px) && I.btc < nx.px ? `（而且收盤高於 $${Math.round(nx.px).toLocaleString()}）` : ""}，ILI 如果低於 <b>${nx.ili}</b>（${md(nx.t)} 高點那天的值）就亮黃燈；現在 <b>${I.ili.toFixed(0)}</b>。${redTxt}</span>`
+      : (I.state === "無" || I.state === "靜") ? `<span><b>下一步看什麼</b>：黃燈門檻要等 BTC 下一段高點出來才算得出來；現在 ILI <b>${I.ili.toFixed(0)}</b>。${redTxt}</span>` : "";
     const cyc = I.cycle?.since
-      ? `本輪（BTC ${ymd(I.cycle.since)} 站上 200 日線起）：黃燈 <b>${I.cycle.yellow}</b> 次、紅燈 <b>${I.cycle.red}</b> 次`
+      ? `本輪（BTC ${ymd(I.cycle.since)} 站上 200 日線起）：黃燈 <b>${num(I.cycle.yellow) ? I.cycle.yellow : 0}</b> 次、紅燈 <b>${num(I.cycle.red) ? I.cycle.red : 0}</b> 次`
       : "BTC 在 200 日線下，還沒進入新一輪多頭";
     const flags = (I.events || []).filter((e) => e.kind === "黃" || e.kind === "紅").slice(-5).reverse();
     const open = el.open;
@@ -1622,6 +1625,10 @@ footer { color: var(--ink3); font-size: 12px; }
       }
     }
   }, 3000);
+  // 日內策略抱單時間：頂部和右欄共用，避免一個寫「抱到幾點」、另一個四捨五入成「還有幾小時」而對不上（D163）
+  const holdEnd = (A, hold) => Date.parse(A.t) + hold * 3600e3;
+  const holdLeft = (A, hold) => { const m = Math.max(0, Math.round((holdEnd(A, hold) - Date.now()) / 60000)); return m >= 60 ? `${Math.floor(m / 60)} 小時 ${m % 60} 分` : `${m} 分`; };
+  const holdTxt = (A, hold) => `最多抱到 <b>${tpeFull(new Date(holdEnd(A, hold)).toISOString())}</b>（還有 ${holdLeft(A, hold)}）`;
   // 最上面「現在該做什麼」（使用者 2026-10-04：打開不知道要做什麼）：只放要動手的事，其他都在下面當參考
   function renderTodo() {
     const el = $("todo"), I = DATA.intraday, S = DATA.shortwatch, R = DATA.regime, IL = DATA.ili;
@@ -1630,9 +1637,8 @@ footer { color: var(--ink3); font-size: 12px; }
     el.hidden = false;
     const A = I?.active, dbl = (S?.active || []).filter((x) => x.grade === "double");
     const K = S?.kinds || {}, hold = I?.rule?.hold || 24;
-    const until = (t) => tpeFull(new Date(Date.parse(t) + hold * 3600e3).toISOString());
     const long = A ? `<div class="act long"><b>做多</b><div>
-        <p>日內策略觸發（整體 LIQ ${A.med.toFixed(2)}）。照下面掛單，最多抱到 <b>${until(A.t)}</b>：</p>
+        <p>日內策略觸發（整體 LIQ ${A.med.toFixed(2)}）。照下面掛單，${holdTxt(A, hold)}：</p>
         ${(A.picks || []).map((p) => `<button type="button" class="pick" data-sym="${esc(p.sym)}"><b>${esc(p.sym)}</b><span>${p.lev}x｜進 ${fmtPx(p.price)}｜漲到 ${fmtPx(p.tp)} 出一半（帳面 +${p.tpRoe}%）｜停損 ${fmtPx(p.sl)}（帳面 −${p.slRoe}%）</span></button>`).join("")}
         <small>出一半後，剩下的停損移到進場價。回測只有 ${I.bt.episodes} 波、還在驗證。</small></div></div>`
       : `<div class="act idle"><b>做多</b><div><p>不用做多。整體 LIQ <b>${I?.now?.med == null ? "-" : I.now.med.toFixed(2)}</b>，到 ${I?.th ?? 2} 才觸發日內策略（觸發會推 Telegram）。</p></div></div>`;
@@ -1671,8 +1677,7 @@ footer { color: var(--ink3); font-size: 12px; }
     if (!D) return;
     const A = D.active, nw = D.now, R = D.rule, B = D.bt, L = D.live;
     el.classList.toggle("on", !!A);
-    const left = A ? Math.max(0, Math.round(R.hold - (Date.now() - Date.parse(A.t)) / 3600e3)) : 0;
-    const st = A ? `<p class="intra-st" style="color:var(--buy)">觸發中：整體 LIQ <b>${A.med.toFixed(2)}</b>（${tpeFull(A.t)}），最多再抱 ${left} 小時</p>`
+    const st = A ? `<p class="intra-st" style="color:var(--buy)">觸發中：整體 LIQ <b>${A.med.toFixed(2)}</b>（${tpeFull(A.t)} 觸發），${holdTxt(A, R.hold)}</p>`
       : `<p class="intra-st">未觸發：整體 LIQ <b>${nw?.med == null ? "-" : nw.med.toFixed(2)}</b>，需 ≥ ${D.th}</p>`;
     const rows = (A?.picks || []).map((p) => `<li><button type="button" class="it" data-sym="${esc(p.sym)}"><b class="up">${esc(p.sym)}</b><span>${p.lev}x｜進 ${fmtPx(p.price)}</span><em>+${p.tpPct}% 出半</em>
       <small class="lv">漲到 ${fmtPx(p.tp)}（帳面 +${p.tpRoe}%）出一半 → 剩下停損移成本｜停損 ${fmtPx(p.sl)}（−${R.slPrice}%，帳面 −${p.slRoe}%）｜沒碰到就 ${R.hold}h 到時出場</small></button></li>`).join("");
