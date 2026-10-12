@@ -91,6 +91,35 @@ button { font: inherit; color: inherit; }
 .todo.on-short { border-color: color-mix(in srgb, var(--avoid) 50%, var(--line)); }
 .todo .more { font-size: 11.5px; color: var(--ink3); margin: 0; }
 .todo .act.hold > b { color: var(--liq); background: color-mix(in srgb, var(--liq) 12%, transparent); }
+/* 流動性共振（D169）：共振中整塊亮綠、第一行就說買什麼 */
+.todo.on-res { border-color: var(--buy); box-shadow: 0 0 0 1px color-mix(in srgb, var(--buy) 45%, transparent), 0 0 28px color-mix(in srgb, var(--buy) 16%, transparent); }
+.todo .res-banner { margin: 0; font: 900 22px/1.3 var(--display); color: var(--buy); text-shadow: 0 0 10px color-mix(in srgb, var(--buy) 50%, transparent); animation: resGlow 1.8s ease-in-out infinite; }
+.todo .res-banner.hold { color: var(--liq); text-shadow: none; animation: none; font-size: 19px; }
+@keyframes resGlow { 0%, 100% { opacity: 1; } 50% { opacity: .62; } }
+@media (prefers-reduced-motion: reduce) { .todo .res-banner { animation: none; } }
+.todo .act.res > b { color: var(--buy); background: color-mix(in srgb, var(--buy) 16%, transparent); }
+.todo .act.res.hold > b { color: var(--liq); background: color-mix(in srgb, var(--liq) 12%, transparent); }
+.res-coins { display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 6px; }
+.res-coin { display: grid; gap: 1px; padding: 7px 9px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--buy) 35%, var(--line)); background: color-mix(in srgb, var(--buy) 7%, transparent); text-align: left; color: inherit; font: inherit; cursor: pointer; min-width: 0; }
+.res-coin:active { transform: translateY(1px); }
+.res-coin b { font: 800 15px/1.25 var(--display); display: flex; justify-content: space-between; gap: 6px; }
+.res-coin b em { font: 700 12.5px var(--mono); font-style: normal; }
+.res-coin span { font: 500 11.5px/1.4 var(--mono); color: var(--ink2); overflow-wrap: anywhere; }
+.res-coin.late { border-color: var(--line); background: none; opacity: .7; }
+.res-gauge { position: relative; height: 8px; border-radius: 4px; margin: 4px 0 14px; background: linear-gradient(90deg, color-mix(in srgb, var(--avoid) 45%, transparent) 0 20%, color-mix(in srgb, var(--liq) 35%, transparent) 20% 60%, color-mix(in srgb, var(--buy) 55%, transparent) 60% 100%); }
+.res-gauge i { position: absolute; top: -4px; width: 4px; height: 16px; border-radius: 2px; background: var(--ink); left: var(--x); transform: translateX(-2px); }
+.res-gauge small { position: absolute; top: 11px; font: 500 10.5px var(--mono); color: var(--ink3); transform: translateX(-50%); }
+#rcRes.on { border-color: var(--buy); }
+#rcRes table { width: 100%; border-collapse: collapse; font: 500 12px/1.5 var(--mono); }
+#rcRes th { text-align: left; font: 700 11px var(--body); color: var(--ink3); padding: 2px 4px; border-bottom: 1px solid var(--line); }
+#rcRes td { padding: 3px 4px; border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); white-space: nowrap; }
+#rcRes td:first-child { font-weight: 800; }
+#rcRes tr.late td { color: var(--ink3); }
+#rcRes tr[data-sym] { cursor: pointer; }
+#rcRes .res-tw { overflow-x: auto; }
+.rail .rc { align-content: start; }
+@media (max-width: 1100px) { #rcRes { grid-column: 1 / -1; } }
+@media (max-width: 760px) { .res-coins { grid-template-columns: repeat(2, minmax(0, 1fr)); } .res-coin span { font-size: 11px; } }
 .todo .hrow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; align-items: baseline; padding: 6px 8px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 4%, transparent); border: 0; width: 100%; text-align: left; color: inherit; font: inherit; cursor: pointer; }
 .todo .hrow.warn { box-shadow: inset 3px 0 0 var(--hot); } .todo .hrow.alert { box-shadow: inset 3px 0 0 var(--avoid); } .todo .hrow.ok { box-shadow: inset 3px 0 0 var(--ink3); }
 .todo .hrow b { font: 800 15px/1.3 var(--display); }
@@ -664,6 +693,7 @@ footer { color: var(--ink3); font-size: 12px; }
     </section>
     <aside class="rail" aria-label="現在可以做什麼">
       <p class="say adv" id="head">載入中</p>
+      <section class="rc" id="rcRes" hidden></section>
       <section class="rc" id="rcIntra" hidden></section>
       <section class="rc" id="rcShort" hidden></section>
       <section class="rc adv" id="rcContra" hidden></section>
@@ -732,7 +762,7 @@ footer { color: var(--ink3); font-size: 12px; }
   const field = $("field"), cv = $("cv"), ctx = cv.getContext("2d"), card = $("card");
 
   let DATA = null, nodes = [], lanes = {}, mode = "r24", W = 0, H = 0, dpr = 1, vertical = false;
-  let hover = null, selected = null, drag = null, colors = {}, dark = true;
+  let hover = null, selected = null, drag = null, colors = {}, dark = true, resIn = new Set();
   let focus = null;         // {tier} 或 {group}：只亮這一群，其餘淡掉
   const inFocus = (c) => !focus || (focus.tier ? c.tier === focus.tier : c.group === focus.group);
   const live = {};          // BNSYMBOL -> {p, r24}
@@ -855,7 +885,8 @@ footer { color: var(--ink3); font-size: 12px; }
       return n;
     });
     if (selected) selected = nodes.find((n) => n.c.sym === selected.c.sym) || null;
-    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderTodo(); renderRailTwap(); renderRailIntra(); renderRailShort(); renderRail(); renderContra(); nhSig = ""; renderNH(); renderTabs(); layout(first); renderList();
+    resIn = new Set((resOn()?.wave.coins || []).filter((x) => !x.late).map((x) => x.sym));
+    renderHeader(); renderHeat(); renderRotation(); renderListings(); renderHot(); renderTrack(); renderBoard(); renderWhales(); renderTodo(); renderRailTwap(); renderRailRes(); renderRailIntra(); renderRailShort(); renderRail(); renderContra(); nhSig = ""; renderNH(); renderTabs(); layout(first); renderList();
     if (selected) renderCard(); else card.hidden = true;
   }
 
@@ -933,6 +964,7 @@ footer { color: var(--ink3); font-size: 12px; }
     const sg = sigOn(c.sym);
     if (sg) T.push(`<i class="t-${sg.signal === "short" ? "avoid" : "buy"}">TWAP${sg.buy ? "買" : "賣"}</i>`);
     if (isNH(c) && !nhFar(c)) T.push(`<i class="t-nh">${nhFresh(c) ? `剛創高 ${freshAgo(c)}分` : "新高"}</i>`);
+    if (resIn.has(c.sym)) T.push(`<i class="t-buy" style="color:var(--buy)">共振</i>`);
     if (c.moved) T.push(`<i class="t-${c.moved === "up" ? "buy" : "avoid"}">${c.moved === "up" ? "↑" : "↓"}剛換道</i>`);
     if (DATA.news?.[c.bn]?.status === "done") T.push(`<i class="t-hot">！有原因</i>`);
     const w = whalesOn(c.sym).filter((x) => x.p).length;
@@ -1163,6 +1195,11 @@ footer { color: var(--ink3); font-size: 12px; }
       ctx.globalAlpha = dim ? 0.2 : 1;
     }
 
+    if (resIn.has(c.sym)) {                      // 流動性共振中（D169）：綠色虛線圈慢慢轉
+      ctx.save(); ctx.globalAlpha = dim ? 0.2 : 0.95; ctx.lineWidth = 2.5; ctx.strokeStyle = colors.buy;
+      ctx.setLineDash([7, 5]); ctx.lineDashOffset = reduce ? 0 : -t / 50;
+      ctx.beginPath(); ctx.arc(n.x, n.y, r + 5, 0, 6.2832); ctx.stroke(); ctx.restore();
+    }
     const lit = sg || (isNH(c) && !nhFar(c));
     if (lit && r > 10) {                         // 發光的泡泡：中間墊一層深底，字才看得清楚
       ctx.save();
@@ -1580,12 +1617,14 @@ footer { color: var(--ink3); font-size: 12px; }
       if (c.tier === "hot" && c.reason !== "highvol") return ["warn", `${c.reason === "leader" ? "族群龍頭剛噴" : "過熱（RSI>70、24h 多漲 8%）"}：今年之後 72h 只有 ${pct("過熱")} 跑贏大盤，可以分批落袋，別再加碼。`];
       if (sw) return ["warn", `有做空訊號（${DATA.shortwatch.kinds[sw.kinds[0]]}，單強）：留意，停損別放太遠。`];
       if (c.tier === "hot") return ["warn", `波動很大：今年這類 72h 只有 ${pct("高波動")} 跑贏大盤，部位別太大、停損要掛。`];
+      if (resIn.has(h.sym)) return ["ok", "流動性共振中：可以續抱，Overall LIQ 跌破 0（這一波結束）再出。"];
       if (inLong) return ["ok", "日內做多策略觸發中，這檔也在名單裡：照原計畫抱。"];
       if (isNH(c) && strongBull() && nhGood(c)) return ["ok", "剛創新高、符合追強條件：可以續抱，從最高收盤回落 20% 再出。"];
       return ["ok", c.tier === "buy" ? "穩健：不用動。" : "中性：沒有特別訊號，不用動。"];
     }
     if (sw?.grade === "double") return ["ok", "做空雙強還在：照 24h 計畫，停損照設。"];
     if (A) return ["warn", `日內做多策略觸發中（整體 LIQ ${A.med.toFixed(2)}，大盤偏多）：空單小心，停損拉近。`];
+    if (resOn()) return ["warn", `流動性共振中（Overall LIQ ${resOn().overall.toFixed(2)}，大盤偏多）：空單小心，停損拉近。`];
     if (!c) return sw ? ["ok", "做空訊號還在（單強）：照計畫。"] : ["ok", "不在泡泡圖名單裡，沒有分道資料；照你的停損走。"];
     if (c.tier === "hot" && c.reason !== "highvol") return ["warn", "過熱中，空單有被軋的風險：停損一定要掛。"];
     if (c.tier === "avoid") return ["ok", "還在急跌，對空單有利：可以把停損移到成本。"];
@@ -1629,11 +1668,38 @@ footer { color: var(--ink3); font-size: 12px; }
   const holdEnd = (A, hold) => Date.parse(A.t) + hold * 3600e3;
   const holdLeft = (A, hold) => { const m = Math.max(0, Math.round((holdEnd(A, hold) - Date.now()) / 60000)); return m >= 60 ? `${Math.floor(m / 60)} 小時 ${m % 60} 分` : `${m} 分`; };
   const holdTxt = (A, hold) => `最多抱到 <b>${tpeFull(new Date(holdEnd(A, hold)).toISOString())}</b>（還有 ${holdLeft(A, hold)}）`;
+  // 流動性共振（D169，使用者 2026-10-12）：CoinKarma Overall LIQ ≥ 2 時 LIQ ≥ 3 的大幣加入；Overall LIQ 跌破 0 這一波結束
+  const resOn = () => { const S = DATA.resonance; return S && !S.stale && S.wave?.live && (S.state === "on" || S.state === "hold") ? S : null; };
+  function resNow(c) {                                              // 現價：泡泡圖有這檔用即時價，否則用主流程抓的
+    const b = DATA.coins.find((x) => x.sym === c.sym), px = b ? priceOf(b) : c.now ?? null;
+    return px && c.p0 ? { px, r: (px / c.p0 - 1) * 100 } : null;
+  }
+  const resAge = (t) => { const h = Math.max(0, Math.round((Date.now() - Date.parse(t)) / 3600e3)); return h >= 48 ? `${Math.floor(h / 24)} 天 ${h % 24} 小時` : `${h} 小時`; };
+  function resCoin(c) {
+    const n = resNow(c);
+    return `<button type="button" class="res-coin${c.late ? " late" : ""}" data-sym="${esc(c.sym)}"><b>${esc(c.sym)}${n ? `<em class="${n.r >= 0 ? "up" : "dn"}">${n.r >= 0 ? "+" : ""}${n.r.toFixed(1)}%</em>` : ""}</b>
+      <span>共振價 ${fmtPx(c.p0)}${n ? ` → ${fmtPx(n.px)}` : ""}</span><span>LIQ ${c.liq == null ? "-" : c.liq.toFixed(2)}${c.t ? `｜${resAge(c.t)}前` : ""}${c.late ? "｜晚加入" : ""}</span></button>`;
+  }
+  function resBlock() {
+    const S = DATA.resonance;
+    if (!S) return "";
+    const W = S.wave || {}, B = S.bt || {}, L = resOn();
+    if (!L) {
+      const rets = (W.coins || []).map((c) => c.ret).filter((x) => x != null), avg = rets.length ? rets.reduce((a, b) => a + b, 0) / rets.length : null;
+      const last = W.start ? `上一波 ${tpeFull(W.start).split(" ")[0]}${W.end ? `→${tpeFull(W.end).split(" ")[0]}` : ""}，${(W.coins || []).length} 檔${avg != null ? `平均 ${avg >= 0 ? "+" : ""}${avg.toFixed(1)}%` : ""}。` : "";
+      return `<div class="act idle"><b>共振</b><div><p>${S.stale ? `共振資料 ${resAge(S.at)}沒更新（CoinKarma 抓不到），先別依賴。` : `沒有共振：Overall LIQ <b>${S.overall.toFixed(2)}</b>，要 ≥ 2、而且有大幣 LIQ ≥ 3 才開始。`}${last}</p></div></div>`;
+    }
+    const on = L.state === "on", early = W.coins.filter((c) => !c.late), late = W.coins.filter((c) => c.late);
+    return `<div class="act res${on ? "" : " hold"}"><b>共振</b><div>
+      <p>Overall LIQ <b>${L.overall.toFixed(2)}</b>（${on ? "≥ 2，還在加入新幣" : "0～2，延續中、不再加新幣"}）。這一波 ${tpeFull(W.start)} 開始、已經 ${resAge(W.start)}。${on ? "買下面已共振的幣" : "手上有的續抱"}，抱到 <b>Overall LIQ 跌破 0</b>（這一波結束，這裡會變「沒有共振」）：</p>
+      <div class="res-coins">${early.map(resCoin).join("")}${late.map(resCoin).join("")}</div>
+      <small>回測 ${B.waves} 波：共振幣抱到結束平均 +${B.coinAvg}%、${Math.round(B.coinWin * 100)}% 賺，比同時間沒共振的幣多 +${B.ex}%；今年 ${B.yWaves} 波 ${Math.round(B.yWin * 100)}% 賺。報酬從共振價算，越晚進剩下越少；灰色＝開始 24h 後才加入，回測沒有超額。停損自己設。</small></div></div>`;
+  }
   // 最上面「現在該做什麼」（使用者 2026-10-04：打開不知道要做什麼）：只放要動手的事，其他都在下面當參考
   function renderTodo() {
-    const el = $("todo"), I = DATA.intraday, S = DATA.shortwatch, R = DATA.regime, IL = DATA.ili;
+    const el = $("todo"), I = DATA.intraday, S = DATA.shortwatch, R = DATA.regime, IL = DATA.ili, RS = resOn();
     const draft = holdEdit ? $("holdTxt")?.value : null;            // 資料更新時正在打字：保留草稿
-    if (!I && !S) { el.hidden = true; return; }
+    if (!I && !S && !DATA.resonance) { el.hidden = true; return; }
     el.hidden = false;
     const A = I?.active, dbl = (S?.active || []).filter((x) => x.grade === "double");
     const K = S?.kinds || {}, hold = I?.rule?.hold || 24;
@@ -1641,7 +1707,7 @@ footer { color: var(--ink3); font-size: 12px; }
         <p>日內策略觸發（整體 LIQ ${A.med.toFixed(2)}）。照下面掛單，${holdTxt(A, hold)}：</p>
         ${(A.picks || []).map((p) => `<button type="button" class="pick" data-sym="${esc(p.sym)}"><b>${esc(p.sym)}</b><span>${p.lev}x｜進 ${fmtPx(p.price)}｜漲到 ${fmtPx(p.tp)} 出一半（帳面 +${p.tpRoe}%）｜停損 ${fmtPx(p.sl)}（帳面 −${p.slRoe}%）</span></button>`).join("")}
         <small>出一半後，剩下的停損移到進場價。回測只有 ${I.bt.episodes} 波、還在驗證。</small></div></div>`
-      : `<div class="act idle"><b>做多</b><div><p>不用做多。整體 LIQ <b>${I?.now?.med == null ? "-" : I.now.med.toFixed(2)}</b>，到 ${I?.th ?? 2} 才觸發日內策略（觸發會推 Telegram）。</p></div></div>`;
+      : `<div class="act idle"><b>做多</b><div><p>${RS ? "日內策略沒觸發" : "不用做多"}。整體 LIQ <b>${I?.now?.med == null ? "-" : I.now.med.toFixed(2)}</b>，到 ${I?.th ?? 2} 才觸發日內策略（觸發會推 Telegram）${RS ? "；要做多看上面的共振名單" : ""}。</p></div></div>`;
     const short = dbl.length ? `<div class="act short"><b>做空</b><div>
         <p>出現雙強（兩種強訊號同時亮），看 24 小時、停損自己先設：</p>
         ${dbl.map((x) => `<button type="button" class="pick" data-sym="${esc(x.base)}"><b>${esc(x.base)}</b><span>訊號價 ${fmtPx(x.price)}｜${x.kinds.map((k) => esc(K[k] || k)).join("＋")}${x.weak?.length ? `｜⚠️ 已被追高（${esc(x.weak.join("、"))}），軋空風險較大` : ""}</span></button>`).join("")}
@@ -1651,10 +1717,13 @@ footer { color: var(--ink3); font-size: 12px; }
     if (IL?.state === "紅") mkt = "ILI 紅燈：BTC 創高但機構資金沒跟上，不開新槓桿。";
     else if (R?.state === "強熊") mkt = "強熊：多數時間拿現金，單日反彈不算轉強。";
     const holdWarn = holds.map(holdAdvice).filter(([lv]) => lv !== "ok").length;
-    const verdict = A || dbl.length || holdWarn ? "" : `<p class="verdict-line">現在不用動。</p>`;
-    el.classList.toggle("on", !!A);
-    el.classList.toggle("on-short", !A && dbl.length > 0);
-    el.innerHTML = `<h2>現在該做什麼<small>${tpeFull(DATA.updatedAt || DATA.runAt)} 更新</small></h2>${verdict}${holdBlock()}${long}${short}
+    const nRes = RS ? RS.wave.coins.filter((c) => !c.late).length : 0;
+    const verdict = RS ? (RS.state === "on" ? `<p class="res-banner">流動性共振中：可以買下面 ${nRes} 檔</p>` : `<p class="res-banner hold">共振延續中：已共振的幣續抱，Overall LIQ 跌破 0 出場</p>`)
+      : A || dbl.length || holdWarn ? "" : `<p class="verdict-line">現在不用動。</p>`;
+    el.classList.toggle("on-res", RS?.state === "on");
+    el.classList.toggle("on", !!A && RS?.state !== "on");
+    el.classList.toggle("on-short", !A && !RS && dbl.length > 0);
+    el.innerHTML = `<h2>現在該做什麼<small>${tpeFull(DATA.updatedAt || DATA.runAt)} 更新</small></h2>${verdict}${resBlock()}${holdBlock()}${long}${short}
       ${mkt ? `<div class="act mkt"><b>大盤</b><div><p>${esc(mkt)}</p></div></div>` : ""}
 `;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
@@ -1669,6 +1738,30 @@ footer { color: var(--ink3); font-size: 12px; }
       renderTodo();
       if (k === "edit") $("holdTxt")?.focus();
     }));
+  }
+  // 目前共振（D169）：狀態、Overall LIQ 位置、這一波／上一波每個幣
+  function renderRailRes() {
+    const S = DATA.resonance, el = $("rcRes");
+    el.hidden = !S;
+    if (!S) return;
+    const W = S.wave || {}, B = S.bt || {}, L = resOn(), x = Math.max(0, Math.min(100, (S.overall + 1) / 5 * 100));
+    el.classList.toggle("on", L?.state === "on");
+    const col = L?.state === "on" ? "var(--buy)" : L ? "var(--liq)" : "var(--ink2)";
+    const rows = (W.coins || []).map((c) => {
+      const n = L ? resNow(c) : null, r = n ? n.r : c.ret, px = n ? n.px : c.p1;
+      return `<tr${c.late ? ` class="late"` : ""} data-sym="${esc(c.sym)}" title="${c.t ? `${tpeFull(c.t)} 共振（台北）` : ""}"><td>${esc(c.sym)}</td><td>${c.liq == null ? "-" : c.liq.toFixed(2)}</td><td>${fmtPx(c.p0)}</td><td>${px == null ? "-" : fmtPx(px)}</td><td class="${r == null ? "" : r >= 0 ? "up" : "dn"}">${r == null ? "-" : `${r >= 0 ? "+" : ""}${r.toFixed(1)}%`}</td></tr>`;
+    }).join("");
+    const cap = L ? `這一波 ${tpeFull(W.start)} 開始，已 ${resAge(W.start)}，${W.coins.length} 檔` : W.start ? `上一波 ${tpeFull(W.start).split(" ")[0]} → ${W.end ? tpeFull(W.end).split(" ")[0] : "?"}，${(W.coins || []).length} 檔（漲跌＝共振價到結束價）` : "";
+    el.innerHTML = `<h3><span style="color:${col}">目前共振</span><small>CoinKarma｜${S.stale ? "資料過期" : `${tpeFull(S.at)} 更新`}</small></h3>
+      <p class="intra-st" style="color:${col}"><b>${L ? esc(S.stateTxt) : "沒有共振"}</b>　Overall LIQ <b>${S.overall.toFixed(2)}</b></p>
+      <div class="res-gauge" style="--x:${x}%"><i></i><small style="left:20%">0 結束</small><small style="left:60%">2 共振</small></div>
+      ${cap ? `<p class="rule">${cap}${L ? "（現價→漲跌從共振價算；灰色＝晚加入）" : ""}</p>` : ""}
+      ${rows ? `<div class="res-tw"><table><thead><tr><th>幣</th><th>LIQ</th><th>共振價</th><th>${L ? "現價" : "結束價"}</th><th>漲跌</th></tr></thead><tbody>${rows}</tbody></table></div>` : ""}
+      <details class="more-d"><summary>規則與回測</summary><p class="rule">共振＝CoinKarma 的 Overall LIQ ≥ 2 時，24 檔大幣裡 LIQ ≥ 3 的幣加入；第一個幣共振＝一波開始，Overall LIQ 跌破 0＝這一波結束（0～2 叫延續中，不再加新幣）。<br>
+      回測 ${esc(B.period)} 共 ${B.waves} 波、${B.rows} 筆（共振價跟幣安收盤核對過）：波段起點買到結束，24 檔中位數平均 +${B.mktAvg}%、${Math.round(B.mktWin * 100)}% 的波賺錢；隨機挪到同長度的別段時間只有 ${B.randAvg}%、${Math.round(B.randWin * 100)}%（p≈${B.p}）。今年 ${B.yWaves} 波 ${Math.round(B.yWin * 100)}% 賺、平均 +${B.yAvg}%。
+      共振幣抱到結束平均 +${B.coinAvg}%、${Math.round(B.coinWin * 100)}% 賺，比同時間沒共振的幣多 +${B.ex}%（跑贏 ${Math.round(B.exWin * 100)}%，每年都是正的）；只抱 24h 平均 +${B.h24}%、${Math.round(B.h24Win * 100)}% 賺。開始 24h 後才加入的幣沒有超額；LIQ 大小跟之後漲幅沒有關係。波段長度中位數 33 小時。<br>
+      報酬從共振價算、沒扣手續費、沒有停損；越晚進場剩下的空間越少。每輪從 CoinKarma 唯讀抓取，不推 Telegram（CoinKarma 會員群已有通知）。不是投資建議。</p></details>`;
+    el.querySelectorAll("tr[data-sym]").forEach((r) => r.addEventListener("click", () => selectSym(r.dataset.sym)));
   }
   // 日內策略 v1（D153，驗證中）：整體 LIQ ≥ 2 觸發，流動性前 5、10x／5x、帳面 +10% 出一半
   function renderRailIntra() {
