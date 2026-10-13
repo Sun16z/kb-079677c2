@@ -1760,7 +1760,7 @@ footer { color: var(--ink3); font-size: 12px; }
       <details class="more-d"><summary>規則與回測</summary><p class="rule">共振＝CoinKarma 的 Overall LIQ ≥ 2 時，24 檔大幣裡 LIQ ≥ 3 的幣加入；第一個幣共振＝一波開始，Overall LIQ 跌破 0＝這一波結束（0～2 叫延續中，不再加新幣）。<br>
       回測 ${esc(B.period)} 共 ${B.waves} 波、${B.rows} 筆（共振價跟幣安收盤核對過）：波段起點買到結束，24 檔中位數平均 +${B.mktAvg}%、${Math.round(B.mktWin * 100)}% 的波賺錢；隨機挪到同長度的別段時間只有 ${B.randAvg}%、${Math.round(B.randWin * 100)}%（p≈${B.p}）。今年 ${B.yWaves} 波 ${Math.round(B.yWin * 100)}% 賺、平均 +${B.yAvg}%。
       共振幣抱到結束平均 +${B.coinAvg}%、${Math.round(B.coinWin * 100)}% 賺，比同時間沒共振的幣多 +${B.ex}%（跑贏 ${Math.round(B.exWin * 100)}%，每年都是正的）；只抱 24h 平均 +${B.h24}%、${Math.round(B.h24Win * 100)}% 賺。開始 24h 後才加入的幣沒有超額；LIQ 大小跟之後漲幅沒有關係。波段長度中位數 33 小時。<br>
-      報酬從共振價算、沒扣手續費、沒有停損；越晚進場剩下的空間越少。每輪從 CoinKarma 唯讀抓取，不推 Telegram（CoinKarma 會員群已有通知）。不是投資建議。</p></details>`;
+      報酬從共振價算、沒扣手續費、沒有停損；越晚進場剩下的空間越少。每輪從 CoinKarma 唯讀抓取；一波開始、新加入的幣、一波結束（出場點）會推 Telegram。不是投資建議。</p></details>`;
     el.querySelectorAll("tr[data-sym]").forEach((r) => r.addEventListener("click", () => selectSym(r.dataset.sym)));
   }
   // 日內策略 v1（D153，驗證中）：整體 LIQ ≥ 2 觸發，流動性前 5、10x／5x、帳面 +10% 出一半
