@@ -622,6 +622,7 @@ footer { color: var(--ink3); font-size: 12px; }
     <div class="meta" id="sub"></div>
     <div class="controls">
       <span class="live" id="live" data-s="off"><i></i><span>快照</span></span>
+      <button type="button" class="ct-open" id="ctOpen" hidden title="用 Hyperliquid 代理自動跟流動性共振（測試中）">自動跟單</button>
       <details class="menu">
         <summary>設定</summary>
         <div class="pop">
@@ -2811,3 +2812,4 @@ footer { color: var(--ink3); font-size: 12px; }
   requestAnimationFrame(frame);
 })();
 </script>
+<script src="copytrade.js" defer></script>
