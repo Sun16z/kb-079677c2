@@ -1474,7 +1474,7 @@ footer { color: var(--ink3); font-size: 12px; }
       : "BTC 在 200 日線下，還沒進入新一輪多頭";
     const flags = (I.events || []).filter((e) => e.kind === "黃" || e.kind === "紅").slice(-5).reverse();
     const open = el.open;
-    el.innerHTML = `<summary><span class="il-k"><span class="lng">機構資金<br></span>ILI</span><span class="il-n">${I.ili.toFixed(0)}</span><span class="il-pill il-${I.state}">${pill}</span>${mini}</summary>
+    el.innerHTML = `<summary><span class="il-k"><span class="lng">機構資金<br></span>ILI</span><span class="il-n">${I.ili.toFixed(0)}</span>${I.stale ? `<small style="color:var(--avoid)">資料過期（最後更新 ${I.at && Number.isFinite(Date.parse(I.at)) ? tpeFull(I.at) : "未知"}）</small>` : ""}<span class="il-pill il-${I.state}">${pill}</span>${mini}</summary>
       <div class="pop">
         <span class="il-state il-${I.state}"><b class="il-${I.state}">${pill}</b>　<span>${esc(I.guide)}</span></span>
         <div class="il-bars">
@@ -1725,13 +1725,14 @@ footer { color: var(--ink3); font-size: 12px; }
     const K = S?.kinds || {}, hold = I?.rule?.hold || 24;
     const states = (A?.picks || []).map((p) => ({ p, ...intraPickState(A, p, I?.rule) }));
     const allExpired = !!A && states.length > 0 && states.every((x) => x.expired);
+    const stale = intraStale(I?.stale);
     const age = A ? intraPickState(A, {}, I?.rule).ageMin : null;
     const triggerTime = A && Number.isFinite(Date.parse(A.t)) ? tpeFull(A.t) : "時間不明";
     const long = A ? `<div class="act long"><b>做多</b><div>
-        <p>日內策略觸發（整體 LIQ ${intraFmt(A.med, 2)}）。${allExpired ? `訊號 ${triggerTime} 觸發，已過期，不要追` : `研究中，觸發 ${triggerTime}（${Number.isFinite(age) ? Math.max(0, Math.round(age)) : "-"} 分鐘前），可參考下面價位`}：</p>
-        ${states.map(({ p, expired, ageText, devText }) => `<button type="button" class="pick" data-sym="${esc(p.sym)}"><b>${esc(p.sym)}</b><span>${expired ? `已過期，不要追｜${ageText}｜${devText}` : `${intraNum(p.lev) ? p.lev + "x｜" : ""}進 ${intraNum(p.price) ? fmtPx(p.price) : "-"}｜漲到 ${intraNum(p.tp) ? fmtPx(p.tp) : "-"} 出一半（帳面 +${intraFmt(p.tpRoe, 0)}%）｜停損 ${intraNum(p.sl) ? fmtPx(p.sl) : "-"}（帳面 −${intraFmt(p.slRoe, 0)}%）｜${devText}`}</span></button>`).join("")}
+        <p>日內策略觸發（整體 LIQ ${intraFmt(A.med, 2)}）。${stale || allExpired ? `訊號 ${triggerTime} 觸發，已過期，不要追` : `研究中，觸發 ${triggerTime}（${Number.isFinite(age) ? Math.max(0, Math.round(age)) : "-"} 分鐘前），可參考下面價位`}：</p>
+        ${states.map(({ p, expired, ageText, devText }) => `<button type="button" class="pick" data-sym="${esc(p.sym)}"><b>${esc(p.sym)}</b><span>${stale ? "資料過期，不發新訊號" : expired ? `已過期，不要追｜${ageText}｜${devText}` : `${intraNum(p.lev) ? p.lev + "x｜" : ""}進 ${intraNum(p.price) ? fmtPx(p.price) : "-"}｜漲到 ${intraNum(p.tp) ? fmtPx(p.tp) : "-"} 出一半（帳面 +${intraFmt(p.tpRoe, 0)}%）｜停損 ${intraNum(p.sl) ? fmtPx(p.sl) : "-"}（帳面 −${intraFmt(p.slRoe, 0)}%）｜${devText}`}</span></button>`).join("")}
         <small>${intraResearch(I?.bt)} 出一半後，剩下的停損移到進場價。</small></div></div>`
-      : `<div class="act idle"><b>做多</b><div><p>${RS ? "日內策略沒觸發" : "不用做多"}。整體 LIQ <b>${I?.now?.med == null ? "-" : I.now.med.toFixed(2)}</b>，到 ${I?.th ?? 2} 才觸發日內策略（觸發會推 Telegram）${RS ? "；要做多看上面的共振名單" : ""}。</p></div></div>`;
+      : `<div class="act idle"><b>做多</b><div><p>${stale || `${RS ? "日內策略沒觸發" : "不用做多"}。整體 LIQ <b>${intraFmt(I?.now?.med, 2)}</b>，到 ${intraFmt(I?.th ?? 2, 0)} 才觸發日內策略（觸發會推 Telegram）${RS ? "；要做多看上面的共振名單" : ""}。`}</p></div></div>`;
     const short = dbl.length ? `<div class="act short"><b>做空</b><div>
         <p>出現雙強（兩種強訊號同時亮），看 24 小時、停損自己先設：</p>
         ${dbl.map((x) => `<button type="button" class="pick" data-sym="${esc(x.base)}"><b>${esc(x.base)}</b><span>訊號價 ${fmtPx(x.price)}｜${x.kinds.map((k) => esc(K[k] || k)).join("＋")}${x.weak?.length ? `｜⚠️ 已被追高（${esc(x.weak.join("、"))}），軋空風險較大` : ""}</span></button>`).join("")}
@@ -1747,7 +1748,7 @@ footer { color: var(--ink3); font-size: 12px; }
     el.classList.toggle("on-res", RS?.state === "on");
     el.classList.toggle("on", !!A && RS?.state !== "on");
     el.classList.toggle("on-short", !A && !RS && dbl.length > 0);
-    el.innerHTML = `<h2>現在該做什麼<small>${tpeFull(DATA.updatedAt || DATA.runAt)} 更新</small></h2>${verdict}${resBlock()}${holdBlock()}${long}${short}
+    el.innerHTML = `<h2>現在該做什麼<small>${tpeFull(DATA.updatedAt || DATA.runAt)} 更新</small></h2>${verdict}${resBlock()}${holdBlock()}${stale && A ? `<p style="color:var(--avoid)">${stale}</p>` : ""}${long}${short}
       ${mkt ? `<div class="act mkt"><b>大盤</b><div><p>${esc(mkt)}</p></div></div>` : ""}
 `;
     el.querySelectorAll("button[data-sym]").forEach((b) => b.addEventListener("click", () => selectSym(b.dataset.sym)));
@@ -1788,20 +1789,25 @@ footer { color: var(--ink3); font-size: 12px; }
     el.querySelectorAll("tr[data-sym]").forEach((r) => r.addEventListener("click", () => selectSym(r.dataset.sym)));
   }
   // 日內策略：研究資料與掛單時效分開顯示。
+  function intraStale(s) {
+    if (!s) return "";
+    return `<b style="color:var(--avoid)">資料過期</b>：${(s.reasons || []).map(esc).join("；")}｜CoinKarma ${intraNum(s.ckAgeMin) ? intraFmt(s.ckAgeMin, 1) + " 分鐘" : "未知"}｜幣安價格 ${intraNum(s.pxAgeMin) ? intraFmt(s.pxAgeMin, 1) + " 分鐘" : "未知"}｜不發新訊號`;
+  }
   function renderRailIntra() {
     const D = DATA.intraday, el = $("rcIntra");
     el.hidden = !D;
     if (!D) return;
     const A = D.active, nw = D.now, R = D.rule || {}, B = D.bt || {}, L = D.live;
+    const stale = intraStale(D.stale);
     const states = (A?.picks || []).map((p) => ({ p, ...intraPickState(A, p, R) }));
     const allExpired = states.length > 0 && states.every((x) => x.expired);
-    el.classList.toggle("on", !!A && !allExpired);
+    el.classList.toggle("on", !!A && !allExpired && !stale);
     const triggerTime = A && Number.isFinite(Date.parse(A.t)) ? tpeFull(A.t) : "時間不明";
-    const st = A ? `<p class="intra-st" style="color:var(--buy)">${allExpired ? `訊號 ${triggerTime} 觸發，已過期，不要追` : `研究中，${triggerTime} 觸發；整體 LIQ ${intraFmt(A.med, 2)}`}</p>`
+    const st = A ? `<p class="intra-st" style="color:var(--buy)">${stale || allExpired ? `訊號 ${triggerTime} 觸發，已過期，不要追` : `研究中，${triggerTime} 觸發；整體 LIQ ${intraFmt(A.med, 2)}`}</p>`
       : `<p class="intra-st">未觸發：整體 LIQ <b>${intraFmt(nw?.med, 2)}</b>，需 ≥ ${intraFmt(D.th, 0)}</p>`;
-    const rows = states.map(({ p, expired, ageText, devText }) => `<li><button type="button" class="it" data-sym="${esc(p.sym)}"><b class="up">${esc(p.sym)}</b><span>${expired ? `已過期，不要追｜${ageText}｜${devText}` : `${intraNum(p.lev) ? p.lev + "x｜" : ""}進 ${intraNum(p.price) ? fmtPx(p.price) : "-"}｜${devText}`}</span>${expired ? "" : `<em>+${intraFmt(p.tpPct, 0)}% 出半</em><small class="lv">漲到 ${intraNum(p.tp) ? fmtPx(p.tp) : "-"}（帳面 +${intraFmt(p.tpRoe, 0)}%）出一半 → 剩下停損移成本｜停損 ${intraNum(p.sl) ? fmtPx(p.sl) : "-"}（−${intraFmt(R.slPrice, 0)}%，帳面 −${intraFmt(p.slRoe, 0)}%）｜沒碰到就 ${intraFmt(R.hold, 0)}h 到時出場</small>`}</button></li>`).join("");
+    const rows = states.map(({ p, expired, ageText, devText }) => `<li><button type="button" class="it" data-sym="${esc(p.sym)}"><b class="up">${esc(p.sym)}</b><span>${stale ? "資料過期，不發新訊號" : expired ? `已過期，不要追｜${ageText}｜${devText}` : `${intraNum(p.lev) ? p.lev + "x｜" : ""}進 ${intraNum(p.price) ? fmtPx(p.price) : "-"}｜${devText}`}</span>${stale || expired ? "" : `<em>+${intraFmt(p.tpPct, 0)}% 出半</em><small class="lv">漲到 ${intraNum(p.tp) ? fmtPx(p.tp) : "-"}（帳面 +${intraFmt(p.tpRoe, 0)}%）出一半 → 剩下停損移成本｜停損 ${intraNum(p.sl) ? fmtPx(p.sl) : "-"}（−${intraFmt(R.slPrice, 0)}%，帳面 −${intraFmt(p.slRoe, 0)}%）｜沒碰到就 ${intraFmt(R.hold, 0)}h 到時出場</small>`}</button></li>`).join("");
     const hist = (D.history || []).filter((e) => intraNum(e?.result?.avg)).slice(-5).reverse().map((e) => `${tpeFull(e.t).slice(0, 11)} ${intraSigned(e.result.avg)}（${intraNum(e.result.wins) ? e.result.wins : "-"}/${intraNum(e.result.n) ? e.result.n : "-"}）`).join("、");
-    el.innerHTML = `<h3><span style="color:var(--buy)">日內策略</span><small>研究中</small></h3>${st}
+    el.innerHTML = `<h3><span style="color:var(--buy)">日內策略</span><small>研究中</small></h3>${st}${stale ? `<p class="intra-st">${stale}</p>` : ""}
       ${rows ? `<ol>${rows}</ol>` : ""}
       <p class="rule">實際紀錄：${intraNum(L?.n) && L.n > 0 ? `${L.n} 次，每筆平均 ${intraSigned(L.avg)}，${intraNum(L.epWin) ? Math.round(L.epWin * 100) : "-"}% 的次數賺錢${hist ? `（最近：${hist}）` : ""}` : "還沒有結算的觸發"}。</p>
       <details class="more-d"><summary>規則與回測</summary><p class="rule">整體 LIQ（CoinKarma 名單 LIQ 中位數）≥ ${intraFmt(D.th, 0)} 時，挑名單裡 Hyperliquid 流動性前 ${intraFmt(R.picks, 0)} 檔；預設 3x（上限不足 3x 不選）；價格 +${intraFmt(R.tpPrice, 0)}%（3x＝帳面 +${intraNum(R.tpPrice) ? (R.tpPrice * 3).toFixed(0) : "-"}%）出一半、剩下停損移成本；進場掛停損 −${intraFmt(R.slPrice, 0)}%；最多抱 ${intraFmt(R.hold, 0)} 小時。觸發超過 ${intraFmt(R.staleMin ?? 60, 0)} 分鐘或現價偏離訊號價 ${intraFmt(R.staleDev ?? 1, 0)}% 以上就不要追。<br>
